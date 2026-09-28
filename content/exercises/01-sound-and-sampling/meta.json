@@ -1,0 +1,15 @@
+{
+  "id": "01-sound-and-sampling",
+  "title": "Measure levels, predict aliases, and resample",
+  "brief": "Build decibel helpers, sample a tone, predict the frequency any tone aliases to, and resample with a windowed-sinc filter that matches scipy's resample_poly.",
+  "needs_gpu": false,
+  "timeout": 40,
+  "packages": ["numpy", "scipy"],
+  "hints": [
+    "A level in dBFS is 20 * np.log10(max(value, eps)); use 20 because the value is an amplitude, not a power.",
+    "The alias is the distance to the nearest multiple of the sample rate: abs(f - fs * np.round(f / fs)).",
+    "np.sinc(u) is sin(pi u) / (pi u), so 2 * fc * np.sinc(2 * fc * m) is the ideal low-pass response for a cutoff of fc cycles per sample.",
+    "Zero-stuff with stuffed = np.zeros(len(x) * up); stuffed[::up] = x. After np.convolve, the first output sample you keep is at index half, not 0.",
+    "The ceiling of a / b for positive integers is -(-a // b)."
+  ]
+}

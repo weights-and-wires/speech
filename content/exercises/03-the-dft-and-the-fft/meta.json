@@ -1,0 +1,15 @@
+{
+  "id": "03-the-dft-and-the-fft",
+  "title": "Build the DFT, the FFT, and four windows",
+  "brief": "Build the DFT as a matrix and as a recursive radix-2 FFT, compute bin frequencies, build the classic windows, and measure each window's leakage.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "scipy"],
+  "hints": [
+    "np.outer(k, k) with k = np.arange(n) gives every product k * m at once.",
+    "In fft_radix2, combine the halves with np.concatenate([E + T, E - T]), where T is the twiddles times the odd half.",
+    "n & (n - 1) is 0 exactly when a positive integer n is a power of two.",
+    "A periodic window divides by n, a symmetric one by n - 1. scipy calls the rectangular window boxcar.",
+    "In leakage, normalize by the value at index 0 before taking decibels, so the main lobe peaks at 0 dB."
+  ]
+}

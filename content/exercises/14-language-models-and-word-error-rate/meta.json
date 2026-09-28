@@ -1,0 +1,15 @@
+{
+  "id": "14-language-models-and-word-error-rate",
+  "title": "Smooth a bigram model and score a transcript",
+  "brief": "Build an interpolated Kneser-Ney bigram model with perplexity, a Levenshtein aligner with WER and CER, and noisy-channel rescoring of n-best lists.",
+  "needs_gpu": false,
+  "timeout": 20,
+  "packages": ["numpy"],
+  "hints": [
+    "zip(padded[:-1], padded[1:]) lists the bigrams of one padded sentence; Counter.update adds them all.",
+    "A Counter's keys are the distinct bigram types, so len(counts) is the denominator of P_cont and a count over keys gives N1+.",
+    "In kn_prob, C(history) is the sum of counts over the bigrams whose first element is history, which includes (history, '</s>').",
+    "Fill the edit table with E[i, 0] = i and E[0, j] = j first. On the way back, test the diagonal move first, then the deletion, then the insertion.",
+    "For corpus WER, keep two running totals, errors and reference words, and divide once at the end."
+  ]
+}

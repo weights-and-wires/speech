@@ -1,0 +1,16 @@
+{
+  "id": "13-hidden-markov-models",
+  "title": "Score, align, and train an HMM per word",
+  "brief": "Compute Gaussian and mixture emissions, run forward, backward, and Viterbi in log space, train with Baum-Welch, and recognize noisy synthetic words.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "scipy"],
+  "hints": [
+    "Broadcast X[:, None, :] against means[None, :, :] to get a (T, N, D) array, then sum over the last axis.",
+    "In forward, log_alpha[t - 1][:, None] + log_A has shape (N, N) with rows as 'from' states; logsumexp over axis=0 sums over where you came from.",
+    "backward mirrors forward: log_A + (log_B[t + 1] + log_beta[t + 1])[None, :], then logsumexp over axis=1, the 'to' states.",
+    "In viterbi, store psi[t] = argmax over axis 0 of delta[:, None] + log_A, then walk back with path[t - 1] = psi[t, path[t]].",
+    "gamma = exp(log_alpha + log_beta - log_p). The transition counts sum exp(log_xi) over t = 0 .. T - 2, and so does the denominator.",
+    "Accumulate every sum over all sequences before dividing; return the log-likelihood you computed with the parameters that came in."
+  ]
+}

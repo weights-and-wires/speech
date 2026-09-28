@@ -59,9 +59,21 @@ def _numpy():
     return np
 
 
+
+def _plain(value: Any) -> Any:
+    """A torch tensor as a numpy array, so a check can pass one that still
+    tracks gradients, lives on a GPU, or holds bfloat16. Anything else is
+    returned as it is."""
+    if hasattr(value, "detach") and hasattr(value, "cpu"):
+        tensor = value.detach().cpu()
+        if str(tensor.dtype) in ("torch.bfloat16", "torch.float16"):
+            tensor = tensor.float()
+        return tensor.numpy()
+    return value
+
 def _describe(value: Any) -> str:
     np = _numpy()
-    array = np.asarray(value)
+    array = np.asarray(_plain(value))
     if array.ndim == 0:
         return f"{array.item():.6g}"
     if array.size <= 8:
@@ -85,8 +97,13 @@ def close(
 ) -> None:
     """Fail unless `got` and `want` agree elementwise within tolerance."""
     np = _numpy()
-    got_a = np.asarray(got, dtype=float)
-    want_a = np.asarray(want, dtype=float)
+    got_a = np.asarray(_plain(got))
+    want_a = np.asarray(_plain(want))
+    # A complex result is compared as complex, so a spectrum whose phase is
+    # wrong fails; casting to float would keep only the real part.
+    kind = complex if np.iscomplexobj(got_a) or np.iscomplexobj(want_a) else float
+    got_a = got_a.astype(kind)
+    want_a = want_a.astype(kind)
     if got_a.shape != want_a.shape:
         fail(
             f"{_label(label)}shape {got_a.shape} does not match the expected "
@@ -119,8 +136,8 @@ def almost(got: Any, want: Any, tol: float, label: str | None = None) -> None:
 def equal(got: Any, want: Any, label: str | None = None) -> None:
     """Fail unless two values are exactly equal."""
     np = _numpy()
-    got_a = np.asarray(got)
-    want_a = np.asarray(want)
+    got_a = np.asarray(_plain(got))
+    want_a = np.asarray(_plain(want))
     if got_a.shape != want_a.shape or not np.array_equal(got_a, want_a):
         fail(
             f"{_label(label)}values differ.\n"
@@ -132,7 +149,7 @@ def equal(got: Any, want: Any, label: str | None = None) -> None:
 def shape(value: Any, want: Sequence[int], label: str | None = None) -> None:
     """Fail unless `value` has the given shape."""
     np = _numpy()
-    got = tuple(np.asarray(value).shape)
+    got = tuple(np.asarray(_plain(value)).shape)
     if got != tuple(want):
         fail(f"{_label(label)}shape is {got}, expected {tuple(want)}")
 
@@ -140,7 +157,7 @@ def shape(value: Any, want: Sequence[int], label: str | None = None) -> None:
 def finite(value: Any, label: str | None = None) -> None:
     """Fail when any element is NaN or infinite."""
     np = _numpy()
-    array = np.asarray(value, dtype=float)
+    array = np.asarray(_plain(value), dtype=float)
     if not np.all(np.isfinite(array)):
         fail(f"{_label(label)}result holds NaN or infinity: {_describe(array)}")
 
@@ -174,7 +191,7 @@ def finite_difference(
 ) -> Any:
     """Central-difference gradient of a scalar function, for checking gradients."""
     np = _numpy()
-    x = np.asarray(x, dtype=float)
+    x = np.asarray(_plain(x), dtype=float)
     grad = np.zeros_like(x)
     it = np.nditer(x, flags=["multi_index"])
     while not it.finished:
@@ -243,8 +260,8 @@ def snr_db(got: Any, want: Any) -> float:
     The noise is `got - want`. Identical signals give infinity.
     """
     np = _numpy()
-    got_a = np.asarray(got, dtype=float)
-    want_a = np.asarray(want, dtype=float)
+    got_a = np.asarray(_plain(got), dtype=float)
+    want_a = np.asarray(_plain(want), dtype=float)
     if got_a.shape != want_a.shape:
         fail(f"shape {got_a.shape} does not match the reference {want_a.shape}")
     noise = float(np.sum((got_a - want_a) ** 2))
@@ -272,7 +289,7 @@ def min_snr(got: Any, want: Any, db: float, label: str | None = None) -> None:
 def peak_frequency(signal: Any, sample_rate: float) -> float:
     """The frequency in Hz of the largest bin in the signal's Hann-windowed spectrum."""
     np = _numpy()
-    x = np.asarray(signal, dtype=float)
+    x = np.asarray(_plain(signal), dtype=float)
     if x.ndim != 1 or x.size < 2:
         fail(f"expected a 1-D signal, got shape {x.shape}")
     spectrum = np.abs(np.fft.rfft(x * np.hanning(x.size)))
@@ -287,7 +304,7 @@ def near_frequency(
     The tolerance defaults to two FFT bins, `2 * sample_rate / len(signal)`.
     """
     np = _numpy()
-    x = np.asarray(signal, dtype=float)
+    x = np.asarray(_plain(signal), dtype=float)
     finite(x, label)
     tol = tol_hz if tol_hz is not None else 2.0 * sample_rate / max(x.size, 1)
     found = peak_frequency(x, sample_rate)
@@ -298,7 +315,7 @@ def near_frequency(
 def in_range(value: Any, low: float, high: float, label: str | None = None) -> None:
     """Fail unless every element lies in [low, high]."""
     np = _numpy()
-    array = np.asarray(value, dtype=float)
+    array = np.asarray(_plain(value), dtype=float)
     finite(array, label)
     if array.size and (array.min() < low or array.max() > high):
         fail(

@@ -258,7 +258,7 @@ The `speechcheck` module is on the path at run time. Its API:
 | Name | Signature | Behavior |
 |---|---|---|
 | `check` | `@check("description")` | Registers a check. The description is what the reader sees. |
-| `close` | `close(got, want, rtol=1e-5, atol=1e-8, label=None)` | Fails with a readable diff when the arrays differ. |
+| `close` | `close(got, want, rtol=1e-5, atol=1e-8, label=None)` | Fails with a readable diff when the arrays differ. Complex arrays are compared as complex. |
 | `equal` | `equal(got, want, label=None)` | Exact equality, for shapes, dtypes, and integers. |
 | `fail` | `fail("message")` | Fails the check with that message. |
 | `shape` | `shape(array, (3, 4), label=None)` | Asserts a shape. |
@@ -327,7 +327,8 @@ The following rules apply to the arguments:
   lowest frequency, the layout `np.abs(np.fft.rfft(frames, axis=1)).T` gives.
   With `db=True` it converts magnitudes to decibels itself; pass `db=False`
   for a matrix that is already in dB, and `power=True` for a power spectrogram.
-  `y_axis="mel"` labels mel bands between `fmin` and `fmax`.
+  `y_axis="mel"` labels mel bands between `fmin` and `fmax`. For a linear axis cut to its low bins, pass the top
+  frequency you kept as `fmax`.
 - Torch tensors on any device are accepted wherever an array is.
 
 Every payload is bounded. The limits are the following:

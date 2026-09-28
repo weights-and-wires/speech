@@ -337,8 +337,8 @@ def show_spectrogram(
     than `top_db` below the loudest cell is shown as the floor. With `db=False`
     the values are shown as they are, which suits a matrix already in dB.
 
-    `y_axis` says what the rows are: `"linear"` for FFT bins from 0 to
-    `sample_rate / 2`, `"mel"` for mel bands from `fmin` to `fmax` (Slaney's
+    `y_axis` says what the rows are: `"linear"` for FFT bins from `fmin` to
+    `fmax`, which default to 0 and `sample_rate / 2`, `"mel"` for mel bands from `fmin` to `fmax` (Slaney's
     formula, or HTK's with `htk=True`), or `"bins"` for plain row numbers. The
     time axis is in seconds when `sample_rate` and `hop_length` are both given,
     and in frames otherwise.
@@ -379,7 +379,9 @@ def show_spectrogram(
         x = _axis("Frame", None, 0.0, float(frames))
 
     if y_axis == "linear" and sample_rate:
-        y = _axis("Frequency", "Hz", 0.0, float(sample_rate) / 2, scale="linear")
+        # A matrix cut to its low bins passes the top of what it kept as fmax.
+        top = fmax if fmax is not None else float(sample_rate) / 2
+        y = _axis("Frequency", "Hz", float(fmin), float(top), scale="linear")
     elif y_axis == "mel":
         top = fmax if fmax is not None else (float(sample_rate) / 2 if sample_rate else None)
         if top is None:

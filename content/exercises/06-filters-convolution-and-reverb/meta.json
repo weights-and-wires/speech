@@ -1,0 +1,15 @@
+{
+  "id": "06-filters-convolution-and-reverb",
+  "title": "Convolve, filter, and measure a room",
+  "brief": "Convolve directly and through the FFT without wrap-around, run an IIR filter from its difference equation, pre-emphasize speech, and build and measure a synthetic room.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "scipy"],
+  "hints": [
+    "In convolve_direct, y[k:k + len(x)] += h[k] * x adds one tap's contribution with one vector operation.",
+    "The next power of two at or above n is 1 << (n - 1).bit_length().",
+    "np.polyval(c[::-1], z) evaluates c[0] + c[1] z + c[2] z**2 + ...; with z = np.exp(-1j * w) that is sum_k c[k] e^{-jwk}.",
+    "In lfilter, the feedback sum starts at k = 1 and uses outputs you already computed; guard every index so n - k never goes below 0.",
+    "The energy still to come is a reversed cumulative sum: np.cumsum((h ** 2)[::-1])[::-1]."
+  ]
+}

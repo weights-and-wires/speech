@@ -1,0 +1,17 @@
+{
+  "id": "21-self-supervised-speech",
+  "title": "The losses and targets of self-supervised speech",
+  "brief": "Build wav2vec 2.0's frame arithmetic, span masking, contrastive and diversity losses, HuBERT's masked prediction, BEST-RQ targets, k-means units, and a linear probe, then probe every layer of two pretrained models.",
+  "needs_gpu": true,
+  "timeout": 600,
+  "packages": ["numpy", "scipy", "torch", "transformers"],
+  "hints": [
+    "conv_output_length applies floor((L - k) / s) + 1 once per layer; integer division // does the floor for non-negative lengths.",
+    "receptive_field walks the layers in order and keeps a running product of strides: each layer widens the field by (k - 1) times the stride product of the layers before it.",
+    "span_mask can loop over np.flatnonzero(starts) and set mask[s:s + span] = True; slicing past the end is safe in numpy.",
+    "sample_distractors can draw integers in [0, M - 2] and add 1 to every draw at or after the row's own index, which skips the positive without rejection sampling.",
+    "For contrastive_loss, gather the candidates into an (M, K + 1, D) array with the positive first, scale everything to unit length, and take a log-softmax over axis 1.",
+    "diversity_loss averages the softmax probabilities over frames first, then takes p log p; averaging log-probabilities instead gives a different number.",
+    "fit_linear_probe appends a column of ones and solves (X^T X + l2 * P) W = X^T Y, where P is the identity with its last diagonal entry set to 0 so the bias is not penalized."
+  ]
+}

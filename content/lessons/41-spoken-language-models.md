@@ -33,10 +33,10 @@ learn words and some grammar.
 The second way keeps the text model as it is and teaches it to listen. A
 frozen speech encoder turns audio into vectors, and a small trained
 *projector* maps them into the language model's input space, where they sit
-in front of a text prompt like a few extra words. Many speech LLMs work
-this way. You build both, and then you connect Whisper's
-encoder to a 135-million-parameter language model that has never heard
-sound, and teach it to write down the digits people say.
+in front of a text prompt like a few extra words. Many speech LLMs work this
+way. You build both, and then you connect Whisper's encoder to a
+135-million-parameter language model that has never heard sound, and teach it
+to write down the digits people say.
 
 ## What you already know
 
@@ -48,10 +48,10 @@ sound, and teach it to write down the digits people say.
 
 ## Units from k-means
 
-Picture every 20 ms frame of speech as a point in a space of a few hundred
-dimensions. Frames of the same phone, spoken by different people, gather in
-the same region. *k-means* finds $K$ centers for those regions, and each
-frame's *unit* is the index of its nearest center:
+Lesson 21, *Self-supervised speech*, turned a layer's 20 ms frames into
+*units*. Frames of the same phone, spoken by different people, gather in the
+same region of feature space. k-means finds $K$ centers for those regions,
+and each frame's unit is the index of its nearest center:
 
 $$
 u_t = \operatorname*{arg\,min}_{k} \lVert x_t - \mu_k \rVert_2^2
@@ -67,8 +67,7 @@ sq = (x**2).sum(1)[:, None] - 2 * x @ centroids.T + (centroids**2).sum(1)[None, 
 units = sq.argmin(axis=1)
 ```
 
-Lloyd's algorithm, which the lesson on self-supervised speech used to make
-HuBERT's targets, alternates two steps: assign every frame to its nearest
+Lloyd's algorithm, from the same lesson, alternates two steps: assign every frame to its nearest
 center, then move every center to the mean of its frames. The *inertia*, the
 total squared distance from frames to their centers, never increases.
 
@@ -101,8 +100,8 @@ or 200 clusters worked best.
 ## A unit language model
 
 Once speech is a unit sequence, any language model applies. The simplest is
-the bigram model from the lesson on language models, with add-$\alpha$
-smoothing:
+the bigram model from lesson 14, *Language models and word error rate*, with
+add-$\alpha$ smoothing:
 
 $$
 P(u_t = j \mid u_{t-1} = i) = \frac{c(i, j) + \alpha}{\sum_{j'} c(i, j') + \alpha K}
@@ -243,9 +242,7 @@ and are dropped.
 This stage, with the encoder and the language model both frozen, is how a
 typical recipe starts: align the projector on transcription and captioning
 pairs. Later stages fine-tune the language model lightly on varied
-instructions about audio, often with LoRA, as SALMONN does. SALMONN found
-that too much transcription training makes the model transcribe whatever you
-ask, and added a short "activation tuning" stage to undo it.
+instructions about audio, often with LoRA, as SALMONN does.
 
 The Run does the first stage on the Free Spoken Digit Dataset: 3,000
 recordings of the digits 0 to 9 by 6 speakers, resampled from 8 kHz to
@@ -253,13 +250,11 @@ recordings of the digits 0 to 9 by 6 speakers, resampled from 8 kHz to
 language model answers every clip the same way: it writes `The`, whatever
 the audio says. After training, it writes the digit word.
 
-On a laptop CPU (Apple M4 Pro), the small version encodes 120 clips, trains
-80 steps of 16 in about 18 seconds, and writes the correct word for 19 of 20
-held-out clips. The full version, the one the GPU runs, encodes all 3,000
-clips and trains 1,500 steps of 32. Run on the same CPU, it took 611 seconds
-and wrote the correct word for all 500 clips of the held-out speaker, with
-the training loss falling from 9.8 to 0.001. On an A100, the same schedule
-is estimated to take 1 to 3 minutes; it hasn't been timed there.
+On a laptop CPU, the small version encodes 120 clips, trains 80 steps of 16
+in under 20 seconds, and writes the correct word for 19 of 20 held-out clips.
+The full version, the one the GPU runs, encodes all 3,000 clips and trains
+1,500 steps of 32. Run on a laptop CPU, it took about 10 minutes and wrote the
+correct word for all 500 clips of the held-out speaker.
 
 > [!KEY]
 > An adapter trains a few million parameters between two frozen models. The encoder already hears and the language model already writes; the projector only has to translate one's frames into the other's embeddings.
@@ -272,6 +267,8 @@ is estimated to take 1 to 3 minutes; it hasn't been timed there.
 > - The loss shifts by one and averages only over labeled positions.
 
 ## Build it step by step
+
+Build the functions in the order the checks test them.
 
 1. **`assign_units(features, centroids)`** returns `(T,)` integers. Expand the squared distance so one `@` computes all of them, then `argmin(axis=1)`. The common mistake is a Python loop over frames, which is correct but a hundred times slower.
 2. **`kmeans(features, init, n_iter)`** returns the centers and one inertia per iteration. Record the inertia after assigning and before moving the centers. Leave an empty cluster's center where it is. Copy `init` first, or you change the caller's array.

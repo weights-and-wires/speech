@@ -36,8 +36,8 @@ rather than audio that is average.
 
 HiFi-GAN, from 2020, made this approach standard. In its paper's listening
 test, the V1 model scored higher than a WaveNet vocoder while running 168
-times faster than real time on a V100 GPU. In this lesson you build its losses, its
-multi-period discriminator's reshape, and the Snake activation from BigVGAN,
+times faster than real time on a V100 GPU. In this lesson you build its
+losses, its multi-period discriminator's reshape, and the Snake activation from BigVGAN,
 then train a small HiFi-GAN-style vocoder on one LibriSpeech speaker.
 
 ## What you already know
@@ -145,9 +145,14 @@ For example, fold 10 samples, $0, 1, \ldots, 9$, with $p = 4$. Two samples
 of padding reflect the end as $8, 7$, and the rows are $[0, 1, 2, 3]$,
 $[4, 5, 6, 7]$, and $[8, 9, 8, 7]$. Column 1 holds samples 1, 5, and 9.
 
-The periods are 2, 3, 5, 7, and 11. They are prime so that no two
-sub-discriminators look at overlapping sets of samples: a period of 4 would
-repeat much of what the period of 2 already sees. HiFi-GAN pairs the MPD
+The periods are 2, 3, 5, 7, and 11. They are prime so that the
+sub-discriminators overlap as little as possible: a period of 4 would repeat
+much of what the period of 2 already sees.
+
+> [!KEY]
+> Folding by a period puts samples one period apart side by side, so the MPD's
+> 2-D convolutions judge exactly the structure that makes voiced speech sound
+> periodic. HiFi-GAN pairs the MPD
 with MelGAN's *multi-scale discriminator* (MSD), three sub-discriminators on
 the raw waveform and on versions average-pooled by 2 and 4, which judge
 structure across time. Later vocoders replace the MSD with discriminators on
@@ -287,8 +292,7 @@ a GPU.
 Inference is one parallel pass, so its cost grows linearly with the length
 of the audio. Training is the expensive part. HiFi-GAN trained for 2.5
 million steps, with batches of 16 segments of 8,192 samples, which takes days
-on one GPU. The
-exercise's GPU run trains a V2-sized generator for a few minutes, so it shows
+on one GPU. The exercise's GPU run trains a V2-sized generator for a few minutes, so it shows
 early training, not a finished vocoder.
 
 ## Where this breaks
@@ -308,9 +312,10 @@ multiples of the frame rate. Look for horizontal lines in the output's
 spectrogram.
 
 **The numbers disagree with your ears.** Mel L1 against the input mel is the
-standard objective check, but it doesn't measure phase. Griffin-Lim inverts
-the mel filterbank exactly and then only fixes phase, so its mel L1 is low
-even though it sounds metallic. A GAN vocoder early in training scores worse
+standard objective check, but it doesn't measure phase. Griffin-Lim starts
+from a least-squares inverse of the mel filterbank, which maps back to nearly
+the same mel, and then only fixes phase, so its mel L1 is low even though it
+sounds metallic. A GAN vocoder early in training scores worse
 on mel L1 and can still sound more natural. Listen, and use a listening test
 (lesson 29) to decide.
 

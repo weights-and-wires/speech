@@ -29,9 +29,9 @@ out of the question.
 
 Three systems answer these problems in three different places. DiffWave
 denoises the waveform directly, conditioned on a mel spectrogram, with a
-WaveNet-like network and a 6-step sampler [Kong et al. 2021]. Grad-TTS
+WaveNet-like network and a 6-step sampler (Kong et al., 2021). Grad-TTS
 diffuses mel spectrograms, and starts the reverse process from the text
-encoder's rough mel instead of from zero [Popov et al. 2021]. AudioLDM and
+encoder's rough mel instead of from zero (Popov et al., 2021). AudioLDM and
 Stable Audio diffuse in the latent space of an autoencoder, where a
 10-second clip is a few hundred frames.
 
@@ -133,6 +133,11 @@ fast step's level, and interpolate linearly in $\sqrt{\bar\alpha}$ between
 them. The network receives this fractional step through the sinusoidal
 embedding, which is defined for any real $t$.
 
+> [!KEY]
+> A fast schedule reuses the trained network unchanged. Each fast step asks it
+> about the fractional training step whose signal level matches, so the
+> network only ever sees noise levels it was trained on.
+
 ```python
 for n in range(T - 1):
     if ab[n + 1] <= g <= ab[n]:
@@ -209,9 +214,10 @@ affordable.
 - **AudioLDM** compresses mel spectrograms with a VAE and trains the latent diffusion model on CLAP *audio* embeddings, then samples it with CLAP *text* embeddings, which share the same space. Training needs no captions. A HiFi-GAN turns the decoded mel into 16 kHz audio.
 - **Stable Audio Open** uses a VAE on 44.1 kHz stereo waveforms with a 64-channel latent at 21.5 Hz, and a DiT of about 1.06B parameters conditioned on T5 text features and timing. It trains with the velocity objective and samples with DPM-Solver++ for 100 steps at guidance scale 7.
 
-The frame arithmetic for Stable Audio Open's latent: $44{,}100 / 21.5 \approx 2{,}051$
-samples per latent frame. Its longest output, 47 seconds, is about 1,010
-latent frames instead of 2.07 million samples per channel.
+The frame arithmetic for Stable Audio Open's latent is short. Its VAE
+downsamples by 2,048, so $44{,}100 / 2{,}048 \approx 21.5$ latent frames per
+second. Its longest output, 47 seconds, is about 1,010 latent frames instead
+of 2.07 million samples per channel.
 
 > [!KEY]
 > Diffusion for audio happens in one of three places. DiffWave denoises the waveform under a mel, Grad-TTS denoises the mel starting near an encoder's guess, and latent models denoise an autoencoder's short sequence. The shorter the sequence, the cheaper each of the many steps.
@@ -250,17 +256,18 @@ times $C^2$. Training cost doesn't depend on $T$, because each example uses
 one random step.
 
 The **Run** trains for a fixed wall-clock budget. On a laptop CPU, the small
-version, 8 layers of 16 channels, trained 349 steps in 40 seconds and ran
-43 seconds in all. Its loss fell from 1.00 to 0.17, and the loudness envelope
-of its 6-step sample correlated 0.87 with the original's, under a steady hiss.
+version, 8 layers of 16 channels, trains for 40 seconds, a few hundred steps
+depending on the machine. Its loss falls from 1.00 to about 0.15, and the
+loudness envelope of its 6-step sample correlates about 0.87 with the
+original's, under a steady hiss.
 
 The GPU version trains 20 layers of 64 channels at batch 32 for 7 minutes.
 The same configuration, trained for 15 minutes on an Apple M-series GPU,
 reached about 1,470 steps, at 0.6 seconds a step. Its loss fell from 1.00 to
 0.064, its envelope correlation reached 0.89, and the hiss in the silent
-parts fell to an RMS of 0.09 against 0.19 inside the digit. An A100 is
-roughly ten times faster, so the 7-minute budget there buys several thousand
-steps. That is an estimate, not a measurement. Expect a recognizable digit
+parts fell to an RMS of 0.09 against 0.19 inside the digit. An A100 likely
+fits several thousand steps into the 7-minute budget, an estimate rather than
+a measurement. Expect a recognizable digit
 with audible hiss, not a clean recording. Published diffusion vocoders train
 for hundreds of times longer.
 

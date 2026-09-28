@@ -148,7 +148,7 @@ $4 \ln 2.1 = 2.968$. In torch, `torch.linalg.slogdet(W).logabsdet` gives
 $\log|\det W|$ without overflow.
 
 > [!WARNING]
-> Forgetting the factor $T$ is the most common flow bug. The loss still falls,
+> Forgetting the factor $T$ is a common flow bug. The loss still falls,
 > but the likelihood is wrong, and the model learns to shrink or inflate
 > channels for free.
 
@@ -165,8 +165,7 @@ predicting $s$ and $t$ from the mel spectrogram and half the samples. It
 trained with a Gaussian of standard deviation $\sqrt{0.5}$ and sampled with
 0.6, a lower *temperature* that trades variety for cleaner audio. It needed
 about 88 million parameters, and in the HiFi-GAN paper's listening test a
-GAN vocoder with under 1 million parameters beat it. GAN vocoders replaced it. Flows survived inside
-TTS models, where they model a latent space instead of raw audio.
+GAN vocoder with under 1 million parameters beat it. GAN vocoders replaced it. Flows survived inside TTS models, where they model a latent space instead of raw audio.
 
 ## VITS
 
@@ -281,8 +280,8 @@ leaves some mass there. The Run shows it: some sampled notes land between the
 notes of the scale.
 
 **Discrete data.** Audio samples and durations are integers. A continuous
-density can put infinite mass on a point, so the likelihood blows up. Add
-uniform noise first, *dequantization*, as the VITS duration predictor does.
+density can pile up on a single point, so the likelihood grows without bound.
+Add uniform noise first, *dequantization*, as the VITS duration predictor does.
 
 **Unstable scales.** An unbounded $s$ can reach $e^{50}$ in a few steps.
 Bound it with a tanh, as the exercise's networks do, or start couplings at

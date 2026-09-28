@@ -71,9 +71,8 @@ a hop of 256 samples, and 80 mel bands.
 The acoustic model does the stretch from about 30 symbols to 173 frames. The
 vocoder does the 256-fold stretch from frames to samples.
 
-Before neural models, unit-selection systems glued recorded snippets
-together, and HMM-based systems predicted vocoder parameters that sounded
-smooth but buzzy. WaveNet (2016) replaced the vocoder, Tacotron (2017) the
+Neural models took over the chain one stage at a time. WaveNet (2016)
+replaced the vocoder, Tacotron (2017) the
 acoustic model, FastSpeech (2019) removed attention, and VITS (2021) trained
 the whole chain as one model. Lessons 25 to 28 follow that path.
 
@@ -106,47 +105,45 @@ that switches it off with `model.eval()` often produces noise.
 
 ## Location-sensitive attention
 
-Content-based attention scores each encoder output $h_n$ against the decoder
-state $s$. That fails for speech in a specific way. The sentence "the cat and
-the dog" holds "the" twice, and a content score can't tell the two apart. The
-decoder needs to know where it was, so it can move forward from there.
+Lesson 18, *Attention encoder-decoders*, built location-aware attention: it
+convolves the previous step's weights with a few learned filters and adds the
+result to the content energy, so the decoder knows where it looked last. TTS
+needs that memory even more. The sentence "the cat and the dog" holds "the"
+twice, and a content score can't tell the two apart.
 
-Location-sensitive attention adds that memory. Keep a running sum of all
-earlier attention weights, the *cumulative attention* $c$. Slide a small set
-of learned filters over it to get location features $f_n$, and add them to
-the score:
+Tacotron 2's *location-sensitive attention* changes one thing. It convolves
+the *cumulative attention* $c$, the running sum of all earlier weights, in
+place of the last step's weights alone. The sum records how much of the text
+has been read, not only where the last step looked:
 
 $$
-f = K * c, \qquad
+f = F * c, \qquad
 e_n = v^\top \tanh\left(W s + V h_n + U f_n + b\right), \qquad
 \alpha_n = \frac{\exp(e_n)}{\sum_{m} \exp(e_m)}.
 $$
 
-Read it aloud: $K * c$ convolves the cumulative attention with the filters
-$K$, giving a short feature vector $f_n$ at every text position $n$. The
-energy $e_n$ adds three projections, one of the decoder state, one of the
-encoder output, and one of the location features, passes them through tanh,
-and dots the result with a learned vector $v$. The weights $\alpha_n$ are the
-softmax of the energies. The context vector $\sum_n \alpha_n h_n$ goes to the
-decoder. After the step, $c \leftarrow c + \alpha$.
-
-In torch, with memory of shape `(B, N, D)`:
+Read it aloud: $F * c$ convolves the cumulative attention with the filters
+$F$, giving a short feature vector $f_n$ at every text position $n$. The
+energy $e_n$ adds the same three projections as in lesson 18, of the decoder
+state $s$, the encoder output $h_n$, and the location features, then applies
+tanh and a dot product with a learned vector $v$. The weights $\alpha_n$ are the
+softmax of the energies, the context vector $\sum_n \alpha_n h_n$ goes to the
+decoder, and after the step, $c \leftarrow c + \alpha$. In torch, with memory
+of shape `(B, N, D)`:
 
 ```python
-f = F.conv1d(cum[:, None, :], kernel, padding=(k - 1) // 2).transpose(1, 2)
+f = F.conv1d(cum[:, None, :], filters, padding=(k - 1) // 2).transpose(1, 2)
 e = torch.tanh((s @ W.T)[:, None] + memory @ V.T + f @ U.T + b) @ v
 ```
 
-Chorowski and colleagues introduced this attention for speech recognition
-in 2015. Tacotron 2 convolves the cumulative weights. The widely used NVIDIA
-implementation also stacks the previous step's weights as a second input
-channel.
+The widely used NVIDIA implementation also stacks the previous step's weights
+as a second input channel.
 
 ### Work one step by hand
 
 Take three text positions, one location filter, and a one-dimensional
 attention space. The filter is $[1, -1, 0]$, so with one zero of padding on
-each side, $f_n = c_{n-1} - c_n$. It is positive just past the covered text.
+each side, $f_n = c_{n-1} - c_n$. It is positive right after the covered text.
 Say the decoder spent the last step entirely on position 0, so
 $c = [1, 0, 0]$, and the content terms $Ws + Vh_n + b$ come to
 $[0.2, 0.1, 0.3]$. Take $U = 2$ and $v = 1$:
@@ -159,12 +156,15 @@ $[0.2, 0.1, 0.3]$. Take $U = 2$ and $v = 1$:
 
 Content alone preferred position 2, with the largest score of 0.3. The
 location term moved attention to position 1, the next symbol. The following
-demo shows whole alignments for "the cat sat on the mat", including the two
-failures that location features prevent. Its diagonality readout is 1 minus
-the guided attention loss defined later in this lesson.
+demo shows whole alignments for "the cat sat on the mat": a clean one, the
+skipping and repeating failures, and one that hasn't formed yet. Its
+**Diagonality** readout
+averages $1 - W_{tn}$, the complement of the guided attention penalty defined
+later in this lesson, over the attention mass: a smooth version of the band
+score you compute in the exercise.
 
 ```demo
-{"id": "attention-alignment", "caption": "Choose the repeating and the skipping alignments, then turn on location-sensitive attention and watch each one straighten into a single diagonal.", "props": {"task": "tts"}}
+{"id": "attention-alignment", "caption": "Choose each alignment and read its largest jump and where it reaches the end, then pick the one that isn't aligned yet and turn on location-sensitive attention to watch the blur sharpen toward the diagonal.", "props": {"task": "tts"}}
 ```
 
 > [!KEY]
@@ -300,8 +300,8 @@ symbols.
 | Decoding, all steps | $O(TN)$, $T$ sequential steps | $O(TN)$ for the alignment |
 | Guided attention loss | $O(TN)$ | $O(TN)$ |
 
-A 10-second sentence at 86 frames per second takes 861 sequential decoder
-steps, each through two LSTM layers of 1024 units. Teacher forcing doesn't
+A 10-second sentence at 86 frames per second takes about 860 sequential
+decoder steps, each through two LSTM layers of 1024 units. Teacher forcing doesn't
 remove the loop, because the LSTM state still flows from step to step. That
 sequential loop, at training and at inference, is the second reason
 FastSpeech replaced attention with durations.
@@ -314,7 +314,7 @@ guided loss, and plot the alignment every few hundred steps.
 
 **Teacher forcing hides free-running failure.** The training loss can look
 fine while inference babbles, because at inference the decoder sees its own
-imperfect frames. Always look at free-running alignments on held-out text.
+imperfect frames. Look at free-running alignments on held-out text.
 
 **Long sentences.** Attention trained on 5-second clips often skips or loops
 on a 30-second paragraph. Split long text at punctuation, or use a duration
@@ -322,8 +322,7 @@ model (lesson 25).
 
 **The vocoder hears a different mel.** If the acoustic model's mel settings,
 such as the mel range and the log floor, differ from the vocoder's, the
-output is noise. This mismatch is the most common reason a student pipeline
-fails.
+output is noise. Check both configurations before you debug anything else.
 
 ## The exercise
 
@@ -337,8 +336,6 @@ first uncovered symbol.
 
 Press **Run** to train a toy Tacotron for about 15 seconds on strings of
 eight made-up phones, each a pair of tones with its own length. Like the
-first Tacotron, it predicts two frames per decoder step, a *reduction
-factor* of 2, which halves the sequential loop. The run
-decodes a new string with no teacher forcing, stops on your stop token, draws
-the alignment, and plays the target and the model's reading through
-Griffin-Lim.
+first Tacotron, it predicts two frames per decoder step. The run decodes an
+unseen string with no teacher forcing, stops on your stop token, draws the
+alignment, and plays the target and the model's reading through Griffin-Lim.

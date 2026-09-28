@@ -162,7 +162,7 @@ Every lesson body includes, in this order:
 7. `## The exercise` — one or two paragraphs that say what the reader builds
    and what the checks verify. Name the functions by their exact identifiers.
 
-Aim for 1200 to 2200 words of body, plus math. Short sentences and short
+Aim for 1500 to 2600 words of body, plus math. Short sentences and short
 paragraphs matter more than the word count.
 
 ## Exercise directory

@@ -49,8 +49,8 @@ noise and $t = 1$ is data.
 
 ## What a one-step model must learn
 
-The velocity $v(x, t)$ is the direction the sample moves right now. To jump
-from time $s$ to a later time $e$ in one step, you need the *average* velocity
+The velocity $v(x, t)$ is the direction the sample moves at that instant. To
+jump from time $s$ to a later time $e$ in one step, you need the *average* velocity
 over the whole interval, the chord of the trajectory rather than its tangent:
 
 $$
@@ -80,9 +80,9 @@ fact.
 ## Distillation, in brief
 
 The oldest route to few steps is a teacher. *Progressive distillation*
-(Salimans and Ho) trains a student to match two DDIM steps of the teacher in
+(Salimans and Ho, 2022) trains a student to match two DDIM steps of the teacher in
 one, then halves again, and introduced v-prediction along the way.
-*Consistency models* (Song et al.) learn a function that maps every point of a
+*Consistency models* (Song et al., 2023) learn a function that maps every point of a
 trajectory to its end. In this course's convention, the natural form is
 $f(x_t, t) = x_t + (1 - t)\,\hat{v}$, which equals $x_t$ at $t = 1$ by
 construction. CoMoSpeech uses consistency distillation for one-step TTS, and
@@ -97,7 +97,7 @@ learn the jump alongside the flow.
 
 ## Shortcut models
 
-A *shortcut model* (Frans et al.) adds the step size $d$ as a third input,
+A *shortcut model* (Frans et al., 2024) adds the step size $d$ as a third input,
 $s_\theta(x_t, t, d)$. At $d = 0$ it is an ordinary flow, trained on
 $x_1 - x_0$. For $d > 0$ it learns from itself: one step of size $2d$ must
 equal two steps of size $d$:
@@ -128,7 +128,7 @@ from $1/128$ to 1.
 
 ## MeanFlow
 
-*MeanFlow* (Geng et al.) learns the average velocity $u_\theta(x, s, e)$
+*MeanFlow* (Geng et al., 2025) learns the average velocity $u_\theta(x, s, e)$
 directly. There's no integral in the training data, so it uses an identity
 instead. Multiply the definition by $e - s$ and differentiate with respect to
 the start time $s$, holding $e$ fixed and letting $x_s$ move along the flow:
@@ -170,7 +170,7 @@ an FAD of 96.7 on note embeddings, against 0.38 for the shortcut model and
 
 ## Measure a generator with FAD
 
-The *Fréchet audio distance* (Kilgour et al.) runs real and generated clips
+The *Fréchet audio distance* (Kilgour et al., 2019) runs real and generated clips
 through a fixed audio embedding model, fits a Gaussian to each cloud of
 embeddings, and measures how far apart the two Gaussians are:
 
@@ -191,7 +191,7 @@ fad = np.sum((mu_r - mu_g) ** 2) + np.trace(cov_r + cov_g - 2 * root)
 ```
 
 The original embedding is VGGish: 128 numbers per 0.96 s of 64-band log-mel
-at 16 kHz. Stable Audio reports it with OpenL3, and `fadtk` (Gui et al.)
+at 16 kHz. Stable Audio reports it with OpenL3, and `fadtk` (Gui et al., 2024)
 supports CLAP, EnCodec, MERT, and others.
 
 ### What biases FAD
@@ -202,9 +202,9 @@ FAD looks like one objective number. It isn't, for the following reasons:
   adds distance, so FAD falls as the sets grow. In the **Run** block, two
   independent sets of 2,000 real notes score 0.030, and one generator scores
   0.461 with 100 samples and 0.139 with 1,600. Compare only at equal sizes.
-  *FAD-infinity* (Gui et al.) computes FAD at several sizes $N$, fits a line
-  against $1/N$, and reports its value at $1/N = 0$, which is 0.102 for that
-  generator.
+  *FAD-infinity*, from the same paper, computes FAD at several sizes $N$,
+  fits a line against $1/N$, and reports its value at $1/N = 0$, which is
+  0.102 for that generator.
 - **The embedding.** Change the embedding model and every number changes. On
   raw 2-D points instead of note embeddings, the one-step flow scores 3.13
   rather than 96.7. Gui et al. found that the embedding and the reference set
@@ -216,6 +216,10 @@ FAD looks like one objective number. It isn't, for the following reasons:
 
 Per-song FAD, one clip against the reference statistics, helps you find
 outliers in a generated set.
+
+> [!KEY]
+> A FAD score means something only next to its embedding model, its reference
+> set, and its sample size. Compare two generators only when all three match.
 
 > [!TIP]
 > `scipy.linalg.sqrtm` can return complex values from rounding. Take the real
@@ -272,6 +276,8 @@ on Creative Commons audio, which shapes what each can make.
 
 ## Build it step by step
 
+Build the functions in the order the checks test them.
+
 1. **`shortcut_target(model, x_t, t, d)`** returns the two-step average,
    shape `(B, D)`, under `torch.no_grad()`. The common mistake is starting
    the second step at time `t` instead of `t + d`.
@@ -318,7 +324,7 @@ FAD-infinity multiplies the covariance work by the number of sizes.
 - **Self-consistency drifts.** A shortcut model's large steps learn from its
   own small steps, so an error at small $d$ spreads upward. Keep enough of
   each batch on plain flow matching.
-- **Small evaluation sets flatter no one.** FAD from 100 clips is inflated
+- **Small evaluation sets inflate FAD.** FAD from 100 clips is inflated
   and noisy. Use thousands, equal sizes, or FAD-infinity.
 - **The metric is gamed.** A generator tuned against one embedding can lower
   FAD without sounding better. Report more than one metric, and listen.

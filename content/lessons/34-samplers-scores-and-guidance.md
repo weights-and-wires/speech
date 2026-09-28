@@ -75,9 +75,9 @@ $\sigma = \tau / (1 - \tau)$.
 ## DDIM: the same model, fewer steps
 
 DDIM keeps DDPM's training and its marginals, but defines a reverse step that
-can jump from any step $t$ to any earlier step $t'$ [Song, Meng, and Ermon
-2021]. It estimates the data, then rebuilds the sample at the new noise level
-from that estimate and the same noise estimate:
+can jump from any step $t$ to any earlier step $t'$ (Song, Meng, and Ermon,
+2021). It estimates the data, then rebuilds the sample at the lower noise
+level from that estimate and the same noise estimate:
 
 $$
 \hat x_0 = \frac{x_t - \sqrt{1 - \bar\alpha_t}\, \hat\epsilon}{\sqrt{\bar\alpha_t}}, \qquad
@@ -88,14 +88,14 @@ $$
 \sigma(\eta) = \eta \sqrt{\frac{1 - \bar\alpha_{t'}}{1 - \bar\alpha_t}} \sqrt{1 - \frac{\bar\alpha_t}{\bar\alpha_{t'}}}
 $$
 
-Read it aloud: the new sample is the data estimate scaled for step $t'$,
+Read it aloud: the sample at step $t'$ is the data estimate scaled for $t'$,
 plus the noise estimate with whatever variance is left after the fresh noise
 $\sigma z$. The knob $\eta$ sets how much fresh noise. At $\eta = 0$ the step
 is deterministic. At $\eta = 1$ and $t' = t - 1$, $\sigma^2$ equals DDPM's
 posterior variance $\tilde\beta_t$, and DDIM becomes DDPM.
 
 > [!WARNING]
-> The DDIM paper writes $\alpha_t$ for what DDPM calls $\bar\alpha_t$. Mixing the two notations is the most common DDIM bug. This course writes $\bar\alpha$ throughout.
+> The DDIM paper writes $\alpha_t$ for what DDPM calls $\bar\alpha_t$. Mixing the two notations is a common DDIM bug. This course writes $\bar\alpha$ throughout.
 
 ```python
 x0_hat = (x_t - np.sqrt(1 - ab_t) * eps) / np.sqrt(ab_t)
@@ -111,7 +111,7 @@ $x_1 = \sqrt{0.9} \times 1 + \sqrt{0.1} \times 0.5 = 1.106797$. With
 $\eta = 1$, $\sigma^2 = (0.1 / 0.28)(1 - 0.72 / 0.9) = 0.071429$, the
 posterior variance from the last lesson.
 
-Now take data $x_0 \sim \mathcal{N}(2, 0.5^2)$, the linear schedule with
+Next, take data $x_0 \sim \mathcal{N}(2, 0.5^2)$, the linear schedule with
 $T = 1000$, the exact noise predictor for that Gaussian, and one fixed start
 $x_{1000}$ at 1.3 standard deviations above its mean. The exact answer maps
 that start to the data quantile $2 + 0.5 \times 1.3 = 2.65$. The following
@@ -128,8 +128,8 @@ more accurately with each step.
 
 ## The probability-flow ODE
 
-Song et al. wrote diffusion as a stochastic differential equation, with data
-at $t = 0$ [Song et al. 2021]. For the variance-preserving (VP) process, with
+Score-based models (Song et al., 2021) write diffusion as a stochastic
+differential equation, with data at $t = 0$. For the variance-preserving (VP) process, with
 $\beta(t)$ rising from 0.1 to 20 over $t \in [0, 1]$, noising follows
 $dx = -\tfrac12 \beta(t)\, x\, dt + \sqrt{\beta(t)}\, dw$. The same marginal
 distributions at every $t$ come out of a deterministic ODE, the
@@ -156,11 +156,16 @@ $y_{t'} = y_t + (\sigma_{t'} - \sigma_t)\, \hat\epsilon$. For
 $\bar\alpha = 0.72$, $x_2 = 1.113103$ becomes $y = 1.311804$ at
 $\sigma = 0.623610$.
 
+> [!KEY]
+> DDIM, the probability-flow ODE, and EDM's sampler all follow the same
+> deterministic path from noise to data. They differ only in the clock they
+> measure it with and the integrator they step it with.
+
 ## EDM: a better clock and a better integrator
 
-Karras et al. stripped the process to its simplest form
-[Karras et al. 2022, EDM]. The noisy sample is the data plus noise of
-standard deviation $\sigma$, and the network is a *denoiser*
+EDM (Karras et al., 2022) strips the process to its simplest form. The noisy
+sample is the data plus noise of standard deviation $\sigma$, and the network
+is a *denoiser*
 $D(x; \sigma) \approx \mathbb{E}[x_0 \mid x]$. The ODE is:
 
 $$
@@ -217,7 +222,7 @@ A conditional model estimates $\epsilon(x, c)$ for a condition $c$, such as a
 transcript. Train the same network to also work without the condition, by
 replacing $c$ with a null token $\varnothing$ on a random 10 to 20 percent of
 examples. At sampling time, extrapolate from the unconditional prediction
-past the conditional one [Ho and Salimans 2022]:
+past the conditional one (Ho and Salimans, 2022):
 
 $$
 \tilde\epsilon(x, c) = (1 + w)\, \epsilon(x, c) - w\, \epsilon(x, \varnothing)
@@ -267,7 +272,7 @@ less variety, and too much gives strained, over-bright audio.
 
 Build the functions in the order the checks test them.
 
-1. **`ddim_sigma(ab_t, ab_prev, eta)` and `ddim_step(x_t, eps_hat, ab_t, ab_prev, eta, z)`.** Form $\hat x_0$, then the new sample. Common mistake: using $\bar\alpha_t$ where the formula needs $\bar\alpha_{t'}$.
+1. **`ddim_sigma(ab_t, ab_prev, eta)` and `ddim_step(x_t, eps_hat, ab_t, ab_prev, eta, z)`.** Form $\hat x_0$, then $x_{t'}$. Common mistake: using $\bar\alpha_t$ where the formula needs $\bar\alpha_{t'}$.
 2. **`ddim_sample(eps_fn, x_T, timesteps, alpha_bar, eta, rng)`.** Append 0 to the steps and loop over consecutive pairs. Common mistake: stopping at the last listed step, which leaves a little noise in every sample.
 3. **`vp_to_edm(x_t, ab)`.** Two lines.
 4. **`pf_ode_sample(score_fn, x1, n_steps, ...)`.** Euler over `np.linspace(1, t_end, n_steps + 1)`. Common mistake: a positive step size, which runs the ODE toward noise.

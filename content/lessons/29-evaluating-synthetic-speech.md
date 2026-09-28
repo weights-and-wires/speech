@@ -93,6 +93,11 @@ is the mean distortion over its $|\pi^*|$ steps. A copy of the reference with
 some frames repeated scores exactly 0, because the path can pair every copy
 with its original.
 
+> [!KEY]
+> Align first, then compare. MCD-DTW averages the frame distortion along the
+> DTW path, so a difference in timing doesn't count as a difference in
+> spectrum.
+
 > [!WARNING]
 > MCD numbers are comparable only within one implementation. Toolkits differ
 > in how they compute the cepstrum (SPTK mel-cepstra with a warping of 0.42 at
@@ -127,7 +132,7 @@ report the error in cents, $1200 \log_2(f / \hat f)$, instead of hertz.
 **Speaker similarity** runs a speaker verification model, such as the ones
 in lesson 23, on the synthesized clip and on a real clip of the target
 speaker, and takes the cosine of the two embeddings. It ranges from $-1$ to
-1. Most papers since 2024 use a WavLM-large model fine-tuned for
+1. Many zero-shot TTS papers use a WavLM-large model fine-tuned for
 verification. The number depends entirely on the verifier, so scores from
 different verifiers can't be compared. For zero-shot cloning, papers also
 say which real clip they compared against: the original prompt, or the
@@ -139,7 +144,7 @@ to read. The Seed-TTS evaluation uses Whisper-large-v3 for English; other
 work uses a HuBERT-Large CTC model fine-tuned on LibriSpeech. Two choices
 change the numbers:
 
-- **Normalization.** "Dr. Smith paid $5" and "doctor smith paid five dollars" differ by three word edits, but by none once one normalizer writes both the same way. Normalize both sides with the same normalizer, and report which.
+- **Normalization.** "Dr. Smith paid $5" and "doctor smith paid five dollars" differ by several word edits, but by none once one normalizer writes both the same way. Normalize both sides with the same normalizer, and report which.
 - **The recognizer's language model.** Whisper can guess a word the synthesizer mispronounced, which hides errors. A CTC model with no language model is stricter.
 
 > [!TIP]
@@ -190,9 +195,9 @@ means[b] = ratings[np.ix_(r, i)].mean()
 ```
 
 In the Run's simulated test, 24 raters with personal offsets each score 30
-items. The bootstrap half-widths come out between 0.16 and 0.22, while
-the naive formula over all 720 ratings claims 0.06 or 0.07. Two systems whose naive intervals
-don't overlap can still be indistinguishable. And a MOS depends on the
+items. The bootstrap half-widths come out between 0.16 and 0.22, while the
+naive formula over all 720 ratings claims 0.06 or 0.07. Two systems whose
+naive intervals don't overlap can still be indistinguishable. And a MOS depends on the
 raters and on the other systems in the same test, so compare MOS values only
 within one test.
 
@@ -212,7 +217,7 @@ is willing to ship, so the minimum practice belongs here:
 
 - **Consent.** Clone only voices whose owners agreed to it, for the use at hand. Research datasets such as LJSpeech and LibriTTS come from recordings released for reuse, and your own voice is always available. A voice in a video online is not consent.
 - **Watermarking.** Mark generated audio so it can be recognized later. AudioSeal, from 2024, embeds an imperceptible watermark and ships a detector that finds it even in a short excerpt of a longer clip. Resemble AI's open Chatterbox models embed their own watermark, called Perth, in every output.
-- **Detection and disclosure.** Spoofing countermeasures, which lesson 40 scores by equal error rate, try to detect synthetic speech without a watermark. They lag behind new generators. Labeling synthetic audio as synthetic doesn't depend on either.
+- **Detection and disclosure.** Spoofing countermeasures, which lesson 40 scores by equal error rate, try to detect synthetic speech without a watermark. They often miss generators they weren't trained on. Labeling synthetic audio as synthetic doesn't depend on either.
 
 A watermark can be removed by a determined attacker, and a detector can be
 fooled. Neither replaces consent. They make careless misuse harder and
@@ -273,7 +278,7 @@ replicates.
 **Reference-based scores punish good variety.** MCD and F0 RMSE compare
 against one recording. A system that reads the sentence with different, but
 natural, emphasis scores worse than one that averages. These scores suit
-vocoders and codecs, which should reproduce the input, better than TTS.
+vocoders and codecs, which aim to reproduce the input, better than TTS.
 
 **Metrics can be gamed.** A system tuned on WER can learn to speak slowly
 and over-articulate. One tuned on a MOS predictor can learn that predictor's

@@ -19,8 +19,10 @@ exercise: 22-whisper-and-large-scale-recognition
 
 # Whisper and large-scale recognition
 
-The recognizers so far were trained on a few hundred hours of carefully
-transcribed speech. Whisper took the opposite bet: 680,000 hours of audio from
+The recognizers so far learned to transcribe from a few hundred hours of
+carefully labeled speech. Even self-supervised pretraining, from the previous
+lesson, ends with fine-tuning on a small labeled set. Whisper took the opposite
+bet: 680,000 hours of audio from
 the web, paired with whatever transcripts came with it, and a plain
 Transformer encoder-decoder trained to predict them. The labels are noisy, but
 there are so many of them that the model learns to handle accents, noise, and
@@ -175,6 +177,11 @@ after `the cat`, `<eot>` gets $-0.020$.
 
 Greedy committed to `a` because it was likelier by 0.2 nats, and never saw that
 nothing good followed it.
+
+> [!KEY]
+> Beam search keeps a hypothesis alive after a less likely first token, so it
+> can find a sequence that is likelier as a whole. Greedy decoding can't take
+> back a choice.
 
 ## Timestamp rules
 

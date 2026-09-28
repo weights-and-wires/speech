@@ -114,7 +114,7 @@ The length regulator needs true durations during training. Three systems got
 them in three ways:
 
 - **FastSpeech** trained an autoregressive Transformer TTS teacher first. It picked the attention head with the highest *focus rate*, the average over decoder steps of the largest attention weight, and counted how many decoder steps chose each phone as their argmax.
-- **FastSpeech 2** took durations from the Montreal Forced Aligner, an HMM-based aligner in the style of lesson 23's forced alignment. The paper found these more accurate than teacher attention, and dropping the teacher made training about three times faster.
+- **FastSpeech 2** took durations from the Montreal Forced Aligner, an HMM-based aligner that runs Viterbi over the known transcript, as lesson 23's CTC forced alignment does. The paper found these more accurate than teacher attention, and dropping the teacher made training about three times faster.
 - **Glow-TTS** and later **VITS** search for the alignment inside the model, during training, with monotonic alignment search. That section comes after the variance targets.
 
 ## Pitch and energy targets

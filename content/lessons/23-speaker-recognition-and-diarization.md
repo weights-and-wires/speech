@@ -59,7 +59,7 @@ cleaned VoxCeleb1 test set.
 Training treats every training speaker as a class. At test time only the
 embedding is kept, because the test speakers were never seen. So the loss must
 do more than separate the training speakers: it must pack each one tightly,
-leaving room for new speakers in between.
+leaving room for unseen speakers in between.
 
 ## The additive angular margin
 
@@ -106,8 +106,8 @@ center ($\theta = 1.0472$ rad) and 0.4 to the other.
   The softmax gives it 0.0787, and the loss is 2.54 nats.
 
 An embedding that plain softmax calls done still pays 2.54 nats under the
-margin. It stops paying only when its angle to its own center is at least 0.2
-rad smaller than its angle to any other.
+margin. Its loss falls toward zero only when its angle to its own center is at
+least 0.2 rad smaller than its angle to any other.
 
 > [!KEY]
 > The angular margin makes the true class win by an angle $m$, not merely win.

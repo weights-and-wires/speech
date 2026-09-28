@@ -94,7 +94,12 @@ function attention(task: Task, kind: Case, location: boolean) {
   return { steps, positions, weights: out };
 }
 
-/** 1 minus the guided attention loss: the attention mass near the diagonal. */
+/**
+ * The attention mass near the diagonal, averaged over decoder steps: each
+ * weight counts by a Gaussian of width G in its distance from the diagonal.
+ * It is 1 when every step attends on the diagonal. The guided attention loss
+ * penalizes the complement of the same Gaussian, but sums over every cell.
+ */
 function diagonality(weights: number[][], task: Task) {
   const N = weights.length;
   const U = weights[0].length;
@@ -286,7 +291,7 @@ export default function AttentionAlignment({ caption, task: taskProp }: DemoProp
       </div>
 
       <Readouts>
-        <Readout label="Diagonality" value={score.toFixed(2)} hint={`1 − guided attention loss, g = ${G}`} tone={score > 0.8 ? "good" : "bad"} />
+        <Readout label="Diagonality" value={score.toFixed(2)} hint={`mass within a Gaussian of width ${G} of the diagonal`} tone={score > 0.8 ? "good" : "bad"} />
         <Readout label="Focus" value={focus.toFixed(2)} hint="mean of each step's largest weight" />
         <Readout
           label="Largest jump"

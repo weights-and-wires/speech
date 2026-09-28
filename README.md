@@ -14,9 +14,15 @@ stretch a spectrogram's window before you write the code that does it.
 
 ## Who it is for
 
-You can write Python and have used numpy a little. The lessons define every term
-and symbol when it first appears, and show each formula next to the numpy code
-that computes it. Each lesson ends with a step-by-step guide to its exercise.
+You can write Python, have used numpy, and have met calculus, linear algebra,
+and probability once. You know what a neural network, gradient descent, and a
+transformer are, at the level of the companion machine learning course, but you
+have never trained a model on audio. You don't need any signal processing,
+acoustics, phonetics, or speech background: the course teaches all of it, from
+the sampling theorem up. The lessons define every term and symbol when it first
+appears, say the units of every number, and show each formula next to the numpy
+or torch code that computes it. Each lesson ends with a step-by-step guide to
+its exercise.
 
 ## What is in here
 
@@ -37,13 +43,53 @@ The repository is laid out as follows.
 
 ## The curriculum
 
-<!-- TO BE REWRITTEN BY ORCHESTRATOR -->
+The course has 42 lessons in eight parts, and 21 interactive demos.
 
-The curriculum is still being written. `content/lessons/99-smoke.md` is a
-temporary lesson that exercises every part of the app; it goes once the real
-lessons arrive.
+**Part 1 — Sound and signals.** Sampling and aliasing, quantization and WAV
+files, the DFT and the FFT, the short-time Fourier transform, phase and
+Griffin-Lim, and filters, convolution, and reverb.
 
-[The full list, with what each exercise delivers](docs/CURRICULUM.md).
+**Part 2 — Hearing and speech production.** The mel scale and Whisper's
+log-mel front end, MFCCs and normalization, the source-filter model and linear
+prediction, pitch tracking with YIN, and phonetics, text normalization, and
+voice activity detection.
+
+**Part 3 — Classical recognition.** Dynamic time warping, hidden Markov models
+with Gaussian emissions, and n-gram language models with word error rate.
+
+**Part 4 — Neural speech recognition.** Neural acoustic models, connectionist
+temporal classification and its decoders, attention encoder-decoders,
+transducers and streaming, Conformers and SpecAugment, self-supervised speech,
+Whisper, and speaker recognition and diarization.
+
+**Part 5 — Speech synthesis.** Tacotron and attention, durations and monotonic
+alignment search, WaveNet, GAN vocoders, normalizing flows and VITS, and how to
+evaluate synthetic speech.
+
+**Part 6 — Codecs and token models.** Vector and residual vector quantization,
+neural audio codecs such as EnCodec and Mimi, and codec language models such
+as VALL-E.
+
+**Part 7 — Diffusion and flow matching.** Diffusion from scratch, samplers,
+scores, and guidance, diffusion for audio, flow matching, flow matching for
+speech in the style of Voicebox and F5-TTS, and few-step generation with audio
+metrics.
+
+**Part 8 — Beyond recognition and synthesis.** Enhancement and separation,
+audio classification and voice conversion, spoken language models and the
+adapter pattern, and full-duplex models and voice agents.
+
+Nine lessons run a real experiment on the GPU: training a Conformer-CTC on
+spoken digits, probing `wav2vec2-base` and `hubert-base` layer by layer,
+decoding `whisper-tiny` with your own beam search, training a HiFi-GAN-style
+vocoder, measuring EnCodec and Mimi, training a DiffWave-style vocoder and a
+conditional flow-matching digit generator, and plugging `whisper-tiny` into
+`SmolLM2-135M` through an adapter you train. For more information, see
+[The GPU backend](#the-gpu-backend).
+
+[The full list, with what each exercise delivers](docs/CURRICULUM.md). The
+research notes behind the lessons, with their sources, are in
+[`docs/research/`](docs/research/).
 
 ## Run it locally
 
@@ -169,7 +215,7 @@ steps:
 
 2. Give RunPod read access to that image. A package published from Actions
    starts private, and RunPod pulls anonymously. Make the package public under
-   the organisation's **Packages** settings. The alternative is a container
+   the organization's **Packages** settings. The alternative is a container
    registry credential in the RunPod console holding a GitHub token with
    `read:packages`, which hands that token to RunPod.
 
@@ -221,7 +267,7 @@ the external `edge` network. This bundle never publishes 80 or 443 itself.
 ./scripts/deploy.sh
 ```
 
-The repository is private and the organisation disables deploy keys, so the VM
+The repository is private and the organization disables deploy keys, so the VM
 holds no GitHub credential. The script ships the committed tree with
 `git archive` over SSH, rebuilds, and waits until `/api/health` reports the
 commit it sent. `.env` on the VM is never touched, because it holds the session
@@ -282,6 +328,6 @@ The lockfile must come from npm 10, because the image's `npm ci` rejects a
 lockfile that npm 11 writes. After you change a dependency, run
 `npx npm@10 install` in `frontend/`.
 
-## Licence
+## License
 
 MIT. See [LICENSE](LICENSE).

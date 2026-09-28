@@ -21,14 +21,13 @@ exercise: 31-neural-audio-codecs
 # Neural audio codecs
 
 Uncompressed audio is expensive: 16-bit PCM at 24 kHz costs 384 kilobits per
-second (kbps). A neural codec sends the same speech
-at 1.5 to 6 kbps, and the listener still hears the speaker's voice. It does
+second (kbps). A neural codec sends the same speech at 1.5 to 6 kbps, and the listener still hears the speaker's voice. It does
 this by learning what speech looks like, so it only has to send the part
 that changes.
 
 A neural codec is an autoencoder with a quantizer in the middle. The encoder
 shrinks the waveform to a few dozen vectors a second. The residual quantizer
-from the lesson on vector quantization turns each vector into a handful of
+from lesson 30, *Vector quantization*, turns each vector into a handful of
 integers. The decoder, which is a GAN vocoder in all but name, turns the
 integers back into sound.
 
@@ -48,7 +47,7 @@ one model serve many bitrates, and measure what each codebook buys.
 ## An autoencoder with a quantized middle
 
 SoundStream set the pattern that EnCodec, DAC, and Mimi follow
-[Zeghidour et al. 2021]. The encoder is a stack of convolution blocks. Each
+(Zeghidour et al., 2021). The encoder is a stack of convolution blocks. Each
 block ends with a strided convolution that divides the time axis by its
 stride. SoundStream and EnCodec use strides $(2, 4, 5, 8)$, so the encoder
 turns 320 samples into one latent vector. The number of channels doubles at
@@ -68,7 +67,7 @@ in hertz divided by the product of the strides $s_j$. For EnCodec at 24 kHz,
 $24{,}000 / 320 = 75$ frames per second, which is 13.3 ms of audio per frame.
 
 Mimi, the codec behind Kyutai's Moshi, goes much further
-[Défossez et al. 2024]. Its convolutions use strides $(4, 5, 6, 8)$, a hop of
+(Défossez et al., 2024). Its convolutions use strides $(4, 5, 6, 8)$, a hop of
 960, which gives 25 Hz. One more stride-2 layer after its Transformer halves
 that to 12.5 frames per second: 80 ms per frame, a total hop of 1920. The
 `config.json` of the `mimi` asset lists `upsampling_ratios` of
@@ -123,7 +122,7 @@ codec's configuration.
 The following demo turns the three knobs of the formula.
 
 ```demo
-{"id": "codec-bitrate", "caption": "Lower the frame rate and raise the codebook count until two codecs reach the same bitrate, and compare how many tokens per second each one asks a language model to predict."}
+{"id": "codec-bitrate", "caption": "Start from EnCodec, raise the hop to lower the frame rate and add codebooks to hold the bitrate, and compare how many tokens per second each setting asks a language model to predict."}
 ```
 
 > [!KEY]
@@ -137,7 +136,7 @@ For each training example, draw how many stages it uses, and quantize it with
 only those. SoundStream draws the count uniformly from 1 to $N_q$. DAC found
 that this hurt quality at full bitrate, so it applies dropout to each example
 with probability $p = 0.5$ and uses every stage otherwise
-[Kumar et al. 2023]:
+(Kumar et al., 2023):
 
 $$
 n_q^{(b)} =
@@ -172,10 +171,10 @@ channels. At evaluation, dropout is off, and you choose the count by hand.
 
 The losses come from the vocoder lessons, with one addition from the
 quantizer. The following list gives EnCodec's recipe at 24 kHz
-[Défossez et al. 2022]:
+(Défossez et al., 2022):
 
 - **Reconstruction.** An L1 loss on the waveform, weight 0.1, and an L1 plus L2 loss on 64-band mel spectrograms at seven window sizes from 32 to 2048, weight 1.
-- **Adversarial and feature matching.** A multi-scale STFT discriminator on complex spectrograms, as in the lesson on GAN vocoders, weights 3 and 3.
+- **Adversarial and feature matching.** A multi-scale STFT discriminator on complex spectrograms, as in lesson 27, *GAN vocoders*, weights 3 and 3.
 - **Commitment.** The RVQ commitment loss summed over stages. EMA updates move the codebooks.
 - **A loss balancer.** Each loss's gradient on the output is rescaled so its weight sets its share of the total gradient, whatever its natural scale.
 
@@ -183,8 +182,8 @@ Mimi changes two things. Its first codebook is trained to match WavLM
 features, so that token carries what was said more than how it sounded; the
 next lesson calls this a *semantic* token. And its authors found that training
 with only the adversarial and feature-matching losses sounded better in
-listening tests, even though objective scores got worse. You measure the effect of
-that choice in this lesson's **Run**.
+listening tests, even though objective scores got worse. You measure the
+effect of that choice in this lesson's **Run**.
 
 ## Measure what survives
 
@@ -204,7 +203,9 @@ Read it aloud: $\alpha$ is the gain that best matches the reference to the
 estimate. The target $\alpha s$ is the part of the estimate that the
 reference explains, and $\hat s - \alpha s$ is the distortion. SI-SDR is the
 ratio of their energies in decibels. Because $\alpha$ absorbs any gain,
-turning the volume up or down doesn't change the score.
+turning the volume up or down doesn't change the score. The score depends
+only on the angle between the two zero-mean signals, so swapping the
+estimate and the reference gives the same value.
 
 ```python
 e, r = est - est.mean(), ref - ref.mean()
@@ -252,10 +253,7 @@ LibriSpeech dev-clean, 6 seconds each.
 By mel distance, Mimi at 1.1 kbps matches EnCodec at 6 kbps, and Mimi at
 4.4 kbps beats EnCodec at 24 kbps. By SI-SDR, Mimi at 1.1 kbps looks far
 worse. With only its semantic codebook, Mimi's output shares almost nothing
-with the waveform, yet it still carries speech. On four of these clips,
-`whisper-tiny` turned the semantic-only audio into fluent sentences that kept
-some of the words, and with two codebooks, 0.28 kbps, it transcribed three of
-the four sentences almost exactly.
+with the waveform, yet it still carries speech: listen to it in the **Run**.
 
 > [!KEY]
 > SI-SDR measures waveform fidelity and mel distance measures spectral fidelity. A codec trained to sound right can score poorly on SI-SDR, so report both, and listen.
@@ -274,7 +272,7 @@ Build the functions in the order the checks test them.
 2. **`sample_quantizer_counts(batch, n_q, p, generator)`.** Draw counts with `torch.randint(1, n_q + 1, ...)` and coins with `torch.rand`, both from `generator`, and combine with `torch.where`. Common mistake: `torch.randint(1, n_q, ...)`, whose upper bound is exclusive.
 3. **`rvq_forward(z, codebooks, n_q)`.** Permute to `(B, T, D)`, loop over stages, compute distances on detached tensors, and gather `q = codebooks[i][idx]`. Mask each stage with `n_q > i`. Add the codebook loss with `sg[r]`, the commitment loss with `sg[q]`, and subtract `sg[q]` from the residual. Return `z + (hard - z).detach()` permuted back. Common mistake: averaging a stage's loss over all examples, including those for which it is inactive.
 4. **`ToyCodec`.** Build `encoder`, `decoder`, and `codebooks` as the docstring lists. A convolution with kernel $s$ and stride $s$ divides the length by exactly $s$, and a transposed convolution with the same kernel and stride multiplies it back. `forward` chains `encode`, `rvq_forward`, and `decode`. `codes_to_audio` sums codewords and decodes. Common mistake: forgetting to permute the summed codewords from `(B, T, D)` to `(B, D, T)`.
-5. **`si_sdr(estimate, reference)`.** Remove the means, project, and take the ratio in dB. Common mistake: dividing by $\langle \hat s, \hat s \rangle$ instead of $\langle s, s \rangle$.
+5. **`si_sdr(estimate, reference)`.** Remove the means, project, and take the ratio in dB. Common mistake: computing $\alpha$ with $\langle \hat s, \hat s \rangle$ in the denominator while still scaling the reference, which mixes the two directions of the projection.
 6. **`mel_distance(x, y, sample_rate, scales)`.** Trim to the shorter length, call the provided `log_mel` at each scale, and average the mean absolute differences.
 
 ## Cost and scaling
@@ -296,9 +294,8 @@ pays attention cost proportional to the square of the token count, so a
 codec's frame rate decides how long a clip a language model can handle.
 
 The full **Run**, 16 clips of 6 seconds through both codecs at 11 settings,
-took 36 seconds on a laptop CPU. On an A100 it takes well under a minute,
-mostly loading the two models. Without a GPU the **Run** shrinks to 2 clips
-of 3 seconds and took 5 seconds.
+takes well under a minute on an A100, mostly loading the two models. Without
+a GPU it shrinks to 2 clips of 3 seconds.
 
 ## Where this breaks
 

@@ -48,12 +48,13 @@ class ResidualBlock(nn.Module):
         conditioner_projection: nn.Conv1d(n_mels, 2 * channels, 1)
         output_projection: nn.Conv1d(channels, 2 * channels, 1)
 
-    forward(x, cond, emb), with x (B, C, L), cond (B, n_mels, L), emb (B, emb_dim):
-        y = x + diffusion_projection(emb), broadcast over time
-        y = dilated_conv(y) + conditioner_projection(cond)
-        split y into (gate, filter) halves along channels; y = sigmoid(gate) * tanh(filter)
-        split output_projection(y) into (residual, skip) halves
-        return ((x + residual) / sqrt(2), skip)
+    forward(x, cond, emb), with x (B, C, L), cond (B, n_mels, L), and emb
+    (B, emb_dim), returns (out, skip), each (B, C, L). It computes the
+    lesson's layer: the step embedding's projection joins x at every time step
+    before the dilated convolution, and the mel projection joins after it. Of
+    those 2C channels, the first C are the sigmoid gate and the last C the tanh
+    filter. Of output_projection's 2C channels, the first C are the residual
+    and the last C the skip, and out is (x + residual) / sqrt(2).
     """
 
     def __init__(self, channels: int, dilation: int, n_mels: int, emb_dim: int = 512):

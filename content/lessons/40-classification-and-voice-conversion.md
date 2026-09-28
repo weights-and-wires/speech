@@ -40,7 +40,7 @@ synthetic voice into another with kNN-VC.
 
 - A log-mel spectrogram has one row per mel band and one column per 10 ms frame.
 - Self-supervised models such as WavLM give one vector per 20 ms, and their middle layers carry phonetic content.
-- The equal error rate is where false acceptances equal false rejections, from the lesson on speaker recognition.
+- The equal error rate is where false acceptances equal false rejections, from lesson 23, *Speaker recognition and diarization*.
 - Cosine similarity compares directions, not lengths: $x \cdot r / (\lVert x \rVert \lVert r \rVert)$.
 - Cross-entropy over a softmax is the loss for picking one class out of many.
 
@@ -94,8 +94,8 @@ A `Conv2d` with a 16 by 16 kernel and stride 10 computes exactly this
 patchify followed by the linear projection, which is how implementations do
 it. AST starts from an ImageNet Vision Transformer (DeiT), averages its
 input weights over the three color channels, and interpolates its positional
-embeddings to the 12 by 101 grid. It reports 0.485 mAP on AudioSet, 95.6%
-on ESC-50, and 98.1% on Speech Commands v2.
+embeddings to the 12 by 101 grid. It reports 0.485 mAP on AudioSet with an
+ensemble, 95.6% on ESC-50, and 98.1% on Speech Commands v2.
 
 > [!KEY]
 > AST is a Vision Transformer that reads overlapping 16 by 16 spectrogram patches. The overlap costs tokens, 1,212 for 10 seconds, and buys detail that non-overlapping patches would cut in half.
@@ -152,8 +152,8 @@ $\log N$, which makes a quick test.
 
 For *zero-shot* classification, embed one prompt per class, such as "the
 sound of a dog barking", and pick the prompt with the highest cosine to the
-clip. The lesson on few-step generation and audio metrics uses the same
-embeddings to score generated audio.
+clip. The CLAP score of lesson 38, *Few-step generation and audio metrics*,
+uses the same embeddings to score generated audio.
 
 ## Voice conversion
 
@@ -166,8 +166,8 @@ separate embedding. Too wide a bottleneck leaks the source speaker, and too
 narrow loses words.
 
 kNN-VC (Baas et al., 2023) needs no training for the conversion itself. It
-relies on what the lesson on self-supervised speech showed: the middle
-layers of models such as WavLM encode phones in a way that is nearly the same
+relies on what lesson 21, *Self-supervised speech*, measured: the middle
+layers of self-supervised models such as WavLM encode phones in a way that is nearly the same
 for every speaker, while each frame still carries the speaker's timbre. So a
 frame of the target speaker saying the same phone is a near neighbor, and it
 already sounds like the target.
@@ -207,15 +207,15 @@ $(0.95, -0.05)$. With $k = 1$, it would be an exact copy of $r_1$.
 
 The paper reports that below about 30 seconds of reference audio, kNN-VC
 falls behind other methods, though even 5 seconds keeps moderate
-intelligibility and speaker similarity. At 50 frames per second, 8 minutes of reference audio is 24,000
-frames, about 49 MB in 16-bit floats.
+intelligibility and speaker similarity. At 50 frames per second, 8 minutes
+of reference audio is 24,000 frames, about 49 MB in 16-bit floats.
 
 The Run can't load WavLM or a vocoder on the CPU, so it keeps the method and
 swaps the parts. It synthesizes two voices, a 110 Hz source and a 210 Hz
 target with formants raised 18%. Mel cepstra with each speaker's mean
 removed stand in for WavLM layer 6. After matching, it averages the
 *magnitude spectra* of the four target frames and turns them into sound with
-Griffin-Lim from the lesson on phase. On its seeded voices, 94% of matched
+Griffin-Lim from lesson 5, *Phase and Griffin-Lim*. On its seeded voices, 94% of matched
 frames are the same vowel as the source frame, and the output's pitch is the
 target's 211 Hz.
 
@@ -230,16 +230,11 @@ logical access, speech made by TTS or voice conversion, and physical access,
 recorded replays. AASIST (2022), a graph attention network on raw waveforms,
 has a light version, AASIST-L, with only 85k parameters.
 
-A countermeasure outputs a score, and the equal error rate from the lesson on
-speaker recognition measures it. Treat bona fide as the positive class. At a
-threshold $\theta$, the false rejection rate is the fraction of bona fide
-scores below $\theta$, and the false acceptance rate is the fraction of
-spoofed scores at or above it. The EER is where the two curves cross.
-
-For bona fide scores $(0.9, 0.8, 0.7, 0.3)$ and spoofed scores
-$(0.6, 0.4, 0.2, 0.1)$, a threshold of 0.6 rejects one bona fide score,
-0.3, and accepts one spoof, 0.6, so both rates are $1/4$ and the EER is 25%.
-The Run draws both curves for a toy detector whose scores are two unit
+A countermeasure outputs a score, and the equal error rate of lesson 23,
+*Speaker recognition and diarization*, measures it, with bona fide speech in
+the role of the target trials. A false rejection is a bona fide score below
+the threshold, a false acceptance is a spoofed score at or above it, and the
+EER is where the two rates cross. The Run draws both curves for a toy detector whose scores are two unit
 Gaussians 2.5 apart. Theory puts that EER at $\Phi(-1.25) = 10.6\%$, and the
 400 seeded samples per class measure 11.0%.
 
@@ -272,6 +267,8 @@ share it, and watermark it when you can.
 > - kNN-VC replaces each source frame with the mean of its $k = 4$ nearest target frames by cosine distance.
 
 ## Build it step by step
+
+Build the functions in the order the checks test them.
 
 1. **`ast_patch_grid(n_mels, n_frames, patch, stride)`** returns `(n_freq, n_time)` from the formula with integer division. The common mistake is rounding up, which counts a patch that runs off the edge.
 2. **`patchify(spec, patch, stride)`** returns `(n_freq * n_time, patch * patch)`. Build 4-D row and column index grids by broadcasting, index once, and reshape. Frequency is the outer loop: row `i_f * n_time + i_t`.

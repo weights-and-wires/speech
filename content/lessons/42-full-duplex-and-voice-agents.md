@@ -71,8 +71,8 @@ largest term.
 | Playback buffer | 40 ms |
 | Total | 1,000 ms |
 
-Streaming every stage helps: a streaming recognizer, from the lesson on
-transducers, has the transcript ready when the endpoint fires, and the
+Streaming every stage helps: a streaming recognizer, from lesson 19,
+*Transducers and streaming*, has the transcript ready when the endpoint fires, and the
 synthesizer starts on the first few words. The endpoint wait is harder. Cut
 it to 200 ms and the agent interrupts every pause for breath.
 
@@ -103,7 +103,7 @@ is semantic, distilled from WavLM, and the other 7 are acoustic.
 The text token is Moshi's own transcript, aligned in time with its speech.
 The paper builds it so that "when a word starts" in the audio, the stream
 holds that word's tokens, then `PAD` until the next word, with an `EPAD`
-("end of padding") just before the next word. The word timings come from
+("end of padding") right before the next word. The word timings come from
 Whisper's timestamps. Predicting text first gives the model a plan for what
 it says, which the paper reports improves its content.
 
@@ -132,9 +132,9 @@ D[k, t + \delta_k] = C[k, t], \qquad \delta = (\underbrace{0}_{\text{text}},\ \u
 $$
 
 Read it aloud: the text and the two semantic streams stay in place, and all
-14 acoustic streams move $\tau$ frames later. It is the delay pattern from the
-lesson on codec language models with one delay per stream instead of one per
-codebook index. The latency this costs is one frame plus the delay:
+14 acoustic streams move $\tau$ frames later. It is the delay pattern of
+lesson 32, *Codec language models*, with one delay per stream instead of one
+per codebook index. The latency this costs is one frame plus the delay:
 
 $$
 T_{\text{duplex}} = \frac{1 + \tau}{f_{\text{frame}}}
@@ -250,22 +250,25 @@ reaches 10 frames at 209, and the agent stops there.
 Real agents replace the energy VAD with a neural one, such as the
 MIT-licensed Silero VAD, and add *semantic endpointing*: Pipecat's Smart Turn
 v3 classifies from the audio whether the speaker has finished, which lets the
-endpoint wait shrink without cutting people off. They also need echo
-cancellation, so the agent doesn't hear itself and barge in on its own voice.
+endpoint wait shrink without cutting people off.
 
 ## Where to go next
 
-This is the last lesson of the course. The following systems and resources
-are good places to continue, each with open code, weights, or papers:
+This is the last lesson of the course. It began with a tone sampled at a
+fixed rate, and it ends with a model that listens and speaks at once. Between
+the two, you built every piece such a model is made of: the spectrogram and
+the mel front end, the recognizer and its decoder, the vocoder, the codec,
+the token model, and the flow that turns noise into speech. The following
+systems and resources are good places to continue, each with open code,
+weights, or papers:
 
-- **Moshi and Mimi** (Kyutai, 2024): the full-duplex model this lesson took apart, with code at `github.com/kyutai-labs/moshi`.
-- **Delayed streams modeling** (Kyutai, 2025): one framework for streaming ASR and TTS. Kyutai STT serves about 400 real-time streams on one H100, and Unmute wraps a text LLM with Kyutai's STT and TTS into a low-latency cascade.
+- **Moshi and Mimi** (Kyutai, 2024): the full-duplex model this lesson took apart, with open code and weights.
+- **Delayed streams modeling** (Kyutai, 2025): one framework for streaming ASR and TTS, and Unmute, which wraps a text LLM with Kyutai's STT and TTS into a low-latency cascade.
 - **Voxtral Realtime** (Mistral AI, 2026): streaming ASR built on delayed streams modeling, which matches Whisper's quality at a 480 ms delay, with Apache 2.0 weights.
 - **Sesame CSM** (2025): a Llama backbone predicts Mimi's first codebook and a small decoder the rest, the depth split in another form. CSM-1B is Apache 2.0.
-- **Qwen2.5-Omni and Qwen3-Omni** (2025): Thinker-Talker models, where Qwen3-Omni's Thinker is a mixture of experts with 30B parameters, 3B active, and a theoretical first-audio latency of 234 ms.
+- **Qwen2.5-Omni and Qwen3-Omni** (2025): Thinker-Talker models. Qwen3-Omni's Thinker is a mixture of experts with 30B parameters, 3B active.
 - **GLM-4-Voice** (2024) and **LLaMA-Omni** (2024): fixed-ratio interleaving, and a speech decoder trained with CTC that answers in as little as 226 ms.
 - **MiniMind-O** (2026): a whole omni model at about 0.1B parameters with open code, weights, and data, small enough to read end to end.
-- **Pocket TTS** (Kyutai, 2026): a 100M-parameter TTS that runs faster than real time on a laptop CPU.
 - **Surveys and a tutorial**: "On the landscape of spoken language models" (TMLR 2025), and the Interspeech 2026 tutorial on spoken language models that follows it.
 - **Benchmarks**: VoiceBench for spoken instructions, Big Bench Audio's 1,000 spoken reasoning questions, URO-Bench for speech-to-speech, and HumDial-FDBench for full-duplex dialogue.
 
@@ -277,6 +280,8 @@ are good places to continue, each with open code, weights, or papers:
 > - A streaming convolution carries $(K - 1) d$ samples of state; a turn-taking machine counts speech and silence runs.
 
 ## Build it step by step
+
+Build the functions in the order the checks test them.
 
 1. **`inner_monologue(word_starts, word_tokens, n_frames, pad, epad)`** returns `(n_frames,)`. Fill with `pad`, write the tokens, then place `epad` before each start that has a free frame. The common mistake is writing `epad` first and overwriting a token.
 2. **`moshi_delays(n_q, tau)`** returns the 17 delays for `n_q = 8`.
@@ -302,8 +307,8 @@ The following table compares generation costs for $T$ frames of $K$ tokens.
 | Fixed-ratio interleave | text plus speech tokens | none |
 
 A full-duplex model must finish each step in less than one frame, 80 ms at
-12.5 Hz, or it falls behind the conversation. That real-time constraint,
-not total compute, decides model size. A streaming convolution's state costs
+12.5 Hz, or it falls behind the conversation, so that real-time constraint
+decides model size. A streaming convolution's state costs
 $(K - 1) d$ samples per channel per layer, which is tiny, and a Transformer's
 key-value cache grows with the context, which is why Mimi's Transformers use
 a 250-frame window.

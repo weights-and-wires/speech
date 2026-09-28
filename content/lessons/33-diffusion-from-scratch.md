@@ -60,7 +60,7 @@ between the two.
 ## The forward process
 
 Each forward step shrinks the signal slightly and adds a little noise
-[Ho et al. 2020]:
+(Ho et al., 2020):
 
 $$
 q(x_t \mid x_{t-1}) = \mathcal{N}\left(\sqrt{1 - \beta_t}\, x_{t-1},\ \beta_t I\right)
@@ -193,7 +193,7 @@ $\tilde\beta_2 = (0.1 / 0.28) \times 0.2 = 0.071429$, a standard deviation of
 
 ## Train by predicting the noise
 
-The DDPM training loss is a regression [Ho et al. 2020, Eq. 14]:
+The DDPM training loss is a regression (Ho et al., 2020, equation 14):
 
 $$
 \mathcal{L}_{\text{simple}} = \mathbb{E}_{x_0,\, \epsilon,\, t} \left\lVert \epsilon - \epsilon_\theta\left(\sqrt{\bar\alpha_t}\, x_0 + \sqrt{1 - \bar\alpha_t}\, \epsilon,\ t\right) \right\rVert^2
@@ -217,6 +217,10 @@ dropped. The dropped weights would emphasize the nearly clean steps. Leaving
 them out trains the network more evenly across noise levels, and gave better
 samples in the DDPM paper.
 
+> [!KEY]
+> Training is plain regression: jump the data to a random step in one line and
+> predict the noise. Only sampling pays for all $T$ steps.
+
 ## Hear it with an exact denoiser
 
 When the data itself is Gaussian, the ideal noise predictor is known in
@@ -235,10 +239,11 @@ step 200. You hear $x_{200}$, $x_{25}$, $x_8$, and $x_0$ on the way back. The
 voice emerges only in the last few steps, because a small-amplitude signal
 spends most of the schedule buried.
 
-The following demo noises a signal and walks it back.
+The following demo noises a mixture of three Gaussians and walks it back
+with the exact score, so it needs no network either.
 
 ```demo
-{"id": "diffusion-1d", "caption": "Drag the step from 0 to T and watch the signal fade into noise, then run the reverse process and notice that the shape comes back only in the last few steps."}
+{"id": "diffusion-1d", "caption": "Drag the time step from 0 to T and watch the three-bump mixture fade into noise, then follow the sampling paths back from t = T and notice where each one commits to a bump."}
 ```
 
 > [!RECAP]

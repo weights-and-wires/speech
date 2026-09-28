@@ -127,6 +127,10 @@ itself. WaveNet used $k = 2$ and dilations $1, 2, 4, \ldots, 512$, repeated
 three times: $R = 1 + 3 \times 1023 = 3070$ samples, about 192 ms at 16 kHz.
 One block of $1..512$ alone gives $R = 1024$ from only 10 layers.
 
+> [!KEY]
+> Doubling the dilation at every layer doubles the receptive field with each
+> layer, so 10 layers see 1,024 samples where 10 undilated layers see 11.
+
 *Causal* means the output at $t$ never sees $t + 1$. The simplest way to get
 that is to pad $(k-1)d$ zeros on the left and none on the right:
 
@@ -153,7 +157,7 @@ its kernel size, layers per stack, stacks, and sample rate.
 > [!WARNING]
 > `padding="same"` or symmetric padding lets output $t$ see the future. The
 > training loss then drops fast, because the model copies the answer, and
-> generation produces noise. Always run the impulse test.
+> generation produces noise. Run the impulse test on every stack.
 
 ## The gated residual stack
 
@@ -191,7 +195,7 @@ The obvious loop runs the whole network over the last $R$ samples at every
 step. Almost all of that work repeats the step before.
 
 A cache removes the repetition. With kernel size 2, layer $\ell$ at time $t$
-needs exactly two inputs: its input now, and its input $d_\ell$ steps ago.
+needs exactly two inputs: its current input, and its input $d_\ell$ steps ago.
 Keep, for each layer, a queue of its last $d_\ell$ inputs. One step then
 costs one pass through the layers at a single time position:
 

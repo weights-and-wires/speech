@@ -47,18 +47,18 @@ The following list describes the three kinds of tokens speech models predict:
 
 - **Semantic tokens** are cluster indices of self-supervised speech features, such as k-means over HuBERT or w2v-BERT layers, or the output of a quantizer inside an ASR encoder, as in CosyVoice. They keep what was said and some prosody, and drop most of the speaker and the room. They are easy to predict from text, but you can't decode them to audio on their own.
 - **Acoustic tokens** are RVQ codes from a codec such as EnCodec or DAC. They decode to audio, but they carry every detail of the recording, so they are harder to predict.
-- **Hybrid tokens** come from a codec whose first codebook is trained to be semantic. Mimi distills WavLM into its first codebook. In the previous lesson, that codebook alone scored an SI-SDR of $-44$ dB, and adding just one acoustic codebook gave speech that `whisper-tiny` transcribed almost exactly.
+- **Hybrid tokens** come from a codec whose first codebook is trained to be semantic. Mimi distills WavLM into its first codebook. In the previous lesson, that codebook alone scored an SI-SDR of $-44$ dB and still carried recognizable speech.
 
 AudioLM made the hierarchy explicit: predict semantic tokens first for
 long-range structure, then coarse acoustic tokens, then fine ones
-[Borsos et al. 2023].
+(Borsos et al., 2023).
 
 ## Lay out the codebooks
 
 Write a clip's codes as a grid with $K$ rows, one per codebook, and $T$
 columns, one per frame. A language model needs a sequence of steps, and at
 each step it predicts one or more grid cells. The following layouts are the
-options, in the language of MusicGen's *patterns* [Copet et al. 2023]:
+options, in the language of MusicGen's *patterns* (Copet et al., 2023):
 
 - **Flatten.** One cell per step, frame by frame. Exact, but $K T$ steps: 24,000 steps for 10 seconds of EnCodec at 24 kbps.
 - **Parallel.** A whole column per step, $T$ steps. Codebook $k$ of frame $t$ is predicted without codebooks $< k$ of the same frame, which it depends on.
@@ -117,7 +117,7 @@ The following demo builds the grid and shows what each step can see.
 ## VALL-E: one hard stage, then easy ones
 
 VALL-E predicts EnCodec tokens at 6 kbps: 75 frames per second, 8 codebooks
-of 1024 [Wang et al. 2023]. It splits the grid by codebook:
+of 1024 (Wang et al., 2023). It splits the grid by codebook:
 
 $$
 p(C \mid x, \tilde C) = \prod_{t} p(c_{t,1} \mid c_{<t,1}, \tilde c_{:,1}, x) \prod_{j=2}^{8} p(c_{:,j} \mid c_{:,<j}, x, \tilde C)
@@ -158,7 +158,7 @@ parallel stages greedily.
 ## MaskGIT: guess everything, keep the best
 
 SoundStorm replaced the acoustic stages of AudioLM with a masked model that
-decodes many tokens at once [Borsos et al. 2023]. The procedure is MaskGIT's.
+decodes many tokens at once (Borsos et al., 2023). The procedure is MaskGIT's.
 Start with every token masked. At each iteration, predict every masked token,
 keep the ones the model is most confident about, and mask the rest again. A
 *cosine schedule* decides how many stay masked:
@@ -236,10 +236,15 @@ So $H_{\text{delay}} = 1.030 + 0.890 = 1.919$ nats per frame, and
 $H_{\text{parallel}} = 1.030 + 1.534 = 2.564$. In the **Run**, the tiny model
 reaches 1.924 with the delay pattern and 2.576 with the parallel one.
 
+> [!KEY]
+> A model's loss can't fall below the conditional entropy of what it predicts
+> given what it sees. The layout decides what it sees, so the layout sets the
+> floor, whatever the model's size.
+
 ## Where the field went
 
 The following table surveys open systems from 2023 to 2026 by how they
-handle the codebook problem. Dates and numbers come from each system's paper
+handle the codebook problem, with dates and numbers from each system's paper
 or model card.
 
 | System | Released | Tokens | Layout |
@@ -294,7 +299,7 @@ codebooks, and what each step costs a Transformer.
 
 For EnCodec at 6 kbps, 10 seconds is 750 frames and 6,000 tokens. Flattened,
 attention compares 36 million pairs; with the delay pattern, 570,000. That
-factor of $K^2$ is why nobody flattens 8 or 32 codebooks for long audio, and
+factor of $K^2$ is why few systems flatten 8 or 32 codebooks for long audio, and
 why low frame rates matter so much.
 
 ## Where this breaks
@@ -310,10 +315,6 @@ outputs and rerank them with an ASR model.
 **Cloning without consent.** Three seconds of audio is enough to imitate a
 voice. VALL-E's weights were not released, and some open systems add an
 inaudible watermark to everything they generate.
-
-**The wrong floor.** A model can't beat the entropy of what it predicts given
-what it sees. If the parallel pattern's loss sits well above the delay
-pattern's, the layout is the problem, not the model's size.
 
 ## The exercise
 

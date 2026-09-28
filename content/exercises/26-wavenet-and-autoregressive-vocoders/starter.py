@@ -92,14 +92,14 @@ class WaveNet(nn.Module):
 
         Returns:
             Logits, shape (B, 256, T). Column t is the model's distribution over
-            code t + 1 given codes 0 .. t. The layers are, in order:
+            code t + 1 given codes 0 .. t.
 
-            x = embed(codes), transposed to (B, C, T)
-            for each layer i with dilation d:
-                z = gated_activation(causal_conv1d(x, dilated[i].weight, dilated[i].bias, d))
-                x = x + residual[i](z)
-                skips = skips + skip[i](z)
-            logits = head2(relu(head1(relu(skips))))
+        The architecture is the one in the lesson: embedded codes enter the
+        stack as (B, C, T). Layer i is the gated activation of the causal
+        convolution with dilated[i]'s weights and dilation. The layer's input
+        plus residual[i] of that output feeds the next layer, and skip[i] of it
+        adds to a skip sum that starts at zero. The head applies ReLU, head1,
+        ReLU, and head2 to the skip sum.
         """
         raise NotImplementedError("forward")
 

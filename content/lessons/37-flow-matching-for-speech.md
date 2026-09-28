@@ -52,9 +52,9 @@ $t = 1$ is data, and $\sigma_{\min} = 0$, as in F5-TTS.
 
 ## Speech as a picture to fill in
 
-Picture a mel spectrogram as a painting with a strip cut out. Voicebox (Le et
-al.) trains one model to repaint the strip, given the rest of the painting and
-the text. A *mask* $m$ marks each frame 1 when the model must generate it and
+Picture a mel spectrogram as a painting with a strip cut out. Voicebox
+(Le et al., 2023) trains one model to repaint the strip, given the rest of the
+painting and the text. A *mask* $m$ marks each frame 1 when the model must generate it and
 0 when it can see it. The visible frames form the *context*
 $x_{\text{ctx}} = (1 - m) \odot x_1$, which the network receives next to the
 noisy input $x_t$. The loss counts only the frames the model had to generate:
@@ -78,8 +78,8 @@ loss = (((v - (x1 - x0)) ** 2) * m).sum() / (m.sum() * v.shape[1])
 
 Voicebox masks 70 to 100 percent of the frames of each training clip. At
 inference, *everything* is infilling. For zero-shot TTS, the context is a few
-seconds of a reference speaker, and the masked part is the new sentence in
-that voice. For editing, the mask covers one word. F5-TTS goes further: it
+seconds of a reference speaker, and the masked part is the sentence to
+synthesize in that voice. For editing, the mask covers one word. F5-TTS goes further: it
 drops the phone aligner and pads the character sequence with filler tokens to
 the mel length, so the model also learns where each character goes.
 
@@ -101,11 +101,12 @@ $x_0 = (0.5, -1, 1, 0.2)$, mask $m = (0, 1, 1, 0)$, and $t = 0.5$. Then:
 
 ## Guidance for a flow
 
-Classifier-free guidance works on velocities the same way it works on noise
-predictions. During training, the condition is replaced by a *null* condition
-some of the time, with probability 0.2 in Voicebox. At sampling time, the
-network makes two predictions at each step, one with the condition and one
-without, and extrapolates past the conditional one:
+Lesson 34, *Samplers, scores, and guidance*, built classifier-free guidance
+for noise predictions, and the same combination works on velocities. During
+training, replace the condition with a *null* condition some of the time,
+with probability 0.2 in Voicebox. At each sampling step, predict once with
+the condition and once without, and extrapolate past the conditional
+velocity:
 
 $$
 \tilde v = v_c + \alpha\,(v_c - v_u)
@@ -113,23 +114,23 @@ $$
 
 Read it aloud: start from the conditional velocity $v_c$ and push further in
 the direction that separates it from the unconditional velocity $v_u$, by a
-factor $\alpha$. With $v_c = 1.0$, $v_u = 0.4$, and $\alpha = 2$, the guided
-velocity is $1.0 + 2 \times 0.6 = 2.2$. In code:
+factor $\alpha$. It is lesson 34's $w$, named `alpha` in the exercise. With
+$v_c = 1.0$, $v_u = 0.4$, and $\alpha = 2$, the guided velocity is
+$1.0 + 2 \times 0.6 = 2.2$. In code:
 
 ```python
 both = model(torch.cat([x, x]), t, torch.cat([cond, null_cond]))
 v = both[:B] + alpha * (both[:B] - both[B:])
 ```
 
-Papers write the strength in two ways. This lesson uses the *w-convention* of
-Voicebox and F5-TTS, where $\alpha = 0$ means no guidance. The *s-convention*
-of diffusers and AudioLDM writes $v_u + s\,(v_c - v_u)$, where $s = 1$ means no
-guidance. They are the same formula with $s = 1 + \alpha$. F5-TTS's default
-$\alpha = 2$ is $s = 3$, and CosyVoice 2's $\beta = 0.7$ is $s = 1.7$.
+This is the w-convention of lesson 34, Voicebox, and F5-TTS, where
+$\alpha = 0$ means no guidance. In the s-convention of diffusers and AudioLDM,
+the same guidance is $s = 1 + \alpha$. F5-TTS's default $\alpha = 2$ is
+$s = 3$, and CosyVoice 2's 0.7 is $s = 1.7$.
 
 > [!WARNING]
 > "CFG 2" means twice as much extra push in the w-convention as in the
-> s-convention. Always report which one you use. Also match the null
+> s-convention. Report which one you use. Also match the null
 > condition to training exactly. F5-TTS drops the audio context with
 > probability 0.3 and the audio and text together with 0.2, and its
 > unguided pass drops both.
@@ -166,10 +167,14 @@ $2 / (\pi - 2) \approx 1.752$. Sway needs no retraining, and F5-TTS reports
 2.53 percent word error rate on LibriSpeech-PC test-clean at NFE 16 with it,
 against 2.42 at NFE 32.
 
+> [!KEY]
+> The steps near noise decide the layout of the utterance, and the steps near
+> data only polish it. Sway sampling spends more, smaller steps early.
+
 ## Stream with a chunk mask
 
 A streaming TTS system must play the first words before it has generated the
-last ones. CosyVoice 2 (Du et al.) runs a language model that emits speech
+last ones. CosyVoice 2 (Du et al., 2024) runs a language model that emits speech
 tokens at 25 Hz, upsamples them to 50 Hz, and uses a flow-matching decoder to
 turn them into mel frames. Its decoder is a convolutional transformer U-Net,
 and its attention mask decides what each frame may see. With *chunks* of $M$
@@ -233,6 +238,8 @@ ceiling, apart from the model's own errors.
 
 ## Build it step by step
 
+Build the functions in the order the checks test them.
+
 1. **`sway(u, s)`** returns the warped times, same type as `u`. Pick
    `torch.cos` for a tensor and `np.cos` otherwise. Check it at `u = 0.5`,
    where $s = -1$ gives 0.2929.
@@ -277,7 +284,7 @@ representations with fewer frames per second.
 ## Where this breaks
 
 - **The null condition drifts.** If training zeroes the label embedding and
-  sampling uses a learned null token, the unconditional branch is garbage and
+  sampling uses a learned null token, the unconditional branch is meaningless and
   guidance amplifies it. Use one null, in one place, for both.
 - **Guidance over-saturates.** Large $\alpha$ makes every sample the most
   typical one: loud, flat, and all alike. The run's classifier accuracy rises

@@ -42,7 +42,7 @@ is noise and time 1 is data.
   continuous flow does the same by solving an ordinary differential equation.
 - A diffusion model's noisy sample is $\sqrt{\bar\alpha}$ times the data plus
   $\sqrt{1 - \bar\alpha}$ times Gaussian noise.
-- The v-prediction target mixes noise and data as $\alpha \epsilon - \sigma x$.
+- The v-prediction target mixes noise and data as $a_t \epsilon - \sigma_t x_0$.
 - The probability-flow ODE turns a diffusion model into a deterministic sampler,
   and DDIM is a first-order step along it.
 - An optimizer can fit a network to any regression target you can compute.
@@ -161,7 +161,7 @@ following table lists how the two conventions write the same objects:
 | Data | $x_1$, at $t = 1$ | $x_0$, at step 0 |
 | Noisy point | $t\,x_1 + (1 - t)\,x_0$ | $\sqrt{\bar\alpha}\,x_0 + \sqrt{1-\bar\alpha}\,\epsilon$ |
 | Signal-to-noise ratio | $t^2 / (1 - t)^2$ | $\bar\alpha / (1 - \bar\alpha)$ |
-| Network target | $u = x_1 - x_0$, toward data | $v = \alpha\epsilon - \sigma x_0$, toward noise |
+| Network target | $u = x_1 - x_0$, toward data | $v = a_t\epsilon - \sigma_t x_0$, toward noise |
 | Sampling direction | $t$ from 0 up to 1 | step from $T$ down to 0 |
 
 Two points match when their signal-to-noise ratios match. Setting
@@ -252,7 +252,7 @@ The following demo draws the straight training lines and the paths a sampler
 actually follows.
 
 ```demo
-{"id": "flow-trajectories", "caption": "Change the number of steps and watch where the samples land; notice that the sampling paths bend even though every training path is straight."}
+{"id": "flow-trajectories", "caption": "Turn on the training pairs to see the straight conditional paths, set the steps to 1 and watch every Euler sample land near the data mean although the exact paths bend, then turn on minibatch OT and watch the path bend readout fall toward 1."}
 ```
 
 ## Straighter paths: minibatch OT and reflow
@@ -260,7 +260,7 @@ actually follows.
 A curved field needs many small steps. Two tricks make the field straighter,
 so that a few large steps land on the data.
 
-*Minibatch optimal transport* (Tong et al.) changes which noise sample each
+*Minibatch optimal transport* (Tong et al., 2024) changes which noise sample each
 data sample is paired with. Within each batch, it finds the permutation that
 minimizes the total squared distance, with the Hungarian algorithm in
 `scipy.optimize.linear_sum_assignment`. Paired this way, paths rarely cross,
@@ -274,10 +274,11 @@ $1^2 + 0.5^2 = 1.25$, and neither crosses the other.
 > straight OT *path* with random pairing. Tong's minibatch OT *coupling* is a
 > separate step that reorders the pairs.
 
-*Reflow* (Liu et al.) uses the trained model itself. Draw noise $z_0$, solve
-the ODE carefully to get $z_1$, and train a second flow on the fixed pairs
-$(z_0, z_1)$. The first flow's paths never cross, so neither do the new
-straight lines, and the second flow is nearly straight. To measure it, compare
+*Reflow* (Liu et al., 2022) uses the trained model itself. Draw noise $z_0$,
+solve the ODE carefully to get $z_1$, and train a second flow on the fixed
+pairs $(z_0, z_1)$. The first flow's ODE paths never cross, so straight lines
+between its pairs cross far less often than lines between random pairs, and
+the second flow comes out much straighter. To measure it, compare
 each Euler step's velocity with the chord $z_1 - z_0$:
 
 $$
@@ -303,6 +304,8 @@ of one-step samples went from 0.23 to 1.96, against 2.00 for the data.
 >   suffice.
 
 ## Build it step by step
+
+Build the functions in the order the checks test them.
 
 1. **`ot_path(x0, x1, t, sigma_min)`** returns `(x_t, target)`, both with the
    shape of `x0`. Reshape a `(B,)` time to `(B, 1, ..., 1)` before

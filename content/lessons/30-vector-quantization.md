@@ -18,8 +18,11 @@ exercise: 30-vector-quantization
 
 # Vector quantization
 
-In the lesson on quantization and audio files, you rounded each sample to one
-of $2^{16}$ levels. That is *scalar* quantization: every number is rounded on
+Part 5 ended with systems that turn text into mel spectrograms and mel
+spectrograms into audio. Part 6 turns audio into *tokens*, integers from a
+fixed list that a language model can predict. The tool that makes them is
+quantization. In lesson 2, *Quantization and audio files*, you rounded each
+sample to one of $2^{16}$ levels. That is *scalar* quantization: every number is rounded on
 its own. A neural codec does something bolder. It rounds a whole vector of
 128 or 512 numbers at once, to one entry in a list of about a thousand
 allowed vectors. The list is called a *codebook*. The vector is then sent as
@@ -89,8 +92,9 @@ encoder never learns.
 
 The *straight-through estimator* is a deliberate lie that works. In the
 forward pass, use $z_q$. In the backward pass, pretend the quantizer was the
-identity and copy the decoder's gradient to $z_e$ unchanged
-[van den Oord et al. 2017, VQ-VAE]:
+identity and copy the decoder's gradient to $z_e$ unchanged. VQ-VAE
+(van den Oord et al., 2017) made this the standard way to train through a
+codebook:
 
 $$
 z_q^{\text{ST}} = z_e + \operatorname{sg}[z_q - z_e]
@@ -140,8 +144,9 @@ encoder output toward the codeword.
 ## Update codebooks by averaging, and keep them alive
 
 The codebook loss is one way to move codewords. The steadier way, used by
-VQ-VAE-2, SoundStream, and EnCodec, runs k-means online. Each code keeps two running statistics: $N_k$, how many vectors chose
-it, and $m_k$, the sum of those vectors. After each batch, both decay toward
+VQ-VAE-2, SoundStream, and EnCodec, runs k-means online. Each code keeps two
+running statistics: $N_k$, how many vectors chose it, and $m_k$, the sum of
+those vectors. After each batch, both decay toward
 the batch's values, and the codeword is their ratio:
 
 $$
@@ -151,7 +156,7 @@ e_k = \frac{m_k}{\tilde N_k}
 $$
 
 Read it aloud: $n_k$ is how many vectors in this batch chose code $k$. The
-new count is $\gamma$ times the old one plus $1 - \gamma$ times the batch
+updated count is $\gamma$ times the old one plus $1 - \gamma$ times the batch
 count, and the same for the sum. The codeword is the running sum divided by
 the running count, which is a running mean of the vectors that chose it. The
 decay $\gamma$ is 0.99 in SoundStream and EnCodec. $\tilde N_k$ is $N_k$
@@ -223,7 +228,8 @@ search it.
 *Residual vector quantization* (RVQ) spends the 80 bits in eight stages of
 10 bits each. The first codebook quantizes the vector. The second quantizes
 what the first one got wrong, the *residual*. The third quantizes what is
-left after that, and so on [Zeghidour et al. 2021, SoundStream]:
+left after that, and so on. SoundStream (Zeghidour et al., 2021) brought it
+to neural audio codecs:
 
 $$
 r_0 = z, \qquad q_i = Q_i(r_{i-1}), \qquad r_i = r_{i-1} - q_i, \qquad \hat z = \sum_{i=1}^{N_q} q_i
@@ -265,7 +271,7 @@ The following values come out of the two stages:
 The following demo runs RVQ on 2-D points, stage by stage.
 
 ```demo
-{"id": "rvq-2d", "caption": "Add stages one at a time and watch each codebook tile a smaller region around the leftover error, while the residual norm shrinks."}
+{"id": "rvq-2d", "caption": "Raise the stages used one at a time and watch each codebook tile a smaller region around the leftover error, while the error readout falls with every stage."}
 ```
 
 > [!KEY]
@@ -274,7 +280,7 @@ The following demo runs RVQ on 2-D points, stage by stage.
 ## Round on a fixed grid instead
 
 *Finite scalar quantization* (FSQ) drops the learned codebook
-[Mentzer et al. 2024]. Project to a few dimensions, squash each into a
+(Mentzer et al., 2024). Project to a few dimensions, squash each into a
 bounded range, and round it. The codebook is the grid of integer
 combinations, and it has nothing to collapse:
 
@@ -343,7 +349,7 @@ Build the functions in the order the checks test them.
 ## Cost and scaling
 
 The following table shows the cost for $N$ vectors of dimension $D$, with
-$N_q$ stages of $K$ codewords.
+$N_q$ stages of $K$ codewords and $d$ FSQ dimensions.
 
 | Quantizer | Lookup time | Parameters | Bits per vector |
 |---|---|---|---|

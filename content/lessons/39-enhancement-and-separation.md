@@ -19,8 +19,8 @@ exercise: 39-enhancement-and-separation
 # Enhancement and separation
 
 Most real speech arrives with something else on top of it: a train, a fan,
-a room full of people. *Speech enhancement* removes the something else and keeps the
-voice. *Source separation* goes further. Two people talk at once, and you
+a room full of people. *Speech enhancement* removes the something else and
+keeps the voice. *Source separation* goes further. Two people talk at once, and you
 want each voice on its own track.
 
 The two problems share one idea. Look at the sound as a spectrogram, decide
@@ -37,7 +37,7 @@ small Conv-TasNet trained with the loss that solves the puzzle.
 
 - The STFT turns a signal into complex cells $X(k, t)$, one per frequency bin $k$ and frame $t$, and the inverse STFT turns them back.
 - Power is the squared magnitude $|X|^2$, and a decibel is $10 \log_{10}$ of a power ratio.
-- SI-SDR from the lesson on neural audio codecs scores an estimate against a reference, ignoring its gain.
+- SI-SDR, from lesson 31, *Neural audio codecs*, scores an estimate against a reference, ignoring its gain.
 - A 1-D convolution with dilation $d$ skips $d - 1$ samples between its taps.
 - PyTorch's autograd gives the gradient of any loss you can write with tensor operations.
 
@@ -96,9 +96,9 @@ clean = np.maximum(power - alpha * noise_power[:, None], beta * power)
 S_hat = np.sqrt(clean) * np.exp(1j * np.angle(Y))
 ```
 
-Noise power is an average, and each frame of noise fluctuates around it.
-Where a frame exceeds the average, a lone peak survives. Peaks that come and
-go frame by frame sound like tinkling tones, called *musical noise*. The
+Noise power is an average, and each frame of noise fluctuates around it, so
+lone peaks survive. Peaks that come and go frame by frame sound like tinkling
+tones, called *musical noise*. The
 floor and over-subtraction hide it without removing it.
 
 ## The Wiener gain
@@ -118,8 +118,9 @@ untouched, and bins of pure noise go to zero.
 
 The formula needs $\xi$, which depends on the clean speech. The measurable
 *a posteriori SNR* $\gamma = |Y|^2 / \hat P_N$ gives the estimate
-$\gamma - 1$, but it jumps from frame to frame and brings back musical noise. Ephraim and Malah's *decision-directed*
-estimate (1984) blends it with the previous frame's cleaned output:
+$\gamma - 1$, but it jumps from frame to frame and brings back musical noise.
+Ephraim and Malah's *decision-directed* estimate (1984) blends it with the
+previous frame's cleaned output:
 
 $$
 \hat\xi(k, t) = a\,\frac{|\hat S(k, t - 1)|^2}{\hat P_N(k)} + (1 - a) \max\left(\gamma(k, t) - 1,\ 0\right)
@@ -161,7 +162,7 @@ price is a lag: the gain needs two frames to open for the vowel.
 ## Ideal masks
 
 Suppose an oracle told you $S$ and $N$ for every cell. The best gain is then
-exact, and it shows how far any real method could go. Supervised enhancers
+exact, and it shows how far a real method could go. Supervised enhancers
 train networks to predict these *ideal masks*.
 
 The *ideal binary mask* keeps a cell when speech is louder than the noise by
@@ -199,24 +200,11 @@ perfect.
 
 ## Score it with SI-SDR
 
-You met SI-SDR in the lesson on neural audio codecs. Remove the mean from
-the estimate $\hat s$ and the reference $s$, find the scaled copy of the
-reference that best explains the estimate, and compare the energies:
-
-$$
-s_{\text{target}} = \frac{\langle \hat s, s \rangle}{\lVert s \rVert^2}\, s, \qquad
-\text{SI-SDR}(\hat s, s) = 10 \log_{10} \frac{\lVert s_{\text{target}} \rVert^2}{\lVert \hat s - s_{\text{target}} \rVert^2}
-$$
-
-Read it aloud: the target is the reference scaled by the projection
-coefficient, and everything else in the estimate is distortion. Separation
-papers report the *improvement*, SI-SDRi: the estimate's SI-SDR minus the
-mixture's. Conv-TasNet calls the same quantity SI-SNR.
-
-For $s = (1, -1, 2, -2)$ and $\hat s = (2, -1, 3, -4)$, both zero-mean, the
-coefficient is $17 / 10 = 1.7$. The target is $(1.7, -1.7, 3.4, -3.4)$ with
-energy 28.9, the error is $(0.3, 0.7, -0.4, -0.6)$ with energy 1.1, and the
-SI-SDR is $10 \log_{10} 26.27 = 14.19$ dB.
+Lesson 31, *Neural audio codecs*, defined SI-SDR: remove the means, scale the
+reference by the projection coefficient $\langle \hat s, s \rangle / \lVert s \rVert^2$,
+and compare the energy of that scaled reference with the energy of what is
+left. Separation papers report the *improvement*, SI-SDRi: the estimate's
+SI-SDR minus the mixture's. Conv-TasNet calls the same quantity SI-SNR.
 
 Here you write it in torch, batched over the last axis, so that
 $-\text{SI-SDR}$ can be a training loss:
@@ -264,7 +252,8 @@ There are $C!$ permutations, which is fine for 2 or 3 sources. Past 4, the
 Hungarian algorithm in `scipy.optimize.linear_sum_assignment` finds the same
 minimum in polynomial time.
 
-The following demo separates a chirp from a vowel with an oracle mask and scores the outputs in both orders.
+The following demo separates a chirp from a vowel with an oracle mask and
+scores the outputs in both orders.
 
 ```demo
 {"id": "separation-pit", "caption": "Press Shuffle the outputs and watch the fixed-order loss jump while the PIT loss stays put, then lower the chirp level to see where the oracle masks start to fail."}
@@ -298,8 +287,8 @@ $$
 $$
 
 Read it aloud: one frame, plus $P - 1$ times the sum of the dilations,
-$2^X - 1$, for each of the $R$ repeats. With the paper's $R = 3$, $X = 8$, and $P = 3$, that is $1 + 3 \cdot 2 \cdot 255 =
-1531$ frames. At a hop of 8 samples, 1 ms at 8 kHz, the network sees about
+$2^X - 1$, for each of the $R$ repeats. With the paper's $R = 3$, $X = 8$,
+and $P = 3$, that is $1 + 3 \cdot 2 \cdot 255 = 1531$ frames. At a hop of 8 samples, 1 ms at 8 kHz, the network sees about
 1.5 seconds of context.
 
 The exercise's model is smaller: $N = 64$, $L = 16$, $R = 2$, $X = 5$, and
@@ -328,9 +317,7 @@ Held-out mixtures go from 0 dB SI-SDR to about 14 dB.
 Later separators keep the masks and PIT and change the middle. DPRNN and
 SepFormer split the long frame sequence into chunks and alternate models
 inside and across chunks. TF-GridNet (2023) works on the complex STFT and
-reports 23.5 dB SI-SDRi on the WSJ0-2mix benchmark. For music, HT Demucs
-(2022) joins a waveform U-Net and a spectrogram branch with a Transformer.
-Real-time enhancers such as RNNoise and DeepFilterNet predict gains for a few
+reports 23.5 dB SI-SDRi on the WSJ0-2mix benchmark. Real-time enhancers such as RNNoise and DeepFilterNet predict gains for a few
 dozen frequency bands, a direct descendant of the Wiener gain.
 
 > [!RECAP]
@@ -342,7 +329,9 @@ dozen frequency bands, a direct descendant of the Wiener gain.
 
 ## Build it step by step
 
-1. **`si_sdr(est, ref, eps)`** maps torch tensors `(..., T)` to `(...,)`. Subtract the means with `keepdim=True`, project, and add `eps` to both energies. The common mistake is projecting the reference onto the estimate.
+Build the functions in the order the checks test them.
+
+1. **`si_sdr(est, ref, eps)`** maps torch tensors `(..., T)` to `(...,)`. Subtract the means with `keepdim=True`, project, and add `eps` to both energies. The common mistake is skipping the mean removal, which counts any DC offset as distortion.
 2. **`mix_at_snr(clean, noise, snr_db)`** returns the mixture and the scaled noise. The common mistake is `10 ** (snr_db / 20)` inside a power ratio.
 3. **`spectral_subtraction(Y, noise_power, alpha, beta)`** returns the complex estimate. Broadcast `noise_power[:, None]` and rebuild with `np.exp(1j * np.angle(Y))`. The common mistake is subtracting magnitudes instead of powers.
 4. **`wiener_gain(xi)`** is one line. **`decision_directed_gains`** loops over frames and returns `(F, T)` gains, carrying the kept power $G^2 |Y|^2$ from zeros. The common mistake is carrying the gain instead.

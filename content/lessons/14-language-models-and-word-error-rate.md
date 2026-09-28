@@ -74,6 +74,11 @@ gaps with short words. Both $\lambda$ and $\beta$ are tuned on held-out data.
 In the exercise, `rescore` applies this score to an **n-best list**, the few
 best transcripts a recognizer proposes.
 
+> [!KEY]
+> A recognizer picks the transcript with the best acoustic score plus a scaled
+> language model score. The scale $\lambda$ and the insertion penalty $\beta$
+> are tuned on held-out data, not derived.
+
 ## N-gram language models
 
 A language model assigns a probability to a whole sentence. The chain rule
@@ -104,13 +109,16 @@ from every seen count. The freed mass goes to a backup distribution over
 single words.
 
 Kneser and Ney's insight was about that backup. A word like "Francisco" is
-common, but only after "San". As a backup, it should be rare, because a new
+common, but only after "San". As a backup, it should be rare, because an unseen
 context is unlikely to be followed by it. So the backup counts how many
 *different* words a word follows, not how often it occurs. Interpolated
 Kneser-Ney for bigrams is the following:
 
 $$
-P_{\text{KN}}(w \mid h) = \frac{\max\big(C(h\,w) - d,\ 0\big)}{C(h)} + \lambda(h)\, P_{\text{cont}}(w), \qquad \lambda(h) = \frac{d\, N_{1+}(h\,\bullet)}{C(h)}
+\begin{aligned}
+P_{\text{KN}}(w \mid h) &= \frac{\max\big(C(h\,w) - d,\ 0\big)}{C(h)} + \lambda(h)\, P_{\text{cont}}(w) \\
+\lambda(h) &= \frac{d\, N_{1+}(h\,\bullet)}{C(h)}
+\end{aligned}
 $$
 
 $$
@@ -164,7 +172,10 @@ text. **Perplexity** is the inverse probability of the text, normalized per
 token:
 
 $$
-\text{PP} = P(w_1 \dots w_N)^{-1/N} = 2^{H}, \qquad H = -\frac{1}{N} \sum_{i=1}^{N} \log_2 P(w_i \mid w_{i-1})
+\begin{aligned}
+\text{PP} &= P(w_1 \dots w_N)^{-1/N} = 2^{H} \\
+H &= -\frac{1}{N} \sum_{i=1}^{N} \log_2 P(w_i \mid w_{i-1})
+\end{aligned}
 $$
 
 Read it aloud: $H$ is the average number of bits the model needs per token,
@@ -204,7 +215,11 @@ $E(i, j)$ the distance between the first $i$ reference words and the first
 $j$ hypothesis words:
 
 $$
-E(i, 0) = i, \qquad E(0, j) = j, \qquad E(i, j) = \min\big\{E(i-1, j) + 1,\ E(i, j-1) + 1,\ E(i-1, j-1) + [r_i \ne h_j]\big\}
+\begin{aligned}
+E(i, 0) &= i \\
+E(0, j) &= j \\
+E(i, j) &= \min\big\{E(i-1, j) + 1,\ E(i, j-1) + 1,\ E(i-1, j-1) + [r_i \ne h_j]\big\}
+\end{aligned}
 $$
 
 Read it aloud: an empty hypothesis needs $i$ deletions, and an empty

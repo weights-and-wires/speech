@@ -15,7 +15,7 @@ from speechlab import play, show_plot, show_spectrogram
 
 
 def hann(n: int) -> np.ndarray:
-    """The periodic Hann window of length n. Provided: you built it in the lesson on the DFT and the FFT."""
+    """The periodic Hann window of length n. Provided: you built it in The DFT and the FFT."""
     return 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(n) / n)
 
 
@@ -34,10 +34,10 @@ def frame_signal(
 ) -> np.ndarray:
     """Cut `x` into overlapping frames, shape (frame_count(...), frame_length).
 
-    With `center=True`, first pad `x` by frame_length // 2 samples at each end
-    with np.pad(x, frame_length // 2, mode=pad_mode), so frame m is centered
-    on sample m * hop_length of the original. Frame m holds the padded signal
-    from m * hop_length to m * hop_length + frame_length.
+    With `center=True`, `x` is padded by frame_length // 2 samples at each end
+    in `pad_mode` (a mode name np.pad accepts), so frame m is centered on
+    sample m * hop_length of the original. With `center=False`, frame m starts
+    at sample m * hop_length, and only whole frames are kept.
     """
     raise NotImplementedError("frame_signal")
 
@@ -45,17 +45,17 @@ def frame_signal(
 def stft(x: np.ndarray, n_fft: int, hop_length: int, window: np.ndarray | None = None, center: bool = True) -> np.ndarray:
     """The complex short-time Fourier transform, shape (n_fft // 2 + 1, n_frames).
 
-    Frame `x` with frame_signal(x, n_fft, hop_length, center), multiply every
-    frame by `window` (a periodic Hann of length n_fft when None), and take
-    np.fft.rfft of each frame. Return bins by frames: row k is the frequency
-    k * sample_rate / n_fft, and column m is frame m. This is what
-    torch.stft(..., center=True, pad_mode="reflect", return_complex=True) returns.
+    Frames are cut as `frame_signal` cuts them, and `window` defaults to a
+    periodic Hann of length n_fft. The result is bins by frames: row k is the
+    frequency k * sample_rate / n_fft, and column m is frame m. It equals
+    torch.stft(..., center=True, pad_mode="reflect", return_complex=True) with
+    the same window.
     """
     raise NotImplementedError("stft")
 
 
 def spectrogram(x: np.ndarray, n_fft: int, hop_length: int, power: float = 2.0) -> np.ndarray:
-    """np.abs(stft(x, n_fft, hop_length)) ** power, shape (n_fft // 2 + 1, n_frames).
+    """The magnitude of the STFT raised to `power`, shape (n_fft // 2 + 1, n_frames).
 
     power=1.0 gives the magnitude spectrogram, power=2.0 the power spectrogram.
     """
@@ -66,9 +66,7 @@ def is_cola(window: np.ndarray, hop_length: int) -> bool:
     """Whether `window` satisfies the constant overlap-add condition at this hop.
 
     Copies of the window shifted by every multiple of hop_length must sum to
-    the same value at every sample. Sample n is covered by window samples
-    n, n + hop, n + 2 hop, and so on, so compare those sums for each
-    remainder r in range(hop_length), with a relative tolerance of 1e-10.
+    the same value at every sample, to a relative tolerance of 1e-10.
     """
     raise NotImplementedError("is_cola")
 
@@ -82,12 +80,11 @@ def istft(
 ) -> np.ndarray:
     """The least-squares inverse STFT of X, shape (n_fft // 2 + 1, n_frames), as a 1-D signal.
 
-    n_fft is 2 * (X.shape[0] - 1). Invert each frame with np.fft.irfft(..., n=n_fft),
-    multiply it by the window (a periodic Hann when None), and add it into
-    the output at offset m * hop_length. Add window ** 2 into a second array
-    at the same offsets. Divide the first by the second.
+    n_fft is 2 * (X.shape[0] - 1), and `window` defaults to a periodic Hann.
+    The result is the signal whose STFT is closest to X in the least-squares
+    sense (Griffin and Lim, 1984), so it inverts `stft` exactly.
 
-    With `center=True`, drop the first n_fft // 2 samples. Return `length`
+    With `center=True`, the padding is removed. Return `length`
     samples, or hop_length * (n_frames - 1) when `length` is None. Raise
     ValueError when any returned sample has a summed squared window below
     1e-11, or when fewer than `length` samples exist.

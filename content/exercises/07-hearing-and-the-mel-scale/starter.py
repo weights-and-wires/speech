@@ -47,13 +47,12 @@ def mel_filterbank(
 ) -> np.ndarray:
     """Triangular mel filters, shape (n_mels, n_fft // 2 + 1).
 
-    Place n_mels + 2 edge frequencies equally spaced in mel from `fmin` to
-    `fmax` (default `sample_rate / 2`), and convert them back to Hz. Filter i
-    rises linearly in Hz from edge i to edge i + 1, where it reaches 1, and
-    falls back to 0 at edge i + 2. Evaluate it at each FFT bin frequency
-    k * sample_rate / n_fft, for k = 0 ... n_fft // 2. With norm="slaney",
-    multiply filter i by 2 / (edge[i + 2] - edge[i]); with norm=None, leave
-    its peak at 1. This is `librosa.filters.mel`.
+    The n_mels + 2 edges of the triangles are equally spaced in mel from
+    `fmin` to `fmax` (default `sample_rate / 2`), and filter i spans edges i
+    to i + 2 with its peak at edge i + 1. Each triangle is straight in Hz and
+    is evaluated at the bin frequencies k * sample_rate / n_fft. With
+    norm="slaney" every triangle has unit area in Hz; with norm=None every
+    peak is 1. The result equals `librosa.filters.mel` with the same arguments.
     """
     raise NotImplementedError
 
@@ -61,10 +60,9 @@ def mel_filterbank(
 def power_spectrogram(x: np.ndarray, n_fft: int = N_FFT, hop: int = HOP_LENGTH) -> np.ndarray:
     """The power spectrogram |STFT|^2, shape (n_fft // 2 + 1, 1 + len(x) // hop).
 
-    Use the convention of the STFT lesson: pad n_fft // 2 samples at each end
-    by reflection, cut frames every `hop` samples, multiply each by a periodic
-    Hann window of length `n_fft`, and take the squared magnitude of its real
-    FFT. Row k is frequency bin k; column t is the frame centered on sample
+    It follows the convention of The short-time Fourier transform: centered
+    frames with reflect padding and a periodic Hann window of length `n_fft`.
+    Row k is frequency bin k; column t is the frame centered on sample
     t * hop of the unpadded signal.
     """
     raise NotImplementedError
@@ -73,8 +71,9 @@ def power_spectrogram(x: np.ndarray, n_fft: int = N_FFT, hop: int = HOP_LENGTH) 
 def whisper_normalize(mel_power: np.ndarray) -> np.ndarray:
     """Whisper's log compression of a mel power matrix, same shape as the input.
 
-    Take log10 after clamping every value to at least 1e-10. Raise every value
-    to at least the maximum of the whole matrix minus 8. Map x to (x + 4) / 4.
+    The result is log10 of the powers, floored at log10(1e-10) and at 8 below
+    the largest log value anywhere in the matrix, then rescaled by
+    (x + 4) / 4.
     """
     raise NotImplementedError
 
@@ -87,10 +86,9 @@ def pad_or_trim(audio: np.ndarray, length: int = N_SAMPLES) -> np.ndarray:
 def whisper_log_mel(audio: np.ndarray, n_mels: int = 80) -> np.ndarray:
     """Whisper's log-mel front end for 16 kHz audio, shape (n_mels, len(audio) // 160).
 
-    Compute the power spectrogram with n_fft=400 and hop=160, drop its last
-    frame, apply the Slaney-normalized Slaney-scale filterbank for 16 kHz and
-    n_fft=400 with `n_mels` filters from 0 Hz to 8000 Hz, and pass the result
-    through `whisper_normalize`.
+    It matches `whisper.audio.log_mel_spectrogram(audio, n_mels)`: 400-point
+    frames every 160 samples, the Slaney-scale, Slaney-normalized filterbank
+    from 0 Hz to 8000 Hz, and Whisper's normalization.
     """
     raise NotImplementedError
 

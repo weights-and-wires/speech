@@ -41,11 +41,11 @@ they keep who is speaking and where they keep what is said.
 
 ## What you already know
 
-- A strided convolution shortens a sequence, as in Neural acoustic models.
+- A strided convolution shortens a sequence, as in *Neural acoustic models*.
 - CTC trains an encoder against a transcript without an alignment, as in
-  Connectionist temporal classification.
-- SpecAugment hides spans of the input during training, as in Conformers and
-  SpecAugment.
+  *Connectionist temporal classification*.
+- SpecAugment hides spans of the input during training, as in *Conformers and
+  SpecAugment*.
 - Cross-entropy is minus the log of the probability a softmax puts on the
   right answer.
 - Cosine similarity, $a^\top b / (\lVert a \rVert \lVert b \rVert)$, measures
@@ -145,7 +145,7 @@ $(-0.6, 0.8)$. All are unit length, so the cosines are 0.8, 0, and $-0.6$.
 - With $\kappa = 1$, the logits are 0.8, 0, and $-0.6$, and the loss is
   $\log(1 + e^{-0.8} + e^{-1.4}) = 0.528$ nats.
 
-The same angles cost 1,500 times less at the low temperature, so training
+The same angles cost about 1,600 times less at the low temperature, so training
 spends its effort on the hard line-ups.
 
 > [!KEY]
@@ -207,7 +207,7 @@ unmasked frame, the answer is in the input.
 
 **k-means** alternates two steps until nothing changes: label each point with
 its nearest center, then move each center to the mean of its points. The
-exercise seeds it with k-means++, which places each new center at a point drawn
+exercise seeds it with k-means++, which places each further center at a point drawn
 with probability proportional to its squared distance from the nearest center
 so far.
 
@@ -237,8 +237,8 @@ The length of $(0, 2)$ doesn't count.
 
 A BASE encoder holds 13 representations: the feature encoder's output, called
 layer 0 here, and one after each Transformer block. A **linear probe** asks how
-much of a property a layer holds in a form a straight line can read. Freeze the model, average each clip's frames per layer, and fit a
-linear classifier. The exercise fits it by ridge regression onto one-hot
+much of a property a layer holds in a form a straight line can read. Freeze
+the model, average each clip's frames per layer, and fit a linear classifier. The exercise fits it by ridge regression onto one-hot
 labels $Y$, with a column of ones appended to the features $X$:
 
 $$
@@ -298,9 +298,9 @@ The checks test the functions in this order.
 3. **`span_mask(starts, span)`.** Boolean `(T,)` in and out. Common mistake:
    masking `span + 1` frames.
 4. **`sample_distractors(masked, n_distractors, rng)`.** Returns `(M, K)`
-   frame indices. Draw `rng.integers(0, M - 1, size=(M, K))` and add 1 where
-   the draw is at or past the row's own position. Common mistake: drawing from
-   all frames.
+   frame indices. Draw from the `M - 1` other positions with `rng.integers`,
+   and map each draw past the row's own position, so no rejection loop is
+   needed. Common mistake: drawing from all frames.
 5. **`contrastive_loss(context, targets, masked, distractors, kappa)`.**
    Gather `(M, K + 1, D)` candidates, scale to unit length, and take a
    log-softmax over axis 1. Common mistake: not normalizing the context.
@@ -362,6 +362,6 @@ You build `conv_output_length`, `receptive_field`, `span_mask`, and
 The checks compare your frame counts with real `torch` convolutions, the
 receptive field with a gradient, the masked fraction with $1 - (1-p)^M$, the
 losses with `torch` cross-entropy and closed forms, and the ridge weights with
-least squares on an augmented system. The **Run** probes all 13 layers of `wav2vec2-base` and `hubert-base` on spoken
-digits, plots accuracy against layer, and prints unit sequences for one digit
+least squares on an augmented system. The **Run** probes all 13 layers of
+`wav2vec2-base` and `hubert-base` on spoken digits, plots accuracy against layer, and prints unit sequences for one digit
 from two speakers.

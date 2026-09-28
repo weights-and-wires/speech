@@ -90,7 +90,7 @@ is **Parseval's theorem**.
 
 For a real signal, $X[N - k]$ is always the conjugate of $X[k]$. Bin $N - k$
 is the negative frequency $-k f_s / N$, the mirror image of bin $k$, and it
-carries no new information. So audio code keeps bins 0 through $N/2$ and
+carries no extra information. So audio code keeps bins 0 through $N/2$ and
 drops the rest. That is what `np.fft.rfft` returns: $N/2 + 1$ complex
 numbers.
 
@@ -124,8 +124,10 @@ splits into the DFT of the $N/2$ even-indexed samples, $E$, and the DFT of
 the $N/2$ odd-indexed samples, $O$:
 
 $$
-X[k] = E[k] + e^{-2\pi j k / N} O[k], \qquad
-X[k + N/2] = E[k] - e^{-2\pi j k / N} O[k], \qquad k = 0, \dots, \tfrac{N}{2} - 1
+\begin{aligned}
+X[k] &= E[k] + e^{-2\pi j k / N} O[k] \\
+X[k + N/2] &= E[k] - e^{-2\pi j k / N} O[k] \qquad k = 0, \dots, \tfrac{N}{2} - 1
+\end{aligned}
 $$
 
 Read it aloud: bin $k$ is the even half's bin $k$ plus a **twiddle factor**
@@ -179,8 +181,8 @@ $a_0 = 1$, no window at all.
 The period $P$ matters. A **symmetric** window uses $P = N - 1$, so its first
 and last samples are equal. A **periodic** window uses $P = N$: it is the
 symmetric window of length $N + 1$ with the last sample dropped. Periodic
-windows tile cleanly when frames overlap, which is what the short-time
-Fourier transform in the next lesson needs.
+windows tile cleanly when frames overlap, which is what the next lesson,
+*The short-time Fourier transform*, needs.
 
 ```python
 phase = 2 * np.pi * np.arange(n) / n          # periodic; use n - 1 for symmetric
@@ -189,7 +191,7 @@ hann = 0.5 - 0.5 * np.cos(phase)
 
 With a periodic Hann window, the bin-10.5 cosine above drops to $-92.7$ dB at
 bin 30, instead of $-26.2$. The price shows at the peak: a cosine at exactly
-bin 10 now spreads over three bins, as 8, 16, and 8.
+bin 10 then spreads over three bins, as 8, 16, and 8.
 
 > [!WARNING]
 > `np.hanning(N)` is symmetric. `scipy.signal.get_window("hann", N)` and
@@ -221,7 +223,7 @@ let a quiet tone show next to a loud one.
 The following demo lets you slide a tone between bins and switch windows.
 
 ```demo
-{"id": "window-leakage", "caption": "Move the tone halfway between two bins, then switch from rectangular to Hann and watch the far bins drop by tens of decibels."}
+{"id": "window-leakage", "caption": "With the tone halfway between two bins, switch the window between rectangular and Hann and watch the far bins drop by tens of decibels."}
 ```
 
 **Zero-padding** is not a cure for resolution. Padding a frame with zeros
@@ -243,7 +245,8 @@ The checks test the functions in this order.
 1. **`dft_matrix(n)`** returns the complex `(n, n)` matrix. Use `np.outer` and
    `np.exp`. Common mistake: a plus sign in the exponent, which gives the
    inverse transform's matrix.
-2. **`dft(x)`** returns `dft_matrix(len(x)) @ x`.
+2. **`dft(x)`** returns the complex DFT of a 1-D signal, using your
+   `dft_matrix`.
 3. **`fft_radix2(x)`** recurses on `x[0::2]` and `x[1::2]` and returns a
    complex array. Raise `ValueError` for a length that is not a power of two.
    Common mistake: stopping at length 2 with a special case that gets the

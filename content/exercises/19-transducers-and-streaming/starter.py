@@ -113,11 +113,11 @@ def tdt_greedy_decode(encoder_out, predictor, joiner, durations, blank=BLANK, ma
         durations: the allowed durations, in frames.
         max_symbols: The most labels to emit on one frame without moving.
 
-    Start at t = 0. At each step, call the joiner once, take the argmax token
-    and the argmax duration d = durations[j]. Append a label and update the
-    predictor; don't for a blank. Then move t forward by d. A blank with
-    d = 0 moves 1 frame instead, and so does a label with d = 0 once the
-    frame has emitted `max_symbols` labels. Stop when t >= T.
+    Rules: decoding starts at frame 0 and ends once t >= T. Every joiner call
+    picks the argmax token and the argmax duration, and t advances by that
+    duration. Only a label is emitted and fed to the predictor. A zero
+    duration still advances one frame when the token is a blank, or when the
+    frame has already emitted `max_symbols` labels.
 
     Returns:
         (tokens, calls): the labels as a list of ints, and how many times the

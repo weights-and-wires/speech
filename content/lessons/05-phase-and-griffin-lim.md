@@ -82,6 +82,11 @@ come back from one round trip with an SC of 0.647. Nearly two thirds of the
 magnitude has moved, because the overlapping frames disagreed and the inverse
 averaged them.
 
+> [!KEY]
+> A magnitude spectrogram with made-up phases is almost never the STFT of any
+> signal. Only a consistent array, whose overlapping frames agree about the
+> samples they share, survives the inverse unchanged.
+
 ## Griffin-Lim
 
 Griffin-Lim alternates between two requirements. One set of arrays has the
@@ -91,8 +96,10 @@ the nearest point of the set it moves to. That is an **alternating
 projection**:
 
 $$
-x_{i+1} = \operatorname{ISTFT}\!\left(S \odot e^{j \angle X_i}\right), \qquad
-X_{i+1} = \operatorname{STFT}(x_{i+1})
+\begin{aligned}
+x_{i+1} &= \operatorname{ISTFT}\!\left(S \odot e^{j \angle X_i}\right) \\
+X_{i+1} &= \operatorname{STFT}(x_{i+1})
+\end{aligned}
 $$
 
 Read it aloud: keep the phase of the current STFT $X_i$, written
@@ -129,8 +136,8 @@ phasey color.
 > target magnitude back under it, again and again. With the least-squares
 > inverse, the spectral convergence never gets worse.
 
-Later in the course, a flow-matching model generates mel spectrograms of
-spoken digits, and this lesson's `griffin_lim` turns them into sound. Its
+In *Flow matching for speech*, a model generates mel spectrograms of spoken
+digits, and this lesson's `griffin_lim` turns them into sound. Its
 signature is `griffin_lim(magnitude, n_fft, hop_length, n_iter=32, momentum=0.0, seed=0)`,
 and it returns a 1-D signal of `hop_length * (frames - 1)` samples.
 
@@ -145,7 +152,7 @@ $$
 c_i = t_i + \alpha \,(t_i - t_{i-1})
 $$
 
-Read it aloud: take the latest projection, and add $\alpha$ times the change
+Read it aloud: take the current projection, and add $\alpha$ times the change
 since the previous one. With $\alpha = 0$ this is plain Griffin-Lim. The next
 iteration keeps the phase of $c_i$. On the first iteration there is no
 $t_{i-1}$, so $c_1 = t_1$.
@@ -156,7 +163,7 @@ c = t if previous is None else t + momentum * (t - previous)
 previous = t
 ```
 
-Work one cell by hand. Say the previous projection was $1$ and the latest is
+Work one cell by hand. Say the previous projection was $1$ and the current one is
 $j$: the phase turned from 0° to 90°. With $\alpha = 0.99$,
 $c = j + 0.99(j - 1) = -0.99 + 1.99j$, whose angle is 116.4°. The momentum
 pushes the phase past where the projection stopped, in the direction it was
@@ -173,7 +180,7 @@ iteration to the next.
 The following demo runs Griffin-Lim one iteration at a time.
 
 ```demo
-{"id": "griffin-lim-iterations", "caption": "Step through the iterations with and without momentum, and listen to the roughness of the random start fade as the spectral convergence falls."}
+{"id": "griffin-lim-iterations", "caption": "Run Griffin-Lim, then drag the iteration slider and play each step to hear the roughness of the random start fade as the spectral convergence falls, with plain Griffin-Lim dashed beside the momentum curve."}
 ```
 
 ## Stretch time with a phase vocoder
@@ -192,8 +199,10 @@ hop, where $\omega_k = 2\pi k / N$. Any extra turn means the true frequency
 is a little off the center:
 
 $$
-\Delta\phi = \angle X[k, m+1] - \angle X[k, m] - \omega_k H, \qquad
-\psi \leftarrow \psi + \omega_k H + \operatorname{wrap}(\Delta\phi)
+\begin{aligned}
+\Delta\phi &= \angle X[k, m+1] - \angle X[k, m] - \omega_k H \\
+\psi &\leftarrow \psi + \omega_k H + \operatorname{wrap}(\Delta\phi)
+\end{aligned}
 $$
 
 Read it aloud: the deviation $\Delta\phi$ is the measured phase change minus
@@ -216,8 +225,8 @@ stretch. The pitch stays at 440 Hz.
 
 > [!TIP]
 > To shift pitch instead, stretch time by a factor $r$ with the phase vocoder,
-> then resample by $1/r$ with the resampler from the lesson on sound and
-> sampling. The length comes back and every frequency moves by $r$.
+> then resample by $1/r$ with the resampler from *Sound and sampling*. The
+> length comes back and every frequency moves by $r$.
 
 > [!RECAP]
 > - The spectral convergence is `np.linalg.norm(np.abs(X) - S) / np.linalg.norm(S)`.

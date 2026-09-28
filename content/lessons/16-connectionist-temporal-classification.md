@@ -73,7 +73,10 @@ the audio, so a path's probability is a product, and a transcript
 $\mathbf{l}$'s probability is a sum over the paths that collapse to it:
 
 $$
-p(\mathbf{l} \mid x) = \sum_{\pi \in \mathcal{B}^{-1}(\mathbf{l})} \prod_{t=1}^{T} y^t_{\pi_t}, \qquad \mathcal{L}_{\text{CTC}} = -\log p(\mathbf{l} \mid x)
+\begin{aligned}
+p(\mathbf{l} \mid x) &= \sum_{\pi \in \mathcal{B}^{-1}(\mathbf{l})} \prod_{t=1}^{T} y^t_{\pi_t} \\
+\mathcal{L}_{\text{CTC}} &= -\log p(\mathbf{l} \mid x)
+\end{aligned}
 $$
 
 Read it aloud: for every path that collapses to the transcript, multiply the
@@ -118,7 +121,11 @@ frames 1 to $t$ that ends in state $s$, including the emission at frame $t$.
 A path starts in the first blank or the first label:
 
 $$
-\alpha_1(1) = y^1_{\varnothing}, \qquad \alpha_1(2) = y^1_{l_1}, \qquad \alpha_1(s) = 0 \text{ for } s > 2
+\begin{aligned}
+\alpha_1(1) &= y^1_{\varnothing} \\
+\alpha_1(2) &= y^1_{l_1} \\
+\alpha_1(s) &= 0 \text{ for } s > 2
+\end{aligned}
 $$
 
 Each later frame adds up the allowed predecessors and multiplies by the
@@ -133,7 +140,7 @@ $p(\mathbf{l} \mid x) = \alpha_T(S) + \alpha_T(S-1)$.
 
 Read it aloud: the probability of being in state $s$ at frame $t$ is the
 probability of having stayed, advanced from $s - 1$, or skipped from $s - 2$
-where that's allowed, times the chance of emitting this state's symbol now.
+where that's allowed, times the chance of emitting this state's symbol at frame $t$.
 Equations count frames and states from 1; the code counts from 0.
 
 In log space, shift the previous row by one and by two and combine with
@@ -211,7 +218,10 @@ $t + 1$ to $T$, given state $s$ at frame $t$. In this convention it excludes
 frame $t$'s own emission:
 
 $$
-\beta_T(S) = \beta_T(S - 1) = 1, \qquad \beta_t(s) = \sum_{s'} \beta_{t+1}(s')\, y^{t+1}_{l'_{s'}}
+\begin{aligned}
+\beta_T(S) &= \beta_T(S - 1) = 1 \\
+\beta_t(s) &= \sum_{s'} \beta_{t+1}(s')\, y^{t+1}_{l'_{s'}}
+\end{aligned}
 $$
 
 Read it aloud: at the last frame, the two final states finish for free. At

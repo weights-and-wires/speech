@@ -181,11 +181,11 @@ def normalize_text(text: str) -> str:
 def letter_to_sound(word: str, rules: dict = RULES) -> list[str]:
     """Phones for a word from letter-to-sound rules, a list of ARPAbet strings.
 
-    Lowercase the word and scan it left to right. At each position, use the
-    rule whose grapheme is longest among those that match there; a key ending
-    in "$" matches only if its grapheme ends the word, and wins a tie with the
-    plain key of the same grapheme. Emit that rule's phones and move past the
-    grapheme. Skip a character that no rule matches, such as an apostrophe.
+    The lowercased word is split, left to right, into the longest rule
+    graphemes that match at each position, and the phones are the matched
+    rules' phones in order. A key ending in "$" matches only if its grapheme
+    ends the word, and it wins a tie with the plain key of the same grapheme.
+    A character that no rule matches, such as an apostrophe, is skipped.
     """
     raise NotImplementedError
 
@@ -196,7 +196,7 @@ def g2p(word: str, lexicon: dict = LEXICON) -> list[str]:
 
 
 def text_to_phones(text: str, lexicon: dict = LEXICON) -> list[list[str]]:
-    """normalize_text, then g2p on each word: one list of phones per word."""
+    """Phones for every word of `text` after text normalization: one list of phones per word."""
     raise NotImplementedError
 
 
@@ -227,10 +227,10 @@ def energy_vad(x, sample_rate=16000, frame_ms=25.0, hop_ms=10.0, on_margin_db=9.
                hangover_ms=50.0, floor_percentile=10.0) -> np.ndarray:
     """An energy voice activity detector, one bool per hop, shape (1 + len(x) // hop,).
 
-    Frame lengths are round(ms * sample_rate / 1000) samples. Compute
-    frame_energy_db, take the noise floor as its `floor_percentile` percentile
-    (np.percentile), and run hysteresis with on_db = floor + on_margin_db,
-    off_db = floor + off_margin_db, and hangover round(hangover_ms / hop_ms) frames.
+    Frame lengths are round(ms * sample_rate / 1000) samples. The noise floor
+    is the `floor_percentile` percentile of the frame energies in dB. Speech
+    switches on above floor + on_margin_db and off below floor + off_margin_db,
+    with a hangover of round(hangover_ms / hop_ms) frames.
     """
     raise NotImplementedError
 

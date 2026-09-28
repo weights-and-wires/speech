@@ -65,8 +65,8 @@ def power_to_db(S: np.ndarray, amin: float = 1e-10, top_db: float | None = 80.0)
 def mfcc(power_mel: np.ndarray, n_mfcc: int = 13, top_db: float | None = 80.0) -> np.ndarray:
     """MFCCs from a mel power matrix of shape (n_mels, T): shape (n_mfcc, T).
 
-    Convert to dB with `power_to_db`, take `dct2_ortho` down the mel axis, and
-    keep the first `n_mfcc` rows.
+    Row n is the n-th orthonormal DCT-II coefficient of each frame's mel
+    energies in dB, with `top_db` passed to `power_to_db`.
     """
     raise NotImplementedError
 
@@ -103,10 +103,10 @@ def cmvn(c: np.ndarray, variance: bool = True, eps: float = 1e-10) -> np.ndarray
 def mfcc_features(x: np.ndarray, sample_rate: int = 16000, n_mfcc: int = 13) -> np.ndarray:
     """The classic 39-dimensional features of a 16 kHz signal, shape (3 * n_mfcc, 1 + len(x) // 160).
 
-    Compute `mel_power`, then `mfcc` with `n_mfcc` coefficients, then `lifter`
-    with L = 22. Stack the liftered cepstra, their `deltas`, and the deltas of
-    the deltas (all with width 2) with np.vstack, and apply `cmvn` with
-    variance normalization.
+    The mel power comes from the provided `mel_power`. Rows 0 to n_mfcc - 1
+    are the MFCCs liftered with L = 22, the next n_mfcc rows are their deltas,
+    and the last n_mfcc rows are the deltas of those deltas, all with width 2.
+    Every row is then normalized with CMVN, variance included.
     """
     raise NotImplementedError
 

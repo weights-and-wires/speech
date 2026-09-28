@@ -25,7 +25,8 @@ lows and highs; a microphone adds its own coloring. All of these are
 to model: each is completely described by how it responds to a single click.
 
 That click response, the **impulse response**, turns filtering into one
-operation, **convolution**. In this lesson you convolve directly and through
+operation, **convolution**. The last three lessons took signals apart with
+the FFT; this one uses the FFT to change them. In this lesson you convolve directly and through
 the FFT, run filters defined by feedback, and build a synthetic room. Speech
 systems use all three: pre-emphasis in classical front ends, band-limiting
 before resampling, and convolution with room responses to teach recognizers
@@ -173,7 +174,10 @@ tilts down by about 6 dB per octave. **Pre-emphasis** flattens it with a
 two-tap FIR filter that subtracts most of the previous sample:
 
 $$
-y[n] = x[n] - \alpha\, x[n-1], \qquad |H(e^{j\omega})|^2 = 1 + \alpha^2 - 2\alpha \cos\omega
+\begin{aligned}
+y[n] &= x[n] - \alpha\, x[n-1] \\
+|H(e^{j\omega})|^2 &= 1 + \alpha^2 - 2\alpha \cos\omega
+\end{aligned}
 $$
 
 Read it aloud: each output is the sample minus $\alpha$ times the one before.
@@ -186,13 +190,6 @@ It is $-8.28$ dB at 1 kHz, $+2.88$ dB at 4 kHz, and $+5.89$ dB at 8 kHz, where
 the power gain is $(1 + 0.97)^2 = 3.88$. Pre-emphasis helped the linear
 prediction of classical front ends and MFCCs. Whisper and most neural front
 ends skip it and let the model learn the tilt.
-
-> [!RECAP]
-> - Direct convolution adds `h[k] * x` at offset `k` for every tap; the output has `len(x) + len(h) - 1` samples.
-> - FFT convolution pads both signals to a power of two of at least that length, multiplies the `rfft`s, and trims the `irfft`.
-> - A filter's frequency response is $B(e^{-j\omega}) / A(e^{-j\omega})$, and its difference equation subtracts the feedback terms.
-> - Pre-emphasis is `x[n] - 0.97 * x[n - 1]`.
-> - A room is an impulse response; its RT60 is read from the slope of its Schroeder decay.
 
 ## Build a room and measure it
 
@@ -250,7 +247,7 @@ take about 0.505 s.
 The following demo builds a room and plays speech through it.
 
 ```demo
-{"id": "room-reverb", "caption": "Raise the reverberation time from a small office to a hall, and listen to each syllable start to blur into the next."}
+{"id": "room-reverb", "caption": "Raise the reverberation time from 0.1 s toward 2 s, then play the syllables in the room and hear each one blur into the next."}
 ```
 
 > [!KEY]
@@ -259,9 +256,16 @@ The following demo builds a room and plays speech through it.
 > 20 dB.
 
 Convolving clean speech with measured or synthetic room responses is a
-standard training augmentation for recognizers. Real responses can also be
+standard training augmentation for recognizers. Room responses can also be
 simulated with the image-source method, which mirrors the source in every
 wall.
+
+> [!RECAP]
+> - Direct convolution adds `h[k] * x` at offset `k` for every tap; the output has `len(x) + len(h) - 1` samples.
+> - FFT convolution pads both signals to a power of two of at least that length, multiplies the `rfft`s, and trims the `irfft`.
+> - A filter's frequency response is $B(e^{-j\omega}) / A(e^{-j\omega})$, and its difference equation subtracts the feedback terms.
+> - Pre-emphasis is `x[n] - 0.97 * x[n - 1]`.
+> - A room is an impulse response; its RT60 is read from the slope of its Schroeder decay.
 
 ## Build it step by step
 

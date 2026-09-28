@@ -83,7 +83,7 @@ The file starts with YAML front matter:
 ```yaml
 ---
 title: The short-time Fourier transform
-slug: 05-the-stft
+slug: 04-the-short-time-fourier-transform
 part: "Part 1 — Signals"
 summary: One sentence, under 140 characters, that says what the lesson delivers.
 minutes: 55
@@ -93,9 +93,9 @@ objectives:
   - "Explain the trade-off between time and frequency resolution: a longer window sees finer frequency and coarser time."
   - Draw a spectrogram in decibels and read a chirp, a tone, and a click from it.
 prereqs:
-  - 03-sampling
-  - 04-the-dft
-exercise: 05-the-stft
+  - 01-sound-and-sampling
+  - 03-the-dft-and-the-fft
+exercise: 04-the-short-time-fourier-transform
 ---
 ```
 
@@ -174,7 +174,7 @@ field. It holds exactly four files.
 
 ```json
 {
-  "id": "05-the-stft",
+  "id": "04-the-short-time-fourier-transform",
   "title": "Build a spectrogram from frames",
   "brief": "Frame a signal, window it, and take the magnitude of each frame's FFT.",
   "needs_gpu": false,

@@ -18,9 +18,9 @@ from speechlab import play, show_plot, show_spectrogram
 def quantize(x: np.ndarray, bits: int) -> np.ndarray:
     """Round `x` to a uniform grid of 2**bits levels, returned as floats.
 
-    The step is `2 ** (1 - bits)`. Divide by the step, round to the nearest
-    integer, clip the integer to [-2**(bits - 1), 2**(bits - 1) - 1], and
-    multiply by the step again. The top level is one step below 1.0.
+    The levels are whole multiples of the step `2 ** (1 - bits)`, and each
+    sample goes to the nearest one. The lowest level is -1.0 and the top level
+    is one step below 1.0; samples beyond them saturate.
     """
     raise NotImplementedError("quantize")
 
@@ -46,8 +46,9 @@ def tpdf_dither(x: np.ndarray, bits: int, rng: np.random.Generator) -> np.ndarra
 def mu_law_encode(x: np.ndarray, mu: int = 255) -> np.ndarray:
     """Integer mu-law codes from 0 to `mu`, as an int64 array shaped like `x`.
 
-    Clip `x` to [-1, 1], compand it with F(x) = sign(x) ln(1 + mu |x|) / ln(1 + mu),
-    and map F from [-1, 1] to codes with floor((F + 1) / 2 * mu + 0.5).
+    The code is the mu-law curve F(x) = sign(x) ln(1 + mu |x|) / ln(1 + mu)
+    of `x` clipped to [-1, 1], with F mapped linearly from [-1, 1] onto
+    [0, mu] and rounded half up, as `torchaudio.functional.mu_law_encode` does.
     """
     raise NotImplementedError("mu_law_encode")
 
@@ -55,14 +56,15 @@ def mu_law_encode(x: np.ndarray, mu: int = 255) -> np.ndarray:
 def mu_law_decode(codes: np.ndarray, mu: int = 255) -> np.ndarray:
     """Floats in [-1, 1] from mu-law codes: the inverse of `mu_law_encode`, up to rounding.
 
-    Map each code back to y = 2 * code / mu - 1, then expand it with
-    sign(y) ((1 + mu) ** |y| - 1) / mu.
+    A code c stands for the companded value 2 * c / mu - 1, and the inverse
+    curve is F^-1(y) = sign(y) ((1 + mu) ** |y| - 1) / mu.
     """
     raise NotImplementedError("mu_law_decode")
 
 
 def float_to_pcm16(x: np.ndarray) -> np.ndarray:
-    """Floats to int16: multiply by 32768, round, and clip to [-32768, 32767]."""
+    """Floats to int16 on the scale where 1.0 is 32768, rounded to the nearest
+    integer and saturated to [-32768, 32767]."""
     raise NotImplementedError("float_to_pcm16")
 
 

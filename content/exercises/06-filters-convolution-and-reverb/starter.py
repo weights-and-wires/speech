@@ -15,17 +15,17 @@ from speechlab import play, show_plot, show_spectrogram
 def convolve_direct(x: np.ndarray, h: np.ndarray) -> np.ndarray:
     """The full linear convolution y[n] = sum_k h[k] x[n - k], shape (len(x) + len(h) - 1,).
 
-    Loop over the taps of h: tap k adds h[k] * x into y starting at index k.
+    Computed directly in the time domain, without the FFT.
     """
     raise NotImplementedError("convolve_direct")
 
 
 def convolve_fft(x: np.ndarray, h: np.ndarray) -> np.ndarray:
-    """The same full linear convolution, computed through the FFT.
+    """The same full linear convolution, computed through the FFT, shape (len(x) + len(h) - 1,).
 
-    Zero-pad both signals to a power of two at least len(x) + len(h) - 1
-    long, multiply their np.fft.rfft, take np.fft.irfft, and keep the first
-    len(x) + len(h) - 1 samples.
+    Use an FFT length that is a power of two, with enough zero padding that
+    no circular wrap-around can occur. The result equals `convolve_direct` to
+    rounding error.
     """
     raise NotImplementedError("convolve_fft")
 
@@ -79,9 +79,9 @@ def schroeder_decay_db(h: np.ndarray) -> np.ndarray:
 def estimate_rt60(h: np.ndarray, sample_rate: int, start_db: float = -5.0, stop_db: float = -25.0) -> float:
     """The reverberation time of h in seconds, measured from its Schroeder decay.
 
-    Fit a straight line, with np.polyfit, to the decay in dB against time in
-    seconds over the samples where it lies between start_db and stop_db.
-    The line's slope is in dB per second; return -60 / slope.
+    The estimate comes from a least-squares straight line through the decay,
+    in dB against time in seconds, over the samples where it lies between
+    start_db and stop_db, extrapolated to a fall of 60 dB.
     """
     raise NotImplementedError("estimate_rt60")
 

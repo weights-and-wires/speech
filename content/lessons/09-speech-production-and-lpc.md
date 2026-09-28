@@ -28,8 +28,10 @@ the shape of your vocal tract, sets which sound you make. The two are nearly
 independent, which is why you can sing one vowel on many notes, and why TTS
 systems predict pitch and spectrum separately.
 
-In this lesson you build both halves: a synthesizer that makes vowels from
-pulses and resonators, and the tools that take a recording apart again.
+*MFCCs and normalization* kept the smooth envelope of each spectrum and
+threw the harmonics away. This lesson explains where each one comes from.
+You build both halves: a synthesizer that makes vowels from pulses and
+resonators, and the tools that take a recording apart again.
 *Linear prediction* (LPC) recovers the filter; it compressed speech in digital
 telephony for decades. The *cepstrum* recovers the pitch.
 
@@ -99,11 +101,11 @@ narrower the peak. For a formant at $F$ Hz with a *bandwidth* of $B$ Hz, the
 width of the peak 3 dB below its top, at sample rate $f_s$:
 
 $$
-r = e^{-\pi B / f_s},
-\qquad
-\theta = \frac{2\pi F}{f_s},
-\qquad
-y[n] = b_0\,x[n] + 2r\cos\theta\; y[n-1] - r^2\, y[n-2]
+\begin{aligned}
+r &= e^{-\pi B / f_s} \\
+\theta &= \frac{2\pi F}{f_s} \\
+y[n] &= b_0\,x[n] + 2r\cos\theta\; y[n-1] - r^2\, y[n-2]
+\end{aligned}
 $$
 
 Read it aloud: the radius shrinks exponentially with bandwidth over sample
@@ -127,7 +129,7 @@ A vowel synthesizer is an impulse train through three of these in a row. The
 following demo is that synthesizer.
 
 ```demo
-{"id": "vowel-formants", "caption": "Drag the first two formants to move between vowels, then change the pitch and notice that the vowel stays the same."}
+{"id": "vowel-formants", "caption": "Drag on the chart to move the first two formants between vowels, then change the pitch of the source and hear the vowel stay the same as its harmonics spread apart."}
 ```
 
 ## Linear prediction
@@ -138,11 +140,11 @@ $p$ samples, and only the excitation is unpredictable. Linear prediction
 finds those weights:
 
 $$
-\hat x[n] = \sum_{k=1}^{p} \alpha_k\, x[n-k],
-\qquad
-e[n] = x[n] - \hat x[n],
-\qquad
-A(z) = 1 - \sum_{k=1}^{p} \alpha_k z^{-k}
+\begin{aligned}
+\hat x[n] &= \sum_{k=1}^{p} \alpha_k\, x[n-k] \\
+e[n] &= x[n] - \hat x[n] \\
+A(z) &= 1 - \sum_{k=1}^{p} \alpha_k z^{-k}
+\end{aligned}
 $$
 
 Read it aloud: the prediction $\hat x[n]$ is a weighted sum of the $p$ samples
@@ -155,10 +157,11 @@ $N$ samples, and picks the $\alpha_k$ that minimize $\sum_n e[n]^2$. Setting
 each derivative to zero gives the *normal equations*:
 
 $$
-\sum_{k=1}^{p} \alpha_k\, r\big[|i - k|\big] = r[i],
-\quad i = 1, \dots, p,
-\qquad
-r[k] = \sum_{n=k}^{N-1} x[n]\, x[n-k]
+\begin{aligned}
+\sum_{k=1}^{p} \alpha_k\, r\big[|i - k|\big] &= r[i],
+\quad i = 1, \dots, p \\
+r[k] &= \sum_{n=k}^{N-1} x[n]\, x[n-k]
+\end{aligned}
 $$
 
 Read it aloud: $r[k]$ is the frame's *autocorrelation*, the sum of products of
@@ -180,7 +183,7 @@ order $p$, in $O(p^2)$:
    4. $E_i = (1 - k_i^2)\, E_{i-1}$.
 
 Read it aloud: $k_i$ is what the order-$(i-1)$ predictor fails to explain at lag
-$i$, scaled by its error. It becomes the new last coefficient, and every older
+$i$, scaled by its error. It becomes the last coefficient, and every older
 coefficient is corrected by $k_i$ times its mirror image. The error shrinks by
 $1 - k_i^2$. The $k_i$ are *reflection coefficients*. With the autocorrelation
 method, every $|k_i| < 1$, which guarantees that $1/A(z)$ is stable.
@@ -196,8 +199,8 @@ Take $r = [1, 0.5, 0.1]$ and $p = 2$.
 
 1. $E_0 = 1$. Order 1: $k_1 = 0.5 / 1 = 0.5$, so $\alpha_1^{(1)} = 0.5$ and
    $E_1 = (1 - 0.25) \times 1 = 0.75$.
-2. Order 2: $k_2 = (0.1 - 0.5 \times 0.5) / 0.75 = -0.2$. The new last
-   coefficient is $\alpha_2 = -0.2$. The old one is corrected:
+2. Order 2: $k_2 = (0.1 - 0.5 \times 0.5) / 0.75 = -0.2$. The last
+   coefficient of order 2 is $\alpha_2 = -0.2$. The old one is corrected:
    $\alpha_1 = 0.5 - (-0.2)(0.5) = 0.6$. The error is
    $E_2 = 0.75 \times (1 - 0.04) = 0.72$.
 
@@ -283,9 +286,12 @@ for $F_0 = 120$ Hz at 16 kHz the peak sits near quefrency 133.
 
 ## Build it step by step
 
-1. **`impulse_train(f0, sample_rate, n_samples)`** places ones at
-   `np.round(np.arange(0, n_samples, sample_rate / f0))`. The usual mistake
-   is truncating the period to an integer first, which drifts the pitch.
+The checks test the functions in this order.
+
+1. **`impulse_train(f0, sample_rate, n_samples)`** returns `n_samples` zeros
+   with a one at the nearest sample to every multiple of the period
+   `sample_rate / f0`. The usual mistake is truncating the period to an
+   integer first, which drifts the pitch.
 2. **`resonator(frequency, bandwidth, sample_rate)`** returns `(b, a)` from
    the formulas. The usual mistake is $r = e^{-2\pi B / f_s}$, which doubles
    the bandwidth.
@@ -304,8 +310,9 @@ for $F_0 = 120$ Hz at 16 kHz the peak sits near quefrency 133.
    `[1, -alpha]`.
 8. **`formants(alpha, sample_rate, max_bandwidth, min_frequency)`** calls
    `np.roots`, keeps positive angles, converts, filters, and sorts.
-9. **`real_cepstrum(frame, eps)`** applies `np.fft.rfft`, `np.log` of the
-   magnitude plus `eps`, and `np.fft.irfft` with `n=len(frame)`.
+9. **`real_cepstrum(frame, eps)`** returns `len(frame)` real values from the
+   formula. The usual mistake is leaving out `n=len(frame)` in
+   `np.fft.irfft`, which returns one sample short for an odd-length frame.
 10. **`cepstral_pitch(frame, sample_rate, fmin, fmax)`** windows the frame,
     finds the largest cepstral value between `floor(fs / fmax)` and
     `ceil(fs / fmin)`, and returns `fs / q`.
@@ -328,20 +335,23 @@ and a pitch per frame instead of the waveform.
 
 ## Where this breaks
 
-- **High voices.** At high $F_0$ the harmonics are far apart, and LPC fits
-  the harmonics instead of the envelope. For the synthetic /ɑ/ in this
-  lesson, order-18 LPC finds $F_1$ at 720 Hz when $F_0 = 100$ Hz and at 791 Hz
-  when $F_0 = 200$ Hz, 8% off the true 730 Hz. Children's speech is hardest.
-- **Nasals and zeros.** In "m" and "n", the nasal cavity adds
-  antiresonances, which are zeros. An all-pole model can only approximate
-  them with extra poles.
-- **Spectral tilt.** Real glottal pulses fall off at about 12 dB per octave,
-  so high formants are weak and poorly fitted. Pre-emphasis with
-  $\alpha = 0.97$, from *Filters, convolution, and reverb*, flattens the tilt before LPC.
-- **Spurious poles.** Too high an order fits noise and harmonics with extra
-  narrow poles. Filter roots by bandwidth, and track formants across frames.
-- **Silence in the cepstrum.** $\ln 0$ is $-\infty$. Add a small epsilon to the
-  magnitude, and skip frames with no energy.
+**High voices.** At high $F_0$ the harmonics are far apart, and LPC fits the
+harmonics instead of the envelope. For the synthetic /ɑ/ in this lesson,
+order-18 LPC finds $F_1$ at 720 Hz when $F_0 = 100$ Hz and at 791 Hz when
+$F_0 = 200$ Hz, 8% off the true 730 Hz. Children's speech is hardest.
+
+**Nasals and zeros.** In "m" and "n", the nasal cavity adds antiresonances,
+which are zeros. An all-pole model can only approximate them with extra poles.
+
+**Spectral tilt.** Real glottal pulses fall off at about 12 dB per octave, so
+high formants are weak and poorly fitted. Pre-emphasis with $\alpha = 0.97$,
+from *Filters, convolution, and reverb*, flattens the tilt before LPC.
+
+**Spurious poles.** Too high an order fits noise and harmonics with extra
+narrow poles. Filter roots by bandwidth, and track formants across frames.
+
+**Silence in the cepstrum.** $\ln 0$ is $-\infty$. Add a small epsilon to the
+magnitude, and skip frames with no energy.
 
 > [!WARNING]
 > Sign conventions for LPC differ. Some texts and libraries write

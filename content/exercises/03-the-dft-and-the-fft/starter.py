@@ -28,17 +28,15 @@ def dft_matrix(n: int) -> np.ndarray:
 
 
 def dft(x: np.ndarray) -> np.ndarray:
-    """The DFT of a 1-D signal `x`, shape (len(x),), as `dft_matrix(len(x)) @ x`."""
+    """The DFT of a 1-D signal `x`, complex, shape (len(x),), computed with the DFT matrix."""
     raise NotImplementedError("dft")
 
 
 def fft_radix2(x: np.ndarray) -> np.ndarray:
     """The DFT of `x` by the recursive radix-2 Cooley-Tukey algorithm, complex, shape (len(x),).
 
-    Split `x` into its even-indexed and odd-indexed samples, transform each
-    half recursively, and combine them with the twiddles
-    exp(-2 pi j k / n) for k = 0 .. n/2 - 1. A length-1 signal is its own DFT.
-    Raise ValueError when len(x) is not a power of two.
+    It costs O(n log n) and equals np.fft.fft(x) to rounding. Raise
+    ValueError when len(x) is not a power of two.
     """
     raise NotImplementedError("fft_radix2")
 
@@ -62,10 +60,9 @@ def get_window(name: str, n: int, periodic: bool = True) -> np.ndarray:
 def leakage(window: np.ndarray, oversample: int = 64) -> tuple[float, float]:
     """Measure a window's main lobe and side lobes from its zero-padded spectrum.
 
-    Take the magnitude of the rfft of `window` zero-padded to
-    `len(window) * oversample` points, and divide it by its value at 0 Hz.
-    Walk up from index 1 while the next value is smaller: where the walk
-    stops is the first null, the edge of the main lobe.
+    The spectrum is the magnitude of the window's DFT zero-padded to
+    `len(window) * oversample` points, scaled to 1 at 0 Hz. The first null,
+    the edge of the main lobe, is the first local minimum after 0 Hz.
 
     Returns (half_width, side_lobe_db): the index of the first null divided by
     `oversample`, which is the main lobe's half-width in bins, and 20 log10 of

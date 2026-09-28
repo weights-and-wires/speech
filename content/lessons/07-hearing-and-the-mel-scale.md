@@ -37,7 +37,7 @@ you feed it features made a slightly different way.
 ## What you already know
 
 - The STFT cuts a signal into overlapping windowed frames and takes the FFT of each; row `k` of a spectrogram is the frequency `k * sample_rate / n_fft`.
-- With `center=True`, the signal is padded by `n_fft // 2` samples at each end by reflection, so a signal of `N` samples has `1 + N // hop` frames.
+- With `center=True`, the signal is padded by `n_fft // 2` samples at each end by reflection, so a signal of $L$ samples has `1 + L // hop` frames.
 - The periodic Hann window of length `N` is `0.5 - 0.5 * cos(2 pi n / N)`.
 - A decibel (dB) is ten times the base-10 log of a power ratio, so every factor of 10 in power is 10 dB.
 - Power is the square of magnitude: `np.abs(X) ** 2`.
@@ -73,7 +73,7 @@ Three more facts about hearing shape the features you build:
 ## The mel scale
 
 The *mel scale* is a pitch scale built from listening experiments in the 1930s:
-listeners adjusted tones until they sounded equally spaced in pitch. Equal
+listeners adjusted one tone until it sounded half as high as another. Equal
 steps in mel sound like equal steps in pitch. Below about 1 kHz the scale is
 close to linear in hertz; above it, close to logarithmic. Two formulas for it
 dominate speech code, and they are not interchangeable.
@@ -83,9 +83,10 @@ dominate speech code, and they are not interchangeable.
 The HTK formula, used by HTK, Kaldi, and `torchaudio`, is one logarithm:
 
 $$
-m_{\text{HTK}}(f) = 2595 \log_{10}\left(1 + \frac{f}{700}\right),
-\qquad
-f = 700\left(10^{m / 2595} - 1\right)
+\begin{aligned}
+m_{\text{HTK}}(f) &= 2595 \log_{10}\left(1 + \frac{f}{700}\right) \\
+f &= 700\left(10^{m / 2595} - 1\right)
+\end{aligned}
 $$
 
 Read it aloud: divide the frequency $f$ in hertz by 700, add one, take the
@@ -172,7 +173,7 @@ Two normalizations are common:
 - `norm=None` leaves every peak at 1. This is the `torchaudio` default.
 - `norm="slaney"` multiplies filter $i$ by $2 / (f_{i+2} - f_i)$, one over half
   its width, so every triangle has an area of 1 in hertz. Wide high filters no
-  longer collect more power just because they are wide. This is the librosa
+  longer collect more power only because they are wide. This is the librosa
   default, and Whisper's.
 
 With broadcasting, the whole bank is a few lines:
@@ -211,7 +212,7 @@ triangles always add up to one.
 The following demo draws the filters over the FFT bins.
 
 ```demo
-{"id": "mel-filterbank", "caption": "Change the number of filters and the scale, and notice that the lowest triangles shrink until each covers a single FFT bin."}
+{"id": "mel-filterbank", "caption": "Raise the number of mel bands and switch the formula to HTK, and watch the lowest triangles narrow until the fewest bins in a band reads 1 and empty bands appear."}
 ```
 
 At Whisper's settings, 16 kHz and `n_fft=400`, the bins are 40 Hz apart. The
@@ -238,8 +239,8 @@ has five steps:
 
 1. The STFT with a 400-point periodic Hann window, hop 160, and `center=True`
    reflect padding, as in *The short-time Fourier transform*.
-2. Drop the last frame. A clip of $N$ samples has $1 + N/160$ frames;
-   Whisper keeps $N / 160$.
+2. Drop the last frame. A clip of $L$ samples has $1 + \lfloor L/160 \rfloor$
+   frames; Whisper keeps $\lfloor L/160 \rfloor$.
 3. Take the power $|X|^2$ and multiply by the 80-filter Slaney bank
    (128 filters for large-v3). Call the result $M$.
 4. Compress it with a logarithm and a floor.
@@ -248,11 +249,11 @@ has five steps:
 Steps 4 and 5 are the following:
 
 $$
-L = \log_{10} \max\left(M, 10^{-10}\right),
-\qquad
-L' = \max\left(L,\ \max_{b,t} L_{b,t} - 8\right),
-\qquad
-Y = \frac{L' + 4}{4}
+\begin{aligned}
+L &= \log_{10} \max\left(M, 10^{-10}\right) \\
+L' &= \max\left(L,\ \max_{b,t} L_{b,t} - 8\right) \\
+Y &= \frac{L' + 4}{4}
+\end{aligned}
 $$
 
 Read it aloud: clamp every mel power to at least $10^{-10}$ and take its base-10
@@ -272,8 +273,8 @@ features = (log_spec + 4.0) / 4.0
 Take a mel power matrix of two bands and three frames,
 `[[1, 1e-3, 0], [1e-5, 10, 1e-12]]`.
 
-1. Clamp and take $\log_{10}$: `[[0, -3, -10], [-5, 1, -12]]`. The zero became
-   $10^{-10}$ first.
+1. Clamp and take $\log_{10}$: `[[0, -3, -10], [-5, 1, -10]]`. The zero and
+   the $10^{-12}$ both became $10^{-10}$ first.
 2. The global maximum is 1, so the floor is $1 - 8 = -7$:
    `[[0, -3, -7], [-5, 1, -7]]`.
 3. Add 4 and divide by 4: `[[1, 0.25, -0.75], [-0.25, 1.25, -0.75]]`.
@@ -296,6 +297,8 @@ transformer sees 1500 positions, one every 20 ms.
 
 ## Build it step by step
 
+The checks test the functions in this order.
+
 1. **`hz_to_mel(f, htk=False)`** takes a scalar or array in hertz and returns
    mel as a float array. Branch on `htk`. For Slaney, compute both branches
    and choose with `np.where`. The usual mistake is writing `f / 200 * 3` for
@@ -309,19 +312,19 @@ transformer sees 1500 positions, one every 20 ms.
    mel, convert to hertz, and build every triangle by broadcasting. The
    usual mistake is drawing the ramps in mel instead of hertz, which gives
    curved triangles that miss librosa's peak-1 filters by up to 5e-3.
-4. **`power_spectrogram(x, n_fft, hop)`** returns `(n_fft // 2 + 1, 1 + len(x) // hop)`.
-   It is your STFT from *The short-time Fourier transform*: `np.pad(x, n_fft // 2, mode="reflect")`,
-   framing by fancy indexing, the periodic Hann window, `np.fft.rfft`, and
-   `np.abs(...) ** 2`, transposed so rows are bins. The usual mistake is
-   `np.hanning(n_fft)`, which is the symmetric window, not the periodic one.
+4. **`power_spectrogram(x, n_fft, hop)`** returns
+   `(n_fft // 2 + 1, 1 + len(x) // hop)`. It is the centered, reflect-padded,
+   periodic-Hann STFT from *The short-time Fourier transform*, squared. The
+   usual mistake is `np.hanning(n_fft)`, which is the symmetric window, not
+   the periodic one.
 5. **`whisper_normalize(mel_power)`** applies the clamp, the $\log_{10}$, the
    global floor, and the rescale. The usual mistake is a per-frame floor,
    `log_spec.max(axis=0)`.
 6. **`pad_or_trim(audio, length)`** zero-pads at the end with `np.pad` or
    slices to exactly `length` samples.
-7. **`whisper_log_mel(audio, n_mels)`** chains them: power spectrogram, drop
-   the last column with `[:, :-1]`, multiply by `mel_filterbank(16000, 400, n_mels)`,
-   normalize. The usual mistake is keeping 3001 frames for 30 seconds.
+7. **`whisper_log_mel(audio, n_mels)`** returns `(n_mels, len(audio) // 160)`
+   and chains your functions in the order of Whisper's five steps. The usual
+   mistake is keeping 3001 frames for 30 seconds.
 
 ## Cost and scaling
 
@@ -342,22 +345,27 @@ the data and throws away phase.
 
 ## Where this breaks
 
-- **Magnitude instead of power.** Whisper and librosa square the magnitude.
-  Without the square, the features have about half the dynamic range, and the
-  filters weight the bins differently.
-- **The wrong logarithm.** $\ln$ and $\log_{10}$ differ by a factor of 2.303.
-  Kaldi uses $\ln$; Whisper uses $\log_{10}$.
-- **A per-frame floor.** Whisper floors against the loudest value in the whole
-  30-second chunk. A per-frame floor lifts silent frames into noise.
-- **Off-by-one frames.** A centered STFT of 480,000 samples has 3001 frames.
-  Whisper's encoder expects 3000.
-- **The wrong sample rate.** `librosa.load` resamples to 22,050 Hz unless you
-  pass `sr=None` or `sr=16000`. Whisper expects 16 kHz, and features from
-  another rate put every formant in the wrong band.
-- **Too many filters for the FFT.** At `n_fft=400`, 128 HTK filters leave
-  filters 0, 3, 6, and 13 with no bins at all, so those bands are always zero.
-  The Slaney scale spaces the lowest filters further apart and avoids this.
-  Use a larger FFT when you need many narrow low bands.
+**Magnitude instead of power.** Whisper and librosa square the magnitude.
+Without the square, the features have about half the dynamic range, and the
+filters weight the bins differently.
+
+**The wrong logarithm.** $\ln$ and $\log_{10}$ differ by a factor of 2.303.
+Kaldi uses $\ln$; Whisper uses $\log_{10}$.
+
+**A per-frame floor.** Whisper floors against the loudest value in the whole
+30-second chunk. A per-frame floor lifts silent frames into noise.
+
+**Off-by-one frames.** A centered STFT of 480,000 samples has 3001 frames.
+Whisper's encoder expects 3000.
+
+**The wrong sample rate.** `librosa.load` resamples to 22,050 Hz unless you
+pass `sr=None` or `sr=16000`. Whisper expects 16 kHz, and features from
+another rate put every formant in the wrong band.
+
+**Too many filters for the FFT.** At `n_fft=400`, 128 HTK filters leave
+filters 0, 3, 6, and 13 with no bins at all, so those bands are always zero.
+The Slaney scale spaces the lowest filters further apart and avoids this.
+Use a larger FFT when you need many narrow low bands.
 
 > [!WARNING]
 > Kaldi feeds its front end integers on the 16-bit scale, from -32768 to

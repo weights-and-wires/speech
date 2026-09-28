@@ -64,9 +64,10 @@ def accumulated_cost(cost: np.ndarray, band: float | None = None) -> np.ndarray:
 def backtrack(D: np.ndarray) -> list[tuple[int, int]]:
     """The warping path read back from a DTW table.
 
-    Start at (n - 1, m - 1). At each cell, step to whichever of the diagonal
-    (i - 1, j - 1), up (i - 1, j), and left (i, j - 1) neighbors has the
-    smallest D, preferring them in that order on a tie. Stop at (0, 0).
+    The path runs from (0, 0) to (n - 1, m - 1), and each cell's predecessor
+    is the neighbor with the smallest D among the diagonal (i - 1, j - 1),
+    up (i - 1, j), and left (i, j - 1) cells that exist. Ties prefer the
+    diagonal, then up, then left.
 
     Args:
         D: The table from accumulated_cost, shape (n, m), with a finite

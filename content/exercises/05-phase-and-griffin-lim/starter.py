@@ -57,8 +57,8 @@ def spectral_convergence(X: np.ndarray, magnitude: np.ndarray) -> float:
 def random_phase(magnitude: np.ndarray, seed: int = 0) -> np.ndarray:
     """The target magnitude with a random phase in every cell, complex, same shape.
 
-    Draw the phases with rng = np.random.default_rng(seed) as
-    2 pi * rng.random(magnitude.shape), and return magnitude * exp(j phase).
+    The phases, in radians, are 2 pi * rng.random(magnitude.shape) with
+    rng = np.random.default_rng(seed), so the same seed gives the same array.
     """
     raise NotImplementedError("random_phase")
 
@@ -73,16 +73,15 @@ def griffin_lim(
 ) -> np.ndarray:
     """A 1-D signal whose STFT magnitude approximates `magnitude`, shape (bins, frames).
 
-    Start from c = random_phase(magnitude, seed). Then, n_iter times:
+    Fast Griffin-Lim (Perraudin et al., 2013) with the provided `stft` and
+    `istft`, started from random_phase(magnitude, seed) and run for n_iter
+    iterations. `momentum` extrapolates each consistent projection from the
+    previous one, as in the lesson; the first iteration has no previous
+    projection, and momentum=0 gives plain Griffin-Lim.
 
-    1. Keep the phase of c and impose the target magnitude:
-       magnitude * np.exp(1j * np.angle(c)).
-    2. Project onto real signals: t = stft(istft(that, hop_length), n_fft, hop_length).
-    3. Add momentum: c = t + momentum * (t - t_previous), or c = t on the
-       first iteration. With momentum=0 this is plain Griffin-Lim.
-
-    Return istft(magnitude * np.exp(1j * np.angle(c)), hop_length), which has
-    hop_length * (frames - 1) samples.
+    Returns the inverse STFT of the target magnitude under the final phase,
+    hop_length * (frames - 1) samples. With n_iter=0 that is the inverse STFT
+    of the random start.
     """
     raise NotImplementedError("griffin_lim")
 
@@ -90,14 +89,12 @@ def griffin_lim(
 def phase_vocoder(X: np.ndarray, stretch: float, hop_length: int) -> np.ndarray:
     """Stretch a complex STFT X in time by `stretch`, keeping each bin's frequency.
 
-    Read the analysis frames at the positions np.arange(0, frames, 1 / stretch),
-    after appending one column of zeros to X so position m + 1 always exists.
-    At position m + frac, the output magnitude interpolates linearly between
-    |X[:, m]| and |X[:, m + 1]|, and the output phase is a running sum that
-    starts at np.angle(X[:, 0]). After each output frame, add to the running
-    phase the bin's expected advance, 2 pi k hop_length / n_fft, plus the
-    wrapped deviation: angle(X[:, m + 1]) - angle(X[:, m]) - expected,
-    wrapped to [-pi, pi]. n_fft is 2 * (bins - 1).
+    Output frame i reads X at the fractional position i / stretch, for the
+    positions np.arange(0, frames, 1 / stretch); past the last frame, X counts
+    as zeros. The output magnitude interpolates |X| linearly between the two
+    neighboring frames. The output phase starts at np.angle(X[:, 0]) and, from
+    one output frame to the next, advances each bin by its measured frequency
+    over one hop. n_fft is 2 * (bins - 1).
 
     Returns a complex array of shape (bins, len(positions)). With stretch=1
     it returns X itself.
@@ -108,7 +105,8 @@ def phase_vocoder(X: np.ndarray, stretch: float, hop_length: int) -> np.ndarray:
 def time_stretch(x: np.ndarray, stretch: float, n_fft: int = 1024, hop_length: int = 256) -> np.ndarray:
     """Make `x` about `stretch` times longer, within one hop, without changing its pitch.
 
-    istft(phase_vocoder(stft(x, n_fft, hop_length), stretch, hop_length), hop_length).
+    Uses the provided `stft` and `istft` at these settings, and your
+    `phase_vocoder`.
     """
     raise NotImplementedError("time_stretch")
 

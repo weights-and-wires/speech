@@ -71,13 +71,18 @@ Read it aloud: multiply the first $W$ samples by the $W$ samples that start
 $\tau$ later, and add. When $\tau$ is the period, the two stretches line up
 and the sum is large. $F_0$ is then $f_s / \tau$.
 
-The trouble is that $\tau = 2T_0$, $3T_0$, and so on line up just as well. Over
+The trouble is that $\tau = 2T_0$, $3T_0$, and so on line up equally well. Over
 a search range of 60 Hz to 500 Hz, a voice at 300 Hz has five multiples of its
 period in range, and small amplitude changes decide which peak wins. On 60
 synthetic voices with random $F_0$ from 80 Hz to 400 Hz, random formants, and
 20 dB of noise, picking the largest autocorrelation value gives the wrong
 octave, or worse, on 52% of them. A strong first formant makes a second kind
 of error: a peak at a short lag, one period of the formant.
+
+> [!KEY]
+> A signal that repeats every period also repeats every two periods. The
+> largest autocorrelation peak often sits at a multiple of the period, and
+> the estimate lands an octave or more too low.
 
 ## YIN in five steps
 
@@ -195,7 +200,7 @@ $d' = [1, 1, 1.308, 0.771, 0, 1.023]$, and YIN again picks $\tau = 4$.
 > self, relative to the lags before it. Normalizing by the running mean and
 > taking the first dip under a threshold removes most octave errors.
 
-## Tracking and voicing
+## Track frames and decide voicing
 
 A pitch track runs YIN on every frame. Use the STFT convention: pad the
 signal by half a frame at each end by reflection, and center frame $t$ on
@@ -212,10 +217,10 @@ running sum is 0.
 The following demo runs YIN on a short clip.
 
 ```demo
-{"id": "pitch-tracker", "caption": "Move the threshold and watch octave errors appear when it is too strict and unvoiced frames get a pitch when it is too loose."}
+{"id": "pitch-tracker", "caption": "Lower the threshold toward 0.02 to see octave-low errors in the creaky ending, then raise it past 0.2 to see breath frames get a pitch and, past 0.3, octave-high errors."}
 ```
 
-## Scoring a pitch track
+## Score a pitch track
 
 Two numbers score a track against a reference $F_0$. The *gross pitch error*
 (GPE) is the share of frames voiced in both tracks whose estimate is off by
@@ -245,6 +250,8 @@ GPE is 2/5 = 40%. Voicing disagrees on frames 5 and 6, so the voicing error is
 > - GPE counts voiced frames more than 20% off; voicing error counts disagreements.
 
 ## Build it step by step
+
+The checks test the functions in this order.
 
 1. **`difference_function(frame, max_lag)`** returns `max_lag + 1` values.
    Use `sliding_window_view` to get every shifted stretch at once. The usual
@@ -288,21 +295,25 @@ instead, as librosa's `yin` does.
 
 ## Where this breaks
 
-- **The search range misses $F_0$.** A voice at 50 Hz with $f_{\min} = 60$ Hz
-  gets a harmonic instead. Set the range for the speaker.
-- **Octave jumps between frames.** A single frame can still pick $2T_0$. pYIN
-  replaces the single threshold with a distribution over thresholds, keeps
-  several candidates per frame, and chooses a smooth path through them with
-  an HMM. For more information about the Viterbi algorithm behind that path,
-  see *Hidden Markov models*.
-- **Creaky voice and breathy voice.** Irregular periods or strong noise push
-  $d'$ up, and the frame is marked unvoiced when it is voiced.
-- **Frames that straddle a boundary.** A 64 ms frame at a vowel's edge holds
-  half voice and half silence. Voicing flips a frame or two late.
-- **Polyphony.** Two voices or background music put two periods in one frame.
-  YIN finds one of them, or neither. Neural trackers such as CREPE, a
-  convolutional network over 1024-sample frames of 16 kHz audio with 360 pitch
-  bins 20 cents apart, handle noise better but need training data.
+**The search range misses $F_0$.** A voice at 50 Hz with $f_{\min} = 60$ Hz
+gets a harmonic instead. Set the range for the speaker.
+
+**Octave jumps between frames.** A single frame can still pick $2T_0$. pYIN
+replaces the single threshold with a distribution over thresholds, keeps
+several candidates per frame, and chooses a smooth path through them with an
+HMM. For more information about the Viterbi algorithm behind that path, see
+*Hidden Markov models*.
+
+**Creaky voice and breathy voice.** Irregular periods or strong noise push
+$d'$ up, and the frame is marked unvoiced when it is voiced.
+
+**Frames that straddle a boundary.** A 64 ms frame at a vowel's edge holds
+half voice and half silence. Voicing flips a frame or two late.
+
+**Polyphony.** Two voices or background music put two periods in one frame.
+YIN finds one of them, or neither. Neural trackers such as CREPE, a
+convolutional network over 1024-sample frames of 16 kHz audio with 360 pitch
+bins 20 cents apart, handle noise better but need training data.
 
 > [!WARNING]
 > Frames and lags are both counted in samples, and they are easy to mix up. A

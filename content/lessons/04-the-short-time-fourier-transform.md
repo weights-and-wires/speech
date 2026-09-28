@@ -50,8 +50,10 @@ Without padding, frame $m$ covers samples $mH$ to $mH + N - 1$, and only whole
 frames fit. For a signal of $L$ samples, the count is the following:
 
 $$
-M_{\text{uncentered}} = 1 + \left\lfloor \frac{L - N}{H} \right\rfloor, \qquad
-M_{\text{centered}} = 1 + \left\lfloor \frac{L}{H} \right\rfloor
+\begin{aligned}
+M_{\text{uncentered}} &= 1 + \left\lfloor \frac{L - N}{H} \right\rfloor \\
+M_{\text{centered}} &= 1 + \left\lfloor \frac{L}{H} \right\rfloor
+\end{aligned}
 $$
 
 Read it aloud: without centering, one frame fits at the start, and one more
@@ -214,9 +216,9 @@ inverts its STFT, so it doesn't care, and your least-squares inverse doesn't
 either, as long as NOLA holds.
 
 > [!WARNING]
-> Overlap-adding without dividing by $\sum w^2$ leaves a ripple at the hop
-> rate: about 0.8 dB at Whisper's settings. You hear it as a faint buzz at
-> $f_s / H$, 100 Hz for a hop of 160.
+> Overlap-adding the windowed inverse frames without dividing by $\sum w^2$
+> leaves a ripple at the hop rate: about 1.5 dB at Whisper's settings. You
+> hear it as a faint buzz at $f_s / H$, 100 Hz for a hop of 160.
 
 > [!RECAP]
 > - Centered, the frame count is `1 + L // hop`; uncentered, it is `1 + (L - n_fft) // hop`.

@@ -173,12 +173,9 @@ if __name__ == "__main__":
     ref = "set a timer for two minutes".split()
     hyp = "set the timer four to minutes please".split()
     S, D, I, alignment = levenshtein_align(ref, hyp)
-    table = np.zeros((len(ref) + 1, len(hyp) + 1))
-    table[:, 0], table[0, :] = np.arange(len(ref) + 1), np.arange(len(hyp) + 1)
-    for i in range(1, len(ref) + 1):
-        for j in range(1, len(hyp) + 1):
-            table[i, j] = min(table[i - 1, j] + 1, table[i, j - 1] + 1,
-                              table[i - 1, j - 1] + (ref[i - 1] != hyp[j - 1]))
+    # Entry (i, j) is the edit distance between the first i and the first j words.
+    table = np.array([[sum(levenshtein_align(ref[:i], hyp[:j])[:3]) for j in range(len(hyp) + 1)]
+                      for i in range(len(ref) + 1)], dtype=float)
     show_image(table, label="Edit distance table, reference down and hypothesis across",
                x_labels=["-"] + hyp, y_labels=["-"] + ref, value_label="Edits")
     print(" ".join(f"{op}:{r or '-'}/{h or '-'}" for op, r, h in alignment))

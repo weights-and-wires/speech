@@ -27,7 +27,7 @@ treats every frame's output as independent of what it already wrote.
 The **transducer**, or **RNN-T** (Graves, 2012), gets both. Like CTC, it walks
 through the audio frame by frame and emits a blank when it has nothing to say.
 Like an attention decoder, it conditions each label on the labels before it.
-On-device recognizers use it, and NVIDIA's Parakeet models use a faster
+On-device recognizers use it, and NVIDIA's Parakeet-TDT models use a faster
 variant of it that skips frames.
 
 In this lesson you build the transducer's loss as a dynamic program over a
@@ -37,9 +37,9 @@ encoder streamable, and you train a tiny streaming transducer on tones.
 
 ## What you already know
 
-- CTC adds a blank and sums over every alignment with a forward recursion, from the lesson "Connectionist temporal classification."
+- CTC adds a blank and sums over every alignment with a forward recursion, from *Connectionist temporal classification*.
 - A CTC model emits at most one label per frame, so it needs at least as many frames as labels.
-- Attention masks set some scores to $-\infty$ so their weights become 0, from the lesson "Attention encoder-decoders."
+- Attention masks set some scores to $-\infty$ so their weights become 0, from *Attention encoder-decoders*.
 - `torch.logaddexp(a, b)` computes $\log(e^a + e^b)$ and carries gradients.
 - The gradient of a log-likelihood with respect to a log probability is how often that probability is used, on average.
 
@@ -52,8 +52,10 @@ the labels emitted so far: after $u$ labels it gives a vector $g_u$. The
 distribution over the vocabulary, blank included:
 
 $$
-z_{t,u} = W_{\text{out}} \tanh\big(W_{\text{enc}} f_t + W_{\text{pred}} g_u + b\big), \qquad
-P(k \mid t, u) = \operatorname{softmax}(z_{t,u})_k
+\begin{aligned}
+z_{t,u} &= W_{\text{out}} \tanh\big(W_{\text{enc}} f_t + W_{\text{pred}} g_u + b\big) \\
+P(k \mid t, u) &= \operatorname{softmax}(z_{t,u})_k
+\end{aligned}
 $$
 
 Read it aloud: project the frame and the predictor state to the same size,
@@ -87,13 +89,17 @@ every path prefix that reaches node $(t, u)$. Write $\varnothing(t, u)$ for
 $P(\varnothing \mid t, u)$ and $y(t, u)$ for $P(y_{u+1} \mid t, u)$:
 
 $$
-\alpha(1, 0) = 1, \qquad
-\alpha(t, u) = \alpha(t - 1, u)\,\varnothing(t - 1, u) + \alpha(t, u - 1)\, y(t, u - 1)
+\begin{aligned}
+\alpha(1, 0) &= 1 \\
+\alpha(t, u) &= \alpha(t - 1, u)\,\varnothing(t - 1, u) + \alpha(t, u - 1)\, y(t, u - 1)
+\end{aligned}
 $$
 
 $$
-P(\mathbf{y} \mid x) = \alpha(T, U)\, \varnothing(T, U), \qquad
-\mathcal{L}_{\text{RNNT}} = -\log P(\mathbf{y} \mid x)
+\begin{aligned}
+P(\mathbf{y} \mid x) &= \alpha(T, U)\, \varnothing(T, U) \\
+\mathcal{L}_{\text{RNNT}} &= -\log P(\mathbf{y} \mid x)
+\end{aligned}
 $$
 
 Read it aloud: you reach $(t, u)$ either from the left, by a blank at the
@@ -173,8 +179,8 @@ every step, and without the cap it never leaves the frame. NeMo's greedy
 decoder defaults to a cap of 10 per frame.
 
 The transducer has the same blind spot for repeats as an attention decoder. A
-stateless predictor that just emitted `5` can't tell whether a second `5` is
-still the first tone or a new one. Only the audio can say. In a test on 200
+stateless predictor that has emitted `5` can't tell whether a second `5` is
+still the first tone or a second one. Only the audio can say. In a test on 200
 clips, the **Run** block's model got 72 wrong, and every one of them held a
 repeated tone.
 
@@ -340,8 +346,9 @@ tensor to $16 \times 250 \times 5 \times 1{,}024$ floats, or 82 MB.
 ## Where this breaks
 
 **Training sits on a plateau.** A fresh transducer learns first that blanks
-are common and emits nothing for a while. The **Run** block's loss sits near
-8 for its first 100 or so steps before it falls. Coarser encoder frames
+are common and emits nothing for a while. The **Run** block's loss falls to
+about 8 within 50 steps, creeps down until about step 100, and only then
+drops. Coarser encoder frames
 shorten the wait: the model stacks four feature frames into one 40 ms frame,
 and in testing it left the plateau about twice as fast as with 20 ms frames.
 Starting from a CTC-trained encoder also helps.
@@ -350,8 +357,9 @@ Starting from a CTC-trained encoder also helps.
 because waiting costs nothing in the loss. Streaming systems add FastEmit
 (Yu et al., 2021), a regularizer that rewards emitting early.
 
-**Blank index conventions disagree.** This course puts the blank at 0.
-`torchaudio.functional.rnnt_loss` defaults to the last index, as NeMo does.
+**Blank index conventions disagree.** As with CTC, this course puts the blank
+at 0, while `torchaudio.functional.rnnt_loss` defaults to the last index, as
+NeMo does.
 A mismatch trains without errors and learns nothing useful.
 
 **BatchNorm breaks chunked inference.** Statistics computed over a full
@@ -369,7 +377,7 @@ You build `rnnt_log_alpha` and `rnnt_loss` in torch, then
 `greedy_transducer_decode`, `tdt_log_likelihood`, `tdt_greedy_decode`, and
 `chunked_attention_mask`. Press **Run** to train a 69,000-parameter streaming
 transducer, a causal GRU encoder with a stateless predictor, on clips of two
-to six tones with your loss. It then decodes 40 new clips with your greedy
+to six tones with your loss. It then decodes 40 unseen clips with your greedy
 decoder, plays one, draws the posterior of each lattice node, and draws a
 chunked mask.
 

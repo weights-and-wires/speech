@@ -44,9 +44,10 @@ def dot_product_attention(query, keys, values, mask=None):
 def location_aware_attention(s_prev, h, alpha_prev, W, V, b, U, filters, w, mask=None):
     """Location-aware attention (Chorowski et al., 2015) for one decoder step.
 
-    Computes f = conv1d(alpha_prev, filters) with padding k // 2, then the
-    energy of frame u, e_u = w . tanh(W s_prev + V h_u + U f_u + b), then
-    weights = softmax over frames of e, and context = sum_u weights_u h_u.
+    The energy of frame u is e_u = w . tanh(W s_prev + V h_u + U f_u + b),
+    where f is alpha_prev cross-correlated with `filters` at the same length,
+    as torch's conv1d computes it. The weights are the masked softmax of the
+    energies over frames, and the context is their weighted sum of h.
 
     Args:
         s_prev: Decoder state, shape (B, d_s).
@@ -120,11 +121,11 @@ def beam_search(step_fn, eos, beam_width, max_len, length_penalty=None):
             divide it by the GNMT penalty ((5 + n) / 6) ** alpha, where n is
             the number of tokens without <eos>.
 
-    Start from one empty hypothesis with log probability 0. At each of
-    `max_len` steps, extend every unfinished hypothesis by every token. An
-    extension by `eos` becomes a finished hypothesis; keep the `beam_width`
-    best of the rest, by raw log probability, as the unfinished ones. After
-    the last step, the surviving unfinished hypotheses count as finished too.
+    Rules: the search starts from one empty hypothesis with log probability
+    0 and runs for `max_len` steps. Any extension by `eos` is finished at
+    once and never takes a place in the beam. Unfinished hypotheses are
+    pruned to `beam_width` by raw log probability, with no length penalty.
+    Hypotheses still unfinished after the last step count as finished.
 
     Returns:
         Every finished hypothesis as (tokens, score) pairs, best first by the

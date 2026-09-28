@@ -25,8 +25,7 @@ transcript, so you have to search for the one the table likes best.
 
 That search is harder than it looks. Thousands of frame-level paths collapse
 to the same text, and the text with the best single path isn't always the most
-likely text. The acoustic model also knows nothing about
-spelling or grammar, so "the kat" can outscore "the cat" when the audio is
+likely text. The acoustic model also knows nothing about spelling or grammar, so "the kat" can outscore "the cat" when the audio is
 unclear.
 
 In this lesson you build greedy decoding, then prefix beam search, which adds
@@ -37,8 +36,8 @@ a hotword bonus, two tools that let a decoder fix what the acoustics got wrong.
 
 - A CTC model emits $y^t_k$, the probability of symbol $k$ at frame $t$, with the blank $\varnothing$ at index 0.
 - The collapse function $\mathcal{B}$ merges repeated symbols, then deletes blanks, so $\mathcal{B}(\texttt{aa\_ab\_\_}) = \texttt{aab}$.
-- The probability of a labeling $\mathbf{l}$ is the sum over every path that collapses to it, from the lesson "Connectionist temporal classification."
-- A bigram language model gives $P(c \mid \text{previous symbol})$, from the lesson "Language models and word error rate."
+- The probability of a labeling $\mathbf{l}$ is the sum over every path that collapses to it, from *Connectionist temporal classification*.
+- A bigram language model gives $P(c \mid \text{previous symbol})$, from *Language models and word error rate*.
 - `np.logaddexp(a, b)` computes $\log(e^a + e^b)$ without overflow, and handles $-\infty$.
 
 ## Greedy decoding
@@ -95,7 +94,7 @@ to it. After each frame, it keeps only the best $K$ prefixes, where $K$ is the
 
 One number per prefix isn't enough. Suppose the prefix is `a` and the next
 frame emits `a`. If the last frame was also `a`, the two merge and the prefix
-stays `a`. If a blank came in between, the new `a` starts a second letter and
+stays `a`. If a blank came in between, the next `a` starts a second letter and
 the prefix becomes `aa`. So each prefix $\ell$ keeps two probabilities:
 
 - $p_b(\ell)$, the probability of the paths that collapse to $\ell$ and end in a blank.
@@ -109,17 +108,18 @@ $$
 \begin{aligned}
 p^{t}_b(\ell) &\mathrel{+}= \big(p^{t-1}_b(\ell) + p^{t-1}_{nb}(\ell)\big)\, y^t_\varnothing \\
 p^{t}_{nb}(\ell + c) &\mathrel{+}= \big(p^{t-1}_b(\ell) + p^{t-1}_{nb}(\ell)\big)\, y^t_c && c \ne \text{last}(\ell) \\
-p^{t}_{nb}(\ell + c) &\mathrel{+}= p^{t-1}_b(\ell)\, y^t_c,\quad p^{t}_{nb}(\ell) \mathrel{+}= p^{t-1}_{nb}(\ell)\, y^t_c && c = \text{last}(\ell)
+p^{t}_{nb}(\ell + c) &\mathrel{+}= p^{t-1}_b(\ell)\, y^t_c && c = \text{last}(\ell) \\
+p^{t}_{nb}(\ell) &\mathrel{+}= p^{t-1}_{nb}(\ell)\, y^t_c && c = \text{last}(\ell)
 \end{aligned}
 $$
 
 Read it aloud. First line: a blank at frame $t$ leaves the prefix unchanged,
 and every path to $\ell$ can take it, so the whole old probability moves into
-the ends-in-blank bucket. Second line: a new label $c$, different from the
+the ends-in-blank bucket. Second line: a label $c$, different from the
 prefix's last label, extends the prefix to $\ell + c$ from either bucket.
-Third line: repeating the last label splits in two. Only paths that ended in a
-blank start a new copy, $\ell + c$. Paths that ended in the label itself merge
-into the same prefix $\ell$. The score of a prefix is
+Third and fourth lines: repeating the last label splits in two. Only paths
+that ended in a blank start another copy, $\ell + c$. Paths that ended in the
+label itself merge into the same prefix $\ell$. The score of a prefix is
 $p_b(\ell) + p_{nb}(\ell)$.
 
 Real decoders do this in log space, where every $+=$ becomes a `logaddexp` and
@@ -139,7 +139,7 @@ $y_a = 0.4$, with a beam wide enough to keep everything.
 After frame 1, starting from $p_b(\varnothing) = 1$:
 
 - A blank keeps the empty prefix: $p_b(\varnothing) = 1 \times 0.6 = 0.6$.
-- The label `a` makes a new prefix: $p_{nb}(a) = 1 \times 0.4 = 0.4$.
+- The label `a` makes the prefix `a`: $p_{nb}(a) = 1 \times 0.4 = 0.4$.
 
 After frame 2:
 
@@ -159,7 +159,7 @@ come back later. So every score it returns is a lower bound on the true
 probability. The following demo shows the beam at work on a short table.
 
 ```demo
-{"id": "beam-search", "caption": "Shrink the beam to one and watch the right transcript fall out of it, then widen it until the best prefix stops changing."}
+{"id": "beam-search", "caption": "Shrink the beam width to 1 and watch cat get pruned down to c, then widen the beam until its answer matches the beam of 256."}
 ```
 
 > [!KEY]
@@ -176,9 +176,8 @@ probability. The following demo shows the beam at work on a short table.
 
 When the acoustic model can't tell a `c` from a `k`, it has no way to know
 that "cat" is a word and "kat" usually isn't. A **language model** (LM)
-does. **Shallow fusion** adds the LM's opinion
-to the beam's score, the same noisy-channel idea as the lesson "Language
-models and word error rate":
+does. **Shallow fusion** adds the LM's opinion to the beam's score, the same
+noisy-channel idea as in *Language models and word error rate*:
 
 $$
 \operatorname{score}(\ell) = \log\big(p_b(\ell) + p_{nb}(\ell)\big) + \alpha \log P_{\text{LM}}(\ell) + \beta\,|\ell|
@@ -227,7 +226,7 @@ $k = 1$ to both labels:
 
 Now decode three frames with probabilities (blank, `a`, `b`) of
 $(0.2, 0.35, 0.45)$, $(0.8, 0.1, 0.1)$, and $(0.2, 0.45, 0.35)$. Greedy reads
-`b _ a` and returns `ba`. The following table lists the three strongest
+`b _ a` and returns `ba`. The following table lists three of the candidate
 prefixes, their exact acoustic log probabilities from the beam, and their
 fused scores with $\alpha = 1$:
 
@@ -303,7 +302,7 @@ The checks test the functions in this order.
    mistake: dropping blanks before merging, which turns `a _ a` into `a`.
 2. **`prefix_beam_search(log_probs, beam_width, blank, prefix_score)`.**
    Returns a list of `(prefix, score)` pairs, best first. Start from
-   `{(): (0.0, -inf)}`. For each frame, build a `defaultdict` of new
+   `{(): (0.0, -inf)}`. For each frame, build a `defaultdict` of next-frame
    `(p_b, p_nb)` pairs from the three rules, rank by
    `np.logaddexp(p_b, p_nb) + prefix_score(prefix)`, and keep the top
    `beam_width`. Drop prefixes whose score is `-inf`. Common mistake: letting

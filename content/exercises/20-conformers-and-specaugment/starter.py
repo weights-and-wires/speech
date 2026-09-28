@@ -112,15 +112,15 @@ class RelPositionMultiHeadAttention(nn.Module):
             mask: optional bool (B, T), True for real frames. Padded keys get
                 zero weight.
 
-        Split q = linear_q(x), k, and v into H heads of d_k, and project
-        p = linear_pos(pos_emb) the same way. For each head, the score of
-        query i and key j is
+        q, k, and v come from linear_q, linear_k, and linear_v of x, and p from
+        linear_pos(pos_emb), each split into H heads of d_k. For each head,
+        the score of query i and key j is
 
             ((q_i + pos_bias_u) . k_j + (q_i + pos_bias_v) . p_(i - j)) / sqrt(d_k)
 
-        where the second term comes from rel_shift. Softmax over keys, apply
-        self.dropout to the weights, take the weighted sum of v, join the
-        heads, and apply linear_out.
+        where p_(i - j) is the row of p for the distance i - j. The attention
+        weights are a softmax over keys, with self.dropout applied to them.
+        The heads' outputs are joined and passed through linear_out.
 
         Returns:
             shape (B, T, d_model).
@@ -139,7 +139,7 @@ class FeedForwardModule(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        """x: (B, T, d) -> (B, T, d), in the order of the class docstring. Swish is F.silu."""
+        """x: (B, T, d) -> (B, T, d): the layers of the class docstring."""
         raise NotImplementedError("FeedForwardModule.forward")
 
 
@@ -159,11 +159,9 @@ class ConvolutionModule(nn.Module):
     def forward(self, x, mask=None):
         """x: (B, T, d) -> (B, T, d).
 
-        Apply the layers of the class docstring in order. The convolutions
-        want (B, d, T), so transpose after the LayerNorm and back at the end.
-        GLU is F.glu over the channel axis. If `mask` (bool, (B, T), True for
-        real frames) is given, set padded frames to 0 right before the
-        depthwise convolution, so padding never leaks into real frames.
+        The layers of the class docstring, with the GLU gating over channels.
+        If `mask` (bool, (B, T), True for real frames) is given, padded frames
+        must not change the output at any real frame.
         """
         raise NotImplementedError("ConvolutionModule.forward")
 
@@ -182,13 +180,13 @@ class ConformerBlock(nn.Module):
         self.norm_out = nn.LayerNorm(d_model)
 
     def forward(self, x, pos_emb, mask=None):
-        """One Conformer block, x: (B, T, d) -> (B, T, d).
+        """One Conformer block (Gulati et al., 2020), x: (B, T, d) -> (B, T, d).
 
-        x = x + 1/2 ff1(x)
-        x = x + dropout(mhsa(norm_mhsa(x), pos_emb, mask))
-        x = x + conv(x, mask)
-        x = x + 1/2 ff2(x)
-        return norm_out(x)
+        The modules of the class docstring are residual branches, in that
+        order, and each feed-forward branch adds half its output. The attention
+        branch is pre-normed by norm_mhsa and followed by self.dropout; pos_emb
+        goes to it, and mask goes to both the attention and the convolution
+        module. norm_out normalizes the block's output.
         """
         raise NotImplementedError("ConformerBlock.forward")
 

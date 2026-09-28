@@ -146,10 +146,10 @@ decorrelates the log-mel bands, which made it practical to model each frame
 with Gaussians whose covariance matrices are diagonal: 13 variances instead of
 91 covariance entries.
 
-The following demo steps one frame through the pipeline.
+The following demo shows one frame at every stage of the pipeline.
 
 ```demo
-{"id": "mfcc-pipeline", "caption": "Step a frame through power, mel, log, and DCT, then change how many coefficients you keep and watch the rebuilt envelope lose its harmonics."}
+{"id": "mfcc-pipeline", "caption": "Lower the number of coefficients kept and watch the red curve rebuilt from the cepstrum smooth away detail until only the vowel's broad formant shape is left."}
 ```
 
 ## Liftering
@@ -227,11 +227,11 @@ the utterance, and the constant goes with it. *Cepstral mean and variance
 normalization* (CMVN) also divides by each coefficient's standard deviation:
 
 $$
-\hat c_t = \frac{c_t - \mu}{\sigma},
-\qquad
-\mu = \frac{1}{T} \sum_{t=1}^{T} c_t,
-\qquad
-\sigma^2 = \frac{1}{T} \sum_{t=1}^{T} (c_t - \mu)^2
+\begin{aligned}
+\hat c_t &= \frac{c_t - \mu}{\sigma} \\
+\mu &= \frac{1}{T} \sum_{t=1}^{T} c_t \\
+\sigma^2 &= \frac{1}{T} \sum_{t=1}^{T} (c_t - \mu)^2
+\end{aligned}
 $$
 
 Read it aloud: for each coefficient separately, subtract its mean over the $T$
@@ -247,8 +247,8 @@ $(9 + 1 + 1 + 9)/4 = 5$, and $\sigma = 2.2361$. The normalized row is
 $[-1.342, -0.447, 0.447, 1.342]$.
 
 Kaldi applies the mean part by default and the variance part as an option. It
-normalizes per utterance, per speaker, or over a sliding window of about
-300 frames for live audio, where the whole utterance is not available yet.
+normalizes per utterance, per speaker, or over a sliding window of 300 to
+600 frames for live audio, where the whole utterance is not available yet.
 
 > [!KEY]
 > A fixed channel adds a constant to every frame's cepstrum. Subtracting the
@@ -262,6 +262,8 @@ normalizes per utterance, per speaker, or over a sliding window of about
 > - CMVN makes every row zero-mean and unit-variance over the utterance.
 
 ## Build it step by step
+
+The checks test the functions in this order.
 
 1. **`dct2_ortho(x)`** takes `(M,)` or `(M, T)` and returns the same shape.
    Build the `(M, M)` cosine matrix, scale its rows, and multiply. The usual
@@ -281,9 +283,10 @@ normalizes per utterance, per speaker, or over a sliding window of about
 6. **`cmvn(c, variance, eps)`** normalizes each row with `keepdims=True`. The
    usual mistake is normalizing each frame across coefficients, axis 0,
    instead of each coefficient across time.
-7. **`mfcc_features(x, sample_rate, n_mfcc)`** runs the provided `mel_power`,
-   then `mfcc`, `lifter`, `deltas` twice, `np.vstack`, and `cmvn`, for
-   39 rows.
+7. **`mfcc_features(x, sample_rate, n_mfcc)`** returns `(3 * n_mfcc, frames)`:
+   liftered MFCCs from the provided `mel_power`, their deltas, and their
+   delta-deltas, stacked and normalized with CMVN. The usual mistake is taking
+   the delta-deltas from the MFCCs instead of from the deltas.
 
 ## Cost and scaling
 
@@ -304,23 +307,25 @@ cannot see the future: it keeps running sums over a window instead.
 
 ## Where this breaks
 
-- **Short utterances.** The mean of one second of speech depends on which
-  sounds it holds, not only on the channel. CMN then removes real information.
-  Normalize per speaker or over a longer window.
-- **Liftering, then variance normalization.** CMVN divides each row by its
-  own standard deviation, which cancels any fixed per-row scale, lifter
-  included. Liftering matters only for raw distances or mean-only
-  normalization.
-- **Additive noise.** CMN removes channels that multiply the spectrum. Noise
-  adds to the power, which is not a constant after the log, and CMN does not
-  remove it.
-- **Silence and the floor.** The log of a silent band is the floor value. If
-  one recording is quieter, more bands hit the floor, and the channel stops
-  being a constant shift.
-- **Mismatched deltas.** librosa's `feature.delta` fits a Savitzky-Golay
-  filter over 9 frames and interpolates at the edges. On a ramp it gives the
-  slope everywhere, where the HTK formula gives 0.5 and 0.8 at the first two
-  frames.
+**Short utterances.** The mean of one second of speech depends on which
+sounds it holds, not only on the channel. CMN then removes real information.
+Normalize per speaker or over a longer window.
+
+**Liftering, then variance normalization.** CMVN divides each row by its own
+standard deviation, which cancels any fixed per-row scale, lifter included.
+Liftering matters only for raw distances or mean-only normalization.
+
+**Additive noise.** CMN removes channels that multiply the spectrum. Noise
+adds to the power, which is not a constant after the log, and CMN does not
+remove it.
+
+**Silence and the floor.** The log of a silent band is the floor value. If
+one recording is quieter, more bands hit the floor, and the channel stops
+being a constant shift.
+
+**Mismatched deltas.** librosa's `feature.delta` fits a Savitzky-Golay filter
+over 9 frames and interpolates at the edges. On a ramp it gives the slope
+everywhere, where the HTK formula gives 0.5 and 0.8 at the first two frames.
 
 > [!WARNING]
 > Compute CMVN statistics per utterance at training time and the same way at

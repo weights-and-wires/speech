@@ -41,10 +41,10 @@ speaker it has never heard.
 
 ## What you already know
 
-- A log-mel spectrogram has 80 mel bands and 100 frames per second, from the lesson "Hearing and the mel scale."
-- A convolutional front end with two stride-2 layers cuts 100 frames per second to 25, from the lesson "Neural acoustic models."
-- CTC trains an encoder with no frame labels, from the lesson "Connectionist temporal classification."
-- Self-attention scores every pair of frames with a dot product, from the lesson "Attention encoder-decoders."
+- A log-mel spectrogram has 80 mel bands and 100 frames per second, from *Hearing and the mel scale*.
+- A convolutional front end with two stride-2 layers cuts 100 frames per second to about 25, from *Neural acoustic models*.
+- CTC trains an encoder with no frame labels, from *Connectionist temporal classification*.
+- Self-attention scores every pair of frames with a dot product, from *Attention encoder-decoders*.
 - A residual block adds its output to its input, and LayerNorm rescales each frame to zero mean and unit variance.
 
 ## SpecAugment
@@ -61,16 +61,18 @@ $f_0$, in every frame. A **time mask** hides a span of $t$ frames starting at
 $t_0$, in every band:
 
 $$
-f \sim \mathcal{U}\{0, \dots, F\}, \quad f_0 \sim \mathcal{U}\{0, \dots, \nu - f\}, \qquad
-t \sim \mathcal{U}\{0, \dots, \min(T, \lfloor p\,\tau \rfloor)\}, \quad t_0 \sim \mathcal{U}\{0, \dots, \tau - t\}
+\begin{aligned}
+f &\sim \mathcal{U}\{0, \dots, F\}, \quad f_0 \sim \mathcal{U}\{0, \dots, \nu - f\} \\
+t &\sim \mathcal{U}\{0, \dots, \min(T, \lfloor p\,\tau \rfloor)\}, \quad t_0 \sim \mathcal{U}\{0, \dots, \tau - t\}
+\end{aligned}
 $$
 
 Read it aloud: draw the mask's width uniformly from 0 to its limit, then draw
 where it starts so that it fits inside the spectrogram. Frequency masks are at
 most $F$ bands wide. Time masks are at most $T$ frames wide, and never wider
 than a fraction $p$ of the utterance. You repeat each kind $m_F$ and $m_T$
-times. The original paper also warps the time axis, but most systems skip that
-step because it's slow and helps little. In torch:
+times. The original paper also warps the time axis. Many systems skip that step,
+because the paper found it the most expensive step and the least helpful. In torch:
 
 ```python
 f = int(torch.randint(0, F + 1, (1,), generator=gen))
@@ -133,7 +135,10 @@ shared across all positions, with one pair per head. The distance encodings are
 sinusoids, with rows for $r = L - 1$ down to $-(L - 1)$:
 
 $$
-e_r[2i] = \sin\left(r \cdot 10000^{-2i/d}\right), \qquad e_r[2i+1] = \cos\left(r \cdot 10000^{-2i/d}\right)
+\begin{aligned}
+e_r[2i] &= \sin\left(r \cdot 10000^{-2i/d}\right) \\
+e_r[2i+1] &= \cos\left(r \cdot 10000^{-2i/d}\right)
+\end{aligned}
 $$
 
 Read it aloud: each pair of columns is one sine wave and one cosine wave in
@@ -169,7 +174,7 @@ result is `[[2, 3, 4], [6, 7, 8], [10, 11, 12]]`. You can write this with
 left, reshape so the rows slide by one, drop a row, and reshape back.
 
 ```python
-padded = F.pad(x, (1, 0)).reshape(*lead, 2 * L, L)          # rows now slide by one
+padded = F.pad(x, (1, 0)).reshape(*lead, 2 * L, L)          # rows slide by one
 out = padded[..., 1:, :].reshape(*lead, L, 2 * L - 1)[..., :L]
 ```
 
@@ -275,8 +280,7 @@ gaps, so a training example is a string such as "4 0 7". It trains on five
 speakers and tests on the sixth, `theo`, whose voice it never hears. The
 score is the **digit error rate**: the edit distance between the recognized
 and the spoken digits, divided by the number of spoken digits. It's the word
-error rate of the lesson "Language models and word error rate," with digits as
-words.
+error rate of *Language models and word error rate*, with digits as words.
 
 On a GPU, the run trains 6 blocks of width 144, 3.6 million parameters, with
 SpecAugment, for 3,000 steps of 64 utterances. Without a GPU it shrinks to one
@@ -354,10 +358,10 @@ subsamples by 8 instead of 4, to 12.5 frames per second, and uses a kernel of
 
 ## Where this breaks
 
-**BatchNorm and streaming don't mix.** Statistics over a whole utterance
-differ from those over one chunk, and small batches give noisy statistics.
-Streaming Conformers often swap BatchNorm for LayerNorm in the convolution
-module.
+**BatchNorm and streaming don't mix.** As *Transducers and streaming*
+showed, statistics over one chunk differ from those over a whole utterance,
+and small batches make them noisy too. Streaming Conformers often swap
+BatchNorm for LayerNorm in the convolution module.
 
 **Training is unstable at first.** Deep attention stacks need a learning-rate
 warmup, and CTC sits on a plateau where it predicts only blanks before it

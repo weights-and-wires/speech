@@ -30,8 +30,7 @@ reading the same poem at different speeds: DTW works out which line of one
 reader goes with which line of the other.
 
 DTW powered the word recognizers of the 1970s. Before hidden Markov models
-took over, isolated-word recognizers stored one or more
-recordings of each word, called **templates**, and named an unknown word after
+took over, isolated-word recognizers stored one or more recordings of each word, called **templates**, and named an unknown word after
 its nearest template under DTW. In this lesson you build that recognizer. The
 same dynamic program comes back later in the course: in the forward algorithm
 of HMMs, in CTC, and in the alignment search of text-to-speech models.
@@ -39,7 +38,7 @@ of HMMs, in CTC, and in the alignment search of text-to-speech models.
 ## What you already know
 
 - A **frame** is a short slice of audio. In this course a frame is 25 ms long,
-  and a new one starts every 10 ms, so one second holds about 100 frames.
+  and another starts every 10 ms, so one second holds about 100 frames.
 - MFCCs turn each frame into 13 numbers that describe the shape of its
   spectrum, and removing the utterance mean cancels a fixed channel. For more
   information, see *MFCCs and normalization*.
@@ -319,9 +318,9 @@ the triangle inequality, so indexing tricks that assume a metric can miss the
 nearest template.
 
 **It doesn't scale to large vocabularies or continuous speech.** Each word
-needs its own templates, and nothing is shared between words. Hidden Markov
-models, the next lesson, replace templates with statistical models of each
-sound.
+needs its own templates, and nothing is shared between words. The next
+lesson, *Hidden Markov models*, replaces templates with statistical models of
+each sound.
 
 ## The exercise
 

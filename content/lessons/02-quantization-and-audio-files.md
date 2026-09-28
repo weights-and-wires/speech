@@ -17,7 +17,7 @@ exercise: 02-quantization-and-audio-files
 
 # Quantization and audio files
 
-In the lesson on sound and sampling, every sample was a real number. A file
+In *Sound and sampling*, every sample was a real number. A file
 can't store a real number. It stores an integer with a fixed number of bits,
 so every sample gets rounded to the nearest of a few thousand levels. That
 rounding adds noise, and how much noise depends on the number of bits and on
@@ -45,8 +45,10 @@ $N$ bits there are $2^N$ levels. For signals in $[-1, 1)$, the levels are a
 **step** $\Delta$ apart:
 
 $$
-\Delta = \frac{2}{2^N} = 2^{1-N}, \qquad
-Q(x) = \Delta \cdot \operatorname{clip}\!\left(\operatorname{round}\!\left(\frac{x}{\Delta}\right),\, -2^{N-1},\, 2^{N-1} - 1\right)
+\begin{aligned}
+\Delta &= \frac{2}{2^N} = 2^{1-N} \\
+Q(x) &= \Delta \cdot \operatorname{clip}\!\left(\operatorname{round}\!\left(\frac{x}{\Delta}\right),\, -2^{N-1},\, 2^{N-1} - 1\right)
+\end{aligned}
 $$
 
 Read it aloud: divide the sample by the step, round to the nearest whole
@@ -108,8 +110,7 @@ and quantizing a 1234.5 Hz one at 16 kHz measures 49.73 dB.
 Speech is never a full-scale sine. A recording that peaks at $-20$ dBFS has an
 RMS level near $-35$ dBFS, 32 dB below the $-3.01$ dBFS of a full-scale sine.
 So at 16 bits its SNR is about 66 dB, not 98, and at 8 bits about 18 dB,
-which sounds harsh. The rule also assumes
-the error behaves like noise, and that fails for quiet or repetitive signals,
+which sounds harsh. The rule also assumes the error behaves like noise, and that fails for quiet or repetitive signals,
 which is where dither comes in.
 
 ## Dither
@@ -169,11 +170,14 @@ on the loud extremes as on the quiet middle, so quiet passages get few levels.
 quantizer and expands it afterward. The error then scales with the size of
 each sample, which keeps the SNR nearly constant as the level drops.
 
-The **mu-law** curve, from the ITU-T G.711 telephone standard, with $\mu = 255$:
+The **mu-law** curve, with $\mu = 255$, is the following. The ITU-T G.711
+telephone standard encodes a piecewise-linear approximation of it:
 
 $$
-F(x) = \operatorname{sgn}(x) \frac{\ln(1 + \mu |x|)}{\ln(1 + \mu)}, \qquad
-F^{-1}(y) = \operatorname{sgn}(y) \frac{(1 + \mu)^{|y|} - 1}{\mu}
+\begin{aligned}
+F(x) &= \operatorname{sgn}(x) \frac{\ln(1 + \mu |x|)}{\ln(1 + \mu)} \\
+F^{-1}(y) &= \operatorname{sgn}(y) \frac{(1 + \mu)^{|y|} - 1}{\mu}
+\end{aligned}
 $$
 
 Read it aloud: $F$ keeps the sign of $x$ and replaces its size with a
@@ -207,8 +211,8 @@ at about $-31$ dBFS, a rough stand-in for speech, mu-law wins by 15 dB.
 WaveNet used exactly this. It predicts each sample with a softmax, and a
 softmax over 65,536 16-bit values was impractical. Its authors compressed
 with mu-law and quantized to 256 values, and they reported a much better
-reconstruction than 256 linear levels gave. You build that model in the
-lesson on WaveNet.
+reconstruction than 256 linear levels gave. You build that model in
+*WaveNet and autoregressive vocoders*.
 
 > [!TIP]
 > Code 128 decodes to about 0.000086, not to 0, because 256 codes have no
@@ -283,7 +287,8 @@ The checks test the functions in this order.
    `np.clip`. Common mistake: clipping to $2^{N-1}$ instead of $2^{N-1} - 1$,
    which invents a level at $+1.0$ that no integer format has.
 2. **`predicted_snr_db(bits, amplitude)`** returns the formula. Common mistake:
-   `6.02 * bits + 1.76`, which is off by up to 0.01 dB at 24 bits.
+   `6.02 * bits + 1.76`, which is off by 0.015 dB at 24 bits and ignores the
+   amplitude.
 3. **`tpdf_dither(x, bits, rng)`** adds two `rng.uniform` draws and calls your
    `quantize`. Common mistake: one draw of width $2\Delta$, which is uniform,
    not triangular, and leaves the noise power depending on the signal.

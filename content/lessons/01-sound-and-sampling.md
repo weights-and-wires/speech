@@ -85,8 +85,10 @@ about a million to one in pressure, and a log scale turns that range into
 numbers from 0 to about 120. The rule depends on what you measure:
 
 $$
-L_{\text{power}} = 10 \log_{10} \frac{P}{P_{\text{ref}}}, \qquad
-L_{\text{amplitude}} = 20 \log_{10} \frac{A}{A_{\text{ref}}}
+\begin{aligned}
+L_{\text{power}} &= 10 \log_{10} \frac{P}{P_{\text{ref}}} \\
+L_{\text{amplitude}} &= 20 \log_{10} \frac{A}{A_{\text{ref}}}
+\end{aligned}
 $$
 
 Read it aloud: for a power, take ten times the log of the ratio. For an
@@ -205,7 +207,7 @@ The following demo lets you move a sine past the Nyquist frequency and watch
 the samples trace the alias.
 
 ```demo
-{"id": "sampling-and-aliasing", "caption": "Raise the sine above half the sample rate, then play the samples and hear the alias the readout predicts."}
+{"id": "sampling-and-aliasing", "caption": "Set the sine above half the sample rate, then play the samples and hear the lower tone that the readout predicts."}
 ```
 
 > [!KEY]
@@ -247,8 +249,9 @@ $$
 
 Read it aloud: tap $n$ is the ideal low-pass response for cutoff $f_c$, in
 cycles per sample, centered on the middle tap, times the window. This lesson
-uses the **Kaiser window**, `np.kaiser(K, beta)`, whose shape parameter
-$\beta$ trades a sharper cutoff for more leakage. SciPy's `resample_poly` uses
+uses the **Kaiser window**, `np.kaiser(K, beta)`. Its shape parameter
+$\beta$ sets a trade-off: a larger $\beta$ leaks less past the cutoff but
+rolls off more slowly. SciPy's `resample_poly` uses
 $\beta = 5$ and $K = 2 \times 10 \max(L, M) + 1$ taps. After windowing, divide
 the taps by their sum so that a constant signal passes through unchanged.
 
@@ -302,11 +305,13 @@ The checks test the functions in this order.
 5. **`lowpass_taps(num_taps, cutoff, beta)`** returns the windowed sinc from
    `np.sinc` and `np.kaiser`, divided by its sum. Common mistake:
    `np.sinc(np.pi * u)`; `np.sinc` already includes the $\pi$.
-6. **`resample(x, up, down, half_width)`** reduces the ratio with `gcd`,
-   builds `lowpass_taps(2 * half + 1, 0.5 / rate) * up`, zero-stuffs, calls
-   `np.convolve`, and slices `[half : half + n_out * down : down]`. Common
-   mistake: starting the slice at 0, which shifts the output by the filter
-   delay and fails the comparison with `resample_poly`.
+6. **`resample(x, up, down, half_width)`** returns `ceil(len(x) * up / down)`
+   samples. Reduce the ratio with `math.gcd`, build a filter with
+   `half_width * max(up, down)` taps on each side of the middle and a gain of
+   `up`, zero-stuff, and convolve with `np.convolve`. Then keep every
+   `down`-th sample, starting after the filter delay. Common mistake: starting
+   at sample 0, which shifts the output by the filter delay and fails the
+   comparison with `resample_poly`.
 
 ## Cost and scaling
 
@@ -323,7 +328,7 @@ Your `resample` is the first row: it computes every filtered sample, throws
 most away, and spends most multiplies on inserted zeros. A **polyphase**
 resampler, such as `scipy.signal.resample_poly`, computes only the outputs it
 keeps, with the same result. For 16 kHz to 44.1 kHz, $K = 8821$ and the gap is
-a factor of thousands. Memory is $O(N L)$ for the direct method and $O(N)$ for
+$LM = 70{,}560$ times. Memory is $O(N L)$ for the direct method and $O(N)$ for
 polyphase.
 
 ## Where this breaks
@@ -335,7 +340,8 @@ survives at $-14.3$ dB and aliases to 7.5 kHz. More taps narrow the band at a
 higher cost.
 
 **Libraries resample without telling you.** `librosa.load` resamples to
-22,050 Hz and mixes to mono unless you pass `sr=None`. A 16 kHz model then
+22,050 Hz unless you pass `sr=None`, and mixes to mono unless you pass
+`mono=False`. A 16 kHz model then
 fails quietly. Print the rate of every clip you load.
 
 **Resamplers disagree slightly.** SciPy, torchaudio, and SoX use different
@@ -364,5 +370,5 @@ silence, and that 7 kHz and 3 kHz give the same samples at 10 kHz. They test
 `alias_frequency` against a table and against the spectrum of the sampled
 tone, `lowpass_taps` against `scipy.signal.firwin`, and `resample` against
 `scipy.signal.resample_poly`. The last two checks need a resampled 1 kHz tone
-within 50 dB SNR of a synthesized one, and a 10 kHz tone at least 40 dB below
+at least 50 dB SNR against a synthesized one, and a 10 kHz tone at least 40 dB below
 what naive decimation leaves.

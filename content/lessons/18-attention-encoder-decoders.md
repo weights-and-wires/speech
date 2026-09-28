@@ -28,7 +28,7 @@ An **attention encoder-decoder** (AED) drops that assumption. An **encoder**
 listens to the whole utterance and turns it into a shorter sequence of
 vectors. A **decoder** then writes the transcript one token at a time, like a
 person taking dictation. Before each token, it looks back over the encoder's
-vectors and decides which ones matter right now. That choice is
+vectors and decides which ones matter for this token. That choice is
 **attention**. No alignment is given; the model learns where to look.
 
 This is the design of Listen, Attend and Spell (LAS), and of Whisper, which
@@ -39,8 +39,8 @@ attention sweep across the audio.
 
 ## What you already know
 
-- CTC sums over monotonic alignments with a blank, from the lesson "Connectionist temporal classification."
-- Prefix beam search keeps the best few partial transcripts, from the lesson "Decoding CTC."
+- CTC sums over monotonic alignments with a blank, from *Connectionist temporal classification*.
+- Prefix beam search keeps the best few partial transcripts, from *Decoding CTC*.
 - A GRU turns a sequence into a sequence of hidden states, one per step.
 - Transformer attention takes a softmax of dot products between a query and many keys.
 - Cross-entropy is $-\log p_y$, the negative log probability of the correct class $y$.
@@ -60,12 +60,14 @@ the previous token and the previous **context vector** $c_{i-1}$, updates its
 state, attends, and predicts:
 
 $$
-s_i = \operatorname{RNN}\big(s_{i-1}, [y_{i-1}; c_{i-1}]\big), \qquad
-c_i = \sum_{u} \alpha_{i,u}\, h_u, \qquad
-P(y_i \mid x, y_{<i}) = \operatorname{softmax}\big(W_o [s_i; c_i]\big)
+\begin{aligned}
+s_i &= \operatorname{RNN}\big(s_{i-1}, [y_{i-1}; c_{i-1}]\big) \\
+c_i &= \sum_{u} \alpha_{i,u}\, h_u \\
+P(y_i \mid x, y_{<i}) &= \operatorname{softmax}\big(W_o [s_i; c_i]\big)
+\end{aligned}
 $$
 
-Read it aloud: the new state mixes the old state with the last token and the
+Read it aloud: the updated state mixes the old state with the last token and the
 last context. The context is a weighted average of the encoder frames, with
 **attention weights** $\alpha_{i,u}$ that are positive and sum to 1 over $u$.
 The next-token distribution comes from the state and the context together.
@@ -98,9 +100,11 @@ The simplest way to choose frames is to compare. The decoder's state becomes a
 point the same way as the query get high scores:
 
 $$
-e_u = \frac{q \cdot k_u}{\sqrt{d}}, \qquad
-\alpha_u = \frac{\exp(e_u)}{\sum_{u'} \exp(e_{u'})}, \qquad
-c = \sum_u \alpha_u v_u
+\begin{aligned}
+e_u &= \frac{q \cdot k_u}{\sqrt{d}} \\
+\alpha_u &= \frac{\exp(e_u)}{\sum_{u'} \exp(e_{u'})} \\
+c &= \sum_u \alpha_u v_u
+\end{aligned}
 $$
 
 Read it aloud: the **energy** $e_u$ of frame $u$ is the dot product of the
@@ -140,9 +144,11 @@ weights back in. It convolves $\alpha_{i-1}$ with a few learned filters $F$, so
 each frame learns how much attention it and its neighbors received last time:
 
 $$
-f_i = F * \alpha_{i-1}, \qquad
-e_{i,u} = w^{\top} \tanh\big(W s_{i} + V h_u + U f_{i,u} + b\big), \qquad
-\alpha_{i,u} = \operatorname{softmax}_u\, e_{i,u}
+\begin{aligned}
+f_i &= F * \alpha_{i-1} \\
+e_{i,u} &= w^{\top} \tanh\big(W s_{i} + V h_u + U f_{i,u} + b\big) \\
+\alpha_{i,u} &= \operatorname{softmax}_u\, e_{i,u}
+\end{aligned}
 $$
 
 Read it aloud: $f_i$ holds one feature vector per frame, the previous weights
@@ -178,7 +184,7 @@ an utterance. The following demo shows attention weights over a whole
 utterance.
 
 ```demo
-{"id": "attention-alignment", "caption": "Step through the output tokens and watch the attention peak march from left to right across the encoder frames."}
+{"id": "attention-alignment", "caption": "Pick the monotonic alignment and drag the output character to watch the attention peak march left to right across the encoder frames, then pick the repeating one to see it jump back.", "props": {"task": "asr"}}
 ```
 
 > [!KEY]
@@ -194,8 +200,10 @@ hypotheses in the beam are all near zero, and an LM can't rescue them.
 **Label smoothing** moves a little of the target's probability to every class:
 
 $$
-q'(k) = (1 - \varepsilon)\,\mathbb{1}[k = y] + \frac{\varepsilon}{K}, \qquad
-\ell = -\sum_{k=1}^{K} q'(k) \log p_k
+\begin{aligned}
+q'(k) &= (1 - \varepsilon)\,\mathbb{1}[k = y] + \frac{\varepsilon}{K} \\
+\ell &= -\sum_{k=1}^{K} q'(k) \log p_k
+\end{aligned}
 $$
 
 Read it aloud: the smoothed target gives the true class $y$ a weight of
@@ -265,13 +273,15 @@ extends each of them by every token and keeps the best $B$ extensions. An
 extension by `<eos>` is finished and moves to a separate list.
 
 Every token multiplies the probability by a number below 1, so raw scores
-prefer short hypotheses. That's the same bias the insertion bonus fixed in the
-lesson "Decoding CTC." Here the fix is to divide by a function of length. The
+prefer short hypotheses. That's the same bias the insertion bonus fixed in
+*Decoding CTC*. Here the fix is to divide by a function of length. The
 GNMT length penalty (Wu et al., 2016) is
 
 $$
-\operatorname{lp}(n) = \left(\frac{5 + n}{6}\right)^{\alpha}, \qquad
-\operatorname{score}(y) = \frac{\log P(y \mid x)}{\operatorname{lp}(|y|)}
+\begin{aligned}
+\operatorname{lp}(n) &= \left(\frac{5 + n}{6}\right)^{\alpha} \\
+\operatorname{score}(y) &= \frac{\log P(y \mid x)}{\operatorname{lp}(|y|)}
+\end{aligned}
 $$
 
 Read it aloud: a hypothesis with $n$ tokens has its log probability divided
@@ -333,9 +343,9 @@ The checks test the functions in this order.
    $\varepsilon$ over $K - 1$ classes, which isn't what PyTorch's
    `label_smoothing` does.
 4. **`joint_ctc_attention_loss(ctc_log_probs, ctc_lengths, att_logits, targets, target_lengths, lam, epsilon)`.**
-   Build the attention targets with `torch.where` on a position grid, then
-   combine `label_smoothing_loss` and `F.ctc_loss(..., reduction="sum",
-   zero_infinity=True) / B`. Common mistake: forgetting `<eos>` in the
+   Build the attention targets by writing `<eos>` at each utterance's own
+   length, then mix your `label_smoothing_loss` with torch's CTC loss on the
+   same per-utterance scale. Common mistake: forgetting `<eos>` in the
    attention targets, so the model never learns to stop.
 5. **`beam_search(step_fn, eos, beam_width, max_len, length_penalty)`.**
    Returns every finished hypothesis as `(tokens, score)`, best first. Keep an
@@ -363,8 +373,8 @@ so for long outputs the decoder dominates the time.
 ## Where this breaks
 
 **It can't stream.** The decoder attends over the whole utterance, so it can't
-start until the audio ends. The lesson "Transducers and streaming" covers
-models that emit while audio arrives.
+start until the audio ends. The next lesson, *Transducers and streaming*,
+covers models that emit while audio arrives.
 
 **It loops, skips, or stops early.** Attention has no built-in order.
 Location-aware energies, the joint CTC loss, and CTC scores in the beam all
@@ -390,9 +400,9 @@ You build `dot_product_attention` and `location_aware_attention`, then
 `label_smoothing_loss`, `joint_ctc_attention_loss`, and `beam_search`. The
 file gives you a `TinyLAS` model, a pyramidal BiGRU listener and a GRU speller
 with a CTC head, that calls your attention and your loss. Press **Run** to
-train it for 250 steps on clips of two to six tones, decode 40 new clips with
+train it for 250 steps on clips of two to six tones, decode 40 unseen clips with
 your beam search, hear one of them, and see its attention map. The reference
-solution reaches a token error rate of 2.5% on 200 new clips. Every clip it
+solution reaches a token error rate of 2.5% on 200 unseen clips. Every clip it
 got wrong held a repeated tone, dropped or doubled: with no symbol between two
 copies, the decoder must count them from the audio alone.
 

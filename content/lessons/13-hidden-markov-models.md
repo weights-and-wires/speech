@@ -19,11 +19,11 @@ exercise: 13-hidden-markov-models
 
 A template recognizer from *Dynamic time warping* keeps whole recordings and
 compares against each one. It learns nothing about which parts of a word vary
-and which parts don't. A second speaker, a new microphone, or a slightly
+and which parts don't. A second speaker, a different microphone, or a slightly
 different vowel all look equally far from the template.
 
-A **hidden Markov model** (HMM) replaces the recording with a small model. Picture a word as a row of rooms that you walk through from
-left to right. In each room you linger for a while, and every 10 ms you make a
+A **hidden Markov model** (HMM) replaces the recording with a small model.
+Picture a word as a row of rooms that you walk through from left to right. In each room you linger for a while, and every 10 ms you make a
 sound drawn from that room's own distribution. You hear only the sounds; the
 rooms are hidden. An HMM gives the probability of any sequence of sounds, and
 it can say which room produced each one.
@@ -109,7 +109,11 @@ applies. Define the **forward variable** $\alpha_t(j)$, the probability of the
 first $t$ observations and ending in state $j$ at frame $t$:
 
 $$
-\alpha_1(j) = \pi_j\, b_j(o_1), \qquad \alpha_{t+1}(j) = \Big[\sum_{i=1}^{N} \alpha_t(i)\, a_{ij}\Big]\, b_j(o_{t+1}), \qquad P(O \mid \lambda) = \sum_{j=1}^{N} \alpha_T(j)
+\begin{aligned}
+\alpha_1(j) &= \pi_j\, b_j(o_1) \\
+\alpha_{t+1}(j) &= \Big[\sum_{i=1}^{N} \alpha_t(i)\, a_{ij}\Big]\, b_j(o_{t+1}) \\
+P(O \mid \lambda) &= \sum_{j=1}^{N} \alpha_T(j)
+\end{aligned}
 $$
 
 Read it aloud: start with the chance of starting in $j$ times the chance that
@@ -127,9 +131,11 @@ Take a two-state HMM whose emissions are three discrete symbols, so
 $b_j(o)$ is a table lookup:
 
 $$
-\pi = \begin{bmatrix} 0.6 & 0.4 \end{bmatrix}, \qquad
-A = \begin{bmatrix} 0.7 & 0.3 \\ 0.4 & 0.6 \end{bmatrix}, \qquad
-B = \begin{bmatrix} 0.5 & 0.4 & 0.1 \\ 0.1 & 0.3 & 0.6 \end{bmatrix}
+\begin{aligned}
+\pi &= \begin{bmatrix} 0.6 & 0.4 \end{bmatrix}, \qquad
+A = \begin{bmatrix} 0.7 & 0.3 \\ 0.4 & 0.6 \end{bmatrix} \\
+B &= \begin{bmatrix} 0.5 & 0.4 & 0.1 \\ 0.1 & 0.3 & 0.6 \end{bmatrix}
+\end{aligned}
 $$
 
 Row $j$ of $B$ is state $j$'s distribution over the symbols 0, 1, and 2.
@@ -149,11 +155,14 @@ Each frame multiplies in probabilities below 1, so $\alpha$ shrinks
 exponentially. On the exercise's random four-state HMM with 2,000 frames,
 $\log P(O) = -2799.5$ nats, which is about $10^{-1216}$. Even the smallest
 subnormal float64 is about $5 \times 10^{-324}$, so a linear-space forward
-pass returns exactly 0. Store $\log \alpha$ instead, and turn every sum of products into a
-log-sum-exp:
+pass returns exactly 0. Store $\log \alpha$ instead, and turn every sum of
+products into a log-sum-exp:
 
 $$
-\log \alpha_{t+1}(j) = \operatorname{LSE}_i\big(\log \alpha_t(i) + \log a_{ij}\big) + \log b_j(o_{t+1}), \qquad \operatorname{LSE}(v) = v_{\max} + \log \sum_i e^{v_i - v_{\max}}
+\begin{aligned}
+\log \alpha_{t+1}(j) &= \operatorname{LSE}_i\big(\log \alpha_t(i) + \log a_{ij}\big) + \log b_j(o_{t+1}) \\
+\operatorname{LSE}(v) &= v_{\max} + \log \sum_i e^{v_i - v_{\max}}
+\end{aligned}
 $$
 
 Read it aloud: add logs where the linear version multiplies, and combine the
@@ -176,7 +185,10 @@ The **backward variable** $\beta_t(i)$ is the probability of the observations
 after frame $t$, given state $i$ at frame $t$. It runs from the end:
 
 $$
-\beta_T(i) = 1, \qquad \beta_t(i) = \sum_{j=1}^{N} a_{ij}\, b_j(o_{t+1})\, \beta_{t+1}(j)
+\begin{aligned}
+\beta_T(i) &= 1 \\
+\beta_t(i) &= \sum_{j=1}^{N} a_{ij}\, b_j(o_{t+1})\, \beta_{t+1}(j)
+\end{aligned}
 $$
 
 Read it aloud: at the last frame nothing is left to explain. Earlier, add up
@@ -193,11 +205,14 @@ $0.3 \times 0.106 + 0.04 \times 0.112 = 0.03628$, the same number as before.
 
 Alignment asks for the single best state sequence rather than the sum over
 all of them: which frames belong to which sound. That's the job of the
-**Viterbi algorithm**. Replace the sum in the
-forward pass with a maximum, and remember which predecessor won:
+**Viterbi algorithm**. Replace the sum in the forward pass with a maximum, and remember which predecessor won:
 
 $$
-\delta_1(j) = \pi_j\, b_j(o_1), \qquad \delta_{t+1}(j) = \max_i \big[\delta_t(i)\, a_{ij}\big]\, b_j(o_{t+1}), \qquad \psi_{t+1}(j) = \operatorname*{arg\,max}_i \big[\delta_t(i)\, a_{ij}\big]
+\begin{aligned}
+\delta_1(j) &= \pi_j\, b_j(o_1) \\
+\delta_{t+1}(j) &= \max_i \big[\delta_t(i)\, a_{ij}\big]\, b_j(o_{t+1}) \\
+\psi_{t+1}(j) &= \operatorname*{arg\,max}_i \big[\delta_t(i)\, a_{ij}\big]
+\end{aligned}
 $$
 
 Read it aloud: $\delta_t(j)$ is the probability of the best path that ends in
@@ -214,13 +229,13 @@ The following demo draws the trellis, the grid of states against frames,
 with its best path.
 
 ```demo
-{"id": "viterbi-trellis", "caption": "Raise S1's self-loop a11 and watch the best path stay in S1 for more frames, then compare log P(best path) with log P(O), which sums over every path."}
+{"id": "viterbi-trellis", "caption": "Drag S1's self-loop a11 up from 0.05 and watch the best path stay in S1 for more frames, then compare log P(best path) with log P(O), which sums over every path."}
 ```
 
 ## Train with Baum-Welch
 
-Nobody labels frames with states, so you can't fit the Gaussians directly. **Baum-Welch** is the expectation-maximization (EM)
-algorithm for HMMs. It guesses soft labels from the current model, refits the
+Nobody labels frames with states, so you can't fit the Gaussians directly.
+**Baum-Welch** is the expectation-maximization (EM) algorithm for HMMs. It guesses soft labels from the current model, refits the
 model to those soft labels, and repeats. Each round never lowers
 $P(O \mid \lambda)$.
 
@@ -230,7 +245,10 @@ the probability of state $i$ at frame $t$ given all the observations. The
 at frame $t$ to $j$ at frame $t+1$:
 
 $$
-\gamma_t(i) = \frac{\alpha_t(i)\,\beta_t(i)}{P(O \mid \lambda)}, \qquad \xi_t(i, j) = \frac{\alpha_t(i)\, a_{ij}\, b_j(o_{t+1})\, \beta_{t+1}(j)}{P(O \mid \lambda)}
+\begin{aligned}
+\gamma_t(i) &= \frac{\alpha_t(i)\,\beta_t(i)}{P(O \mid \lambda)} \\
+\xi_t(i, j) &= \frac{\alpha_t(i)\, a_{ij}\, b_j(o_{t+1})\, \beta_{t+1}(j)}{P(O \mid \lambda)}
+\end{aligned}
 $$
 
 Read it aloud: $\gamma$ is the forward and backward probability through
@@ -238,16 +256,20 @@ state $i$ at frame $t$, as a share of the total. $\xi$ is the same for one
 transition: arrive in $i$, move to $j$, emit the next frame, and explain the
 rest. In the toy, $\gamma_1 = [0.877, 0.123]$ and $\gamma_3 = [0.212, 0.788]$.
 
-The new parameters are weighted counts:
+The updated parameters are weighted counts:
 
 $$
-\hat a_{ij} = \frac{\sum_{t=1}^{T-1} \xi_t(i, j)}{\sum_{t=1}^{T-1} \gamma_t(i)}, \qquad \hat\mu_j = \frac{\sum_{t} \gamma_t(j)\, o_t}{\sum_{t} \gamma_t(j)}, \qquad \hat\sigma^2_j = \frac{\sum_t \gamma_t(j)\, o_t^2}{\sum_t \gamma_t(j)} - \hat\mu_j^2
+\begin{aligned}
+\hat a_{ij} &= \frac{\sum_{t=1}^{T-1} \xi_t(i, j)}{\sum_{t=1}^{T-1} \gamma_t(i)} \\
+\hat\mu_j &= \frac{\sum_{t} \gamma_t(j)\, o_t}{\sum_{t} \gamma_t(j)} \\
+\hat\sigma^2_j &= \frac{\sum_t \gamma_t(j)\, o_t^2}{\sum_t \gamma_t(j)} - \hat\mu_j^2
+\end{aligned}
 $$
 
-Read it aloud: the new transition probability is the expected number of
-$i$-to-$j$ moves divided by the expected number of moves out of $i$. The new
+Read it aloud: the updated transition probability is the expected number of
+$i$-to-$j$ moves divided by the expected number of moves out of $i$. The updated
 mean is the average frame, with each frame weighted by how much it belongs to
-state $j$. The new variance is the weighted average square minus the square
+state $j$. The updated variance is the weighted average square minus the square
 of the mean. With several training sequences, add up the numerators and
 denominators over all of them before dividing. In numpy, with `gamma` of shape
 `(T, N)`:
@@ -379,7 +401,7 @@ You build `log_gaussian_diag` and `log_gmm` for the emissions, `forward`,
 `backward`, and `viterbi` in log space, `baum_welch_step` for Gaussian HMMs,
 and the recognizer pieces `train_word_hmm` and `recognize`. Press **Run** to
 train one HMM per synthetic word, see the log-likelihood per frame rise with
-every iteration, see the Viterbi alignment of a new take of "osa", and
+every iteration, see the Viterbi alignment of an unseen take of "osa", and
 recognize 40 noisy words.
 
 The checks compare your densities with `scipy.stats.multivariate_normal`,

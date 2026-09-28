@@ -68,12 +68,13 @@ class Conv2dSubsampling(nn.Module):
     - conv2: nn.Conv2d(channels, channels, kernel_size=3, stride=2), no padding.
     - out: nn.Linear(channels * subsampled_length(n_mels), d_model).
 
-    forward(x, lengths) takes x of shape (N, T, n_mels) and lengths of shape
-    (N,). It treats x as a one-channel image with time as height, applies
-    conv1, ReLU, conv2, and ReLU, moves time next to the batch axis, flattens
-    channels and frequency (channels outer) into one axis, and applies `out`.
-    It returns (y, out_lengths): y has shape (N, subsampled_length(T),
-    d_model) and out_lengths = subsampled_length(lengths).
+    forward(x, lengths) takes x of shape (N, T, n_mels), read as a
+    one-channel image with time as height, and lengths of shape (N,). Each
+    convolution is followed by a ReLU. The features that reach `out` for one
+    output frame are ordered channel-major: channel c, frequency f sits at
+    index c * subsampled_length(n_mels) + f. It returns (y, out_lengths): y
+    has shape (N, subsampled_length(T), d_model) and
+    out_lengths = subsampled_length(lengths).
     """
 
     def __init__(self, n_mels: int, d_model: int, channels: int = 32):

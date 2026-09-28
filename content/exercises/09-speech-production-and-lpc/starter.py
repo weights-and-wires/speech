@@ -38,8 +38,8 @@ def resonator(frequency: float, bandwidth: float, sample_rate: int) -> tuple[np.
 def synthesize_vowel(f0: float, formants, bandwidths, sample_rate: int, seconds: float) -> np.ndarray:
     """A vowel from the source-filter model, shape (round(seconds * sample_rate),).
 
-    Pass `impulse_train(f0, ...)` through one `resonator` per formant in turn,
-    with scipy.signal.lfilter, and scale the result so its largest absolute
+    The source is an impulse train at `f0`, and the filter is a cascade of
+    one `resonator` per formant. The result is scaled so its largest absolute
     value is 0.5.
     """
     raise NotImplementedError
@@ -68,8 +68,8 @@ def levinson_durbin(r: np.ndarray, p: int) -> tuple[np.ndarray, float, np.ndarra
 def lpc(frame: np.ndarray, order: int) -> tuple[np.ndarray, float]:
     """Autocorrelation-method LPC of one frame: (alpha, E).
 
-    Multiply the frame by np.hamming(len(frame)), take its autocorrelation up
-    to lag `order`, and run `levinson_durbin`.
+    The frame is windowed with np.hamming(len(frame)) before its
+    autocorrelation, up to lag `order`, is computed.
     """
     raise NotImplementedError
 

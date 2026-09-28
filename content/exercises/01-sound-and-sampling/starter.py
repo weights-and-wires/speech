@@ -17,8 +17,8 @@ from speechlab import play, show_plot, show_spectrogram
 def rms(x: np.ndarray) -> float:
     """The root mean square of `x`, as a float.
 
-    Square every sample, take the mean, and take the square root. A sine of
-    amplitude A, measured over whole periods, has an RMS of A / sqrt(2).
+    A sine of amplitude A, measured over whole periods, has an RMS of
+    A / sqrt(2).
     """
     raise NotImplementedError("rms")
 
@@ -59,8 +59,8 @@ def sample_tone(
 def alias_frequency(frequency: float, sample_rate: float) -> float:
     """The frequency, in Hz, that the samples of a tone at `frequency` show.
 
-    The result lies in [0, sample_rate / 2]. It is the distance from
-    `frequency` to the nearest whole multiple of `sample_rate`.
+    The result lies in [0, sample_rate / 2]. A tone already below half the
+    sample rate is unchanged, and a 7000 Hz tone at 10000 Hz shows as 3000 Hz.
     """
     raise NotImplementedError("alias_frequency")
 
@@ -69,10 +69,9 @@ def lowpass_taps(num_taps: int, cutoff: float, beta: float = 5.0) -> np.ndarray:
     """A windowed-sinc low-pass FIR filter, shape (num_taps,).
 
     `cutoff` is in cycles per sample, between 0 and 0.5 (0.5 is the Nyquist
-    frequency). Tap `n` is the ideal low-pass response
-    `2 * cutoff * sinc(2 * cutoff * m)` at `m = n - (num_taps - 1) / 2`, times
-    a Kaiser window `np.kaiser(num_taps, beta)`. Scale the taps so they sum
-    to 1, which makes the gain at 0 Hz exactly 1.
+    frequency). The filter is symmetric about its middle tap, uses a Kaiser
+    window with shape `beta`, and has a gain of exactly 1 at 0 Hz. It matches
+    `scipy.signal.firwin(num_taps, 2 * cutoff, window=("kaiser", beta))`.
     """
     raise NotImplementedError("lowpass_taps")
 
@@ -80,17 +79,12 @@ def lowpass_taps(num_taps: int, cutoff: float, beta: float = 5.0) -> np.ndarray:
 def resample(x: np.ndarray, up: int, down: int, half_width: int = 10) -> np.ndarray:
     """Change the sample rate of `x` by the ratio `up / down`.
 
-    1. Divide `up` and `down` by their greatest common divisor, and let
-       `rate = max(up, down)` and `half = half_width * rate`.
-    2. Insert `up - 1` zeros after every sample, so the signal is `up` times
-       longer.
-    3. Filter it with `lowpass_taps(2 * half + 1, 0.5 / rate)` times `up`,
-       using the full convolution.
-    4. The filter delays the signal by `half` samples. Keep samples `half`,
-       `half + down`, `half + 2 * down`, and so on.
-
-    Returns `ceil(len(x) * up / down)` samples. This is what
-    `scipy.signal.resample_poly(x, up, down)` computes.
+    Returns `ceil(len(x) * up / down)` samples, equal to
+    `scipy.signal.resample_poly(x, up, down)`. After `up` and `down` are
+    reduced by their greatest common divisor, the anti-aliasing filter is a
+    `lowpass_taps` filter with `half_width * max(up, down)` taps on each side
+    of its middle, cut off at the lower of the two Nyquist frequencies. The
+    output lines up with the input: the filter's delay is removed.
     """
     raise NotImplementedError("resample")
 

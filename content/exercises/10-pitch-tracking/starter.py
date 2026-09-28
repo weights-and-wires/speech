@@ -49,11 +49,11 @@ def cmndf(d: np.ndarray) -> np.ndarray:
 def absolute_threshold(dprime: np.ndarray, tau_min: int, tau_max: int, threshold: float = 0.1) -> int:
     """YIN's choice of lag, an int in [tau_min, tau_max].
 
-    Scan tau upward from tau_min. At the first tau with dprime[tau] < threshold,
-    keep stepping to tau + 1 while that stays inside [tau_min, tau_max] and
-    dprime[tau + 1] < dprime[tau], and return where you stop. If no lag in the
-    range is under the threshold, return the lag of the smallest dprime in
-    [tau_min, tau_max].
+    The result is the bottom of the first dip under `threshold` in
+    [tau_min, tau_max]: of the lags from the first one under the threshold
+    onward, the last one before dprime stops falling, without leaving the
+    range. If no lag in the range is under the threshold, the result is the
+    lag of the smallest dprime in [tau_min, tau_max].
     """
     raise NotImplementedError
 
@@ -70,11 +70,11 @@ def parabolic_interpolation(y: np.ndarray, tau: int) -> float:
 def yin(frame: np.ndarray, sample_rate: int, fmin: float, fmax: float, threshold: float = 0.1) -> tuple[float, float]:
     """YIN on one frame: (F0 in Hz, aperiodicity).
 
-    With tau_min = floor(sample_rate / fmax) and tau_max = ceil(sample_rate / fmin),
-    compute d' = cmndf(difference_function(frame, tau_max + 1)), pick the lag
-    with absolute_threshold over [tau_min, tau_max], refine it with
-    parabolic_interpolation on d', and return sample_rate / refined_lag and
-    d' at the integer lag.
+    The search range is tau_min = floor(sample_rate / fmax) to
+    tau_max = ceil(sample_rate / fmin), and d' is computed up to lag
+    tau_max + 1 so the parabola has a right neighbor. F0 is sample_rate over
+    the interpolated lag, and the aperiodicity is d' at the integer lag that
+    the absolute threshold picked.
     """
     raise NotImplementedError
 
@@ -84,7 +84,7 @@ def track_pitch(x, sample_rate, frame_length=1024, hop=160, fmin=60.0, fmax=500.
 
     Pad x by frame_length // 2 samples at each end by reflection, as in the
     STFT lesson, so frame t is padded[t * hop : t * hop + frame_length] and is
-    centered on sample t * hop. Run `yin` on each frame. A frame is voiced when
+    centered on sample t * hop. A frame is voiced when
     its aperiodicity is below `voicing_threshold`; then f0[t] is YIN's estimate.
     Otherwise f0[t] = 0 and voiced[t] = False.
     """

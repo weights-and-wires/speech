@@ -29,14 +29,15 @@ transcribes the silence wastes compute and invents words. A phone call that
 sends the silence wastes bandwidth. A *voice activity detector* (VAD) marks
 which stretches of a recording hold speech.
 
-This lesson covers both ends: the units linguists use to write speech sounds,
-a text normalizer, a grapheme-to-phoneme converter, and a VAD built from frame
-energy.
+The lessons so far in this part studied the sound of a voice. This one
+covers what surrounds it at both ends: the units linguists use to write
+speech sounds, a text normalizer, a grapheme-to-phoneme converter, and a VAD
+built from frame energy.
 
 ## What you already know
 
 - A decibel is $10 \log_{10}$ of a power ratio, and the mean of $x^2$ over a frame is its power.
-- A centered frame is padded by half its length at each end by reflection, so a signal of $N$ samples has $1 + N / H$ frames at hop $H$.
+- A centered frame is padded by half its length at each end by reflection, so a signal of $L$ samples has $1 + \lfloor L / H \rfloor$ frames at hop $H$.
 - A vowel's identity comes from its formants, and its pitch from the source.
 - Voiced sounds are periodic; sounds like "s" and "f" are turbulent noise.
 - Python's `re` module finds tokens that match a regular expression.
@@ -159,7 +160,7 @@ ships an `EnglishTextNormalizer` for that purpose; for more information, see
 "sh". English spelling is irregular, so G2P starts with a dictionary: look the
 word up in CMUdict, and use the listed pronunciation.
 
-Words missing from the dictionary, such as names and new words, need a
+Words missing from the dictionary, such as names and coined words, need a
 fallback. The oldest is *letter-to-sound rules*: a table from graphemes to
 phones, applied left to right. At each position, take the longest grapheme
 that matches, emit its phones, and move past it. Some rules apply only at the
@@ -173,7 +174,7 @@ the "a" is long.
 
 The *phone error rate* (PER) scores a G2P system: the edit distance between the
 predicted and true phone sequences, divided by the length of the true one.
-Part 3 builds that edit distance. Here, "nation" has one substitution in five
+*Language models and word error rate* builds that edit distance. Here, "nation" has one substitution in five
 phones, a PER of 20%. On 46 held-out CMUdict words, the exercise's rules
 reach 11.6% PER with stress removed. Their errors are the ones that need
 more than one letter of context: the silent "e" in "cake" that lengthens the
@@ -181,8 +182,9 @@ more than one letter of context: the silent "e" in "cake" that lengthens the
 
 Better fallbacks learn from the dictionary itself: joint-sequence models such
 as Sequitur G2P, and neural sequence-to-sequence models that read the whole
-word before they write any phone. None of them solves *homographs*, words spelled alike but said
-differently, such as "read", "live", and "record". Those need the sentence.
+word before they write any phone. None of them solves *homographs*, words
+spelled alike but said differently, such as "read", "live", and "record".
+Those need the sentence.
 
 > [!KEY]
 > Text reaches a speech model in three steps: normalize non-standard words,
@@ -255,8 +257,7 @@ TP = 2, FP = 1, and FN = 1, so $F_1 = 4 / 6 = 0.667$.
 Two widely used detectors do better than energy. WebRTC's VAD, from the
 browser real-time audio stack, classifies frames of 10, 20, or 30 ms with
 Gaussian mixture models over the energies of six bands between 80 Hz and
-4 kHz. Silero VAD is a small neural
-network that outputs a speech probability for each 512-sample chunk at
+4 kHz. Silero VAD is a small neural network that outputs a speech probability for each 512-sample chunk at
 16 kHz, 32 ms, and marks speech above 0.5 by default.
 
 > [!KEY]
@@ -271,6 +272,8 @@ network that outputs a speech probability for each 512-sample chunk at
 > - Hysteresis switches on high and off low after a hangover; frame F1 is $2\text{TP} / (2\text{TP} + \text{FP} + \text{FN})$.
 
 ## Build it step by step
+
+The checks test the functions in this order.
 
 1. **`strip_stress(phones)`** strips the digits 0, 1, and 2 from every phone
    with `str.rstrip`.
@@ -310,23 +313,28 @@ clip of $T$ frames of $N$ samples, the steps cost the following.
 | Hysteresis and F1 | $O(T)$ | $O(1)$ state |
 
 An energy VAD costs a few operations per sample. It also works one frame at a
-time, except for the percentile floor. A live VAD tracks the floor with a slowly updated minimum instead.
+time, except for the percentile floor. A live VAD tracks the floor with a
+slowly updated minimum instead.
 
 ## Where this breaks
 
-- **Low SNR.** At 20 dB and 10 dB SNR, the exercise's VAD reaches a frame F1
-  of 0.92 and 0.94 on the Run block's clip. At 5 dB it falls to 0.77, because
-  quiet speech sinks into the noise floor.
-- **Noise that changes.** A door slam or music is loud but not speech. Energy
-  cannot tell them apart; spectral shape, periodicity, or a trained model can.
-- **Quiet speech sounds.** Fricatives such as "f" and "th" have little energy.
-  A hangover protects word endings, and a zero-crossing rate, the rate at
-  which the signal changes sign, catches noisy sounds that energy misses.
-- **Ambiguous text.** "St." is "saint" or "street", and "2/3" is a date or a
-  fraction. Rules need context, and production normalizers carry large
-  grammars for it.
-- **Names and borrowed words.** English letter-to-sound rules fail on words
-  from other languages. Extend the lexicon by hand for the names you need.
+**Low SNR.** At 20 dB and 10 dB SNR, the exercise's VAD reaches a frame F1 of
+0.92 and 0.94 on the Run block's clip. At 5 dB it falls to 0.77, because quiet
+speech sinks into the noise floor.
+
+**Noise that changes.** A door slam or music is loud but not speech. Energy
+cannot tell them apart; spectral shape, periodicity, or a trained model can.
+
+**Quiet speech sounds.** Fricatives such as "f" and "th" have little energy. A
+hangover protects word endings, and a zero-crossing rate, the rate at which
+the signal changes sign, catches noisy sounds that energy misses.
+
+**Ambiguous text.** "St." is "saint" or "street", and "2/3" is a date or a
+fraction. Rules need context, and production normalizers carry large grammars
+for it.
+
+**Names and borrowed words.** English letter-to-sound rules fail on words from
+other languages. Extend the lexicon by hand for the names you need.
 
 > [!WARNING]
 > Normalize the reference and the hypothesis the same way before you score

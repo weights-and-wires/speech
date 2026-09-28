@@ -65,8 +65,13 @@ transcript per utterance, not a label per frame. Hybrid systems got frame
 labels from an earlier GMM-HMM by forced alignment, the Viterbi path through
 the HMM of the known transcript. The synthetic words in this exercise come
 with frame labels for free, because the generator knows where each segment
-starts. Label frame $t$ with the phone at its center sample, $160t + 200$,
-since each frame starts every 160 samples and is 400 samples long.
+starts. The exercise's `log_mel` frames without centering, so frame $t$
+starts at sample $160t$ and is 400 samples long. Label it with the phone at
+its center sample, $160t + 200$.
+
+From here on, features are time-first: a `(T, D)` array with one row per
+frame, the transpose of the `(bins, frames)` spectrogram layout. Torch layers
+treat the last axis as features, so neural models take this layout.
 
 The score of the classifier is **frame accuracy**, the share of frames whose
 argmax matches the label:
@@ -202,6 +207,10 @@ Take one second of features, $T = 100$ frames, with 80 mel bands:
 So 100 frames become 24, not 25. The two convolutions together give
 $\lfloor(\lfloor(T-1)/2\rfloor - 1)/2\rfloor$. The frame rate is about 25 per
 second, a 40 ms stride.
+
+> [!KEY]
+> Every length downstream comes from the convolution formula, applied layer
+> by layer. The 4x front end turns 100 frames into 24, not 25.
 
 Other systems use other front ends, all computed by the same formula:
 

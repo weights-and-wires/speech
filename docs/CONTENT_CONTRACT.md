@@ -435,8 +435,8 @@ or running a pretrained model over real recordings. The following rules apply:
 | `whisper-tiny` | `openai/whisper-tiny`, 39M parameters, with its tokenizer and feature extractor configs | Apache-2.0 | `WhisperForConditionalGeneration`, `WhisperTokenizer` |
 | `wav2vec2-base` | `facebook/wav2vec2-base`, 95M, self-supervised on LibriSpeech 960 h, not fine-tuned | Apache-2.0 | `Wav2Vec2Model` |
 | `hubert-base` | `facebook/hubert-base-ls960`, 95M, self-supervised, not fine-tuned | Apache-2.0 | `HubertModel` |
-| `encodec-24khz` | `facebook/encodec_24khz`, 15M, 1.5 to 24 kbps | Code MIT, weights CC-BY-NC-4.0 | `EncodecModel` |
-| `mimi` | `kyutai/mimi`, 79M, 12.5 Hz frames, 8 codebooks in `transformers` | CC-BY-4.0 | `MimiModel` |
+| `encodec-24khz` | `facebook/encodec_24khz`, 15M, 75 Hz frames, 1.5 to 24 kbps | Code MIT, weights CC-BY-NC-4.0 | `EncodecModel` |
+| `mimi` | `kyutai/mimi`, 79M, 12.5 Hz frames, 32 codebooks of 2048 in `transformers` (Moshi uses the first 8) | CC-BY-4.0 | `MimiModel` |
 | `smollm2-135m` | `HuggingFaceTB/SmolLM2-135M`, a 135M-parameter base language model | Apache-2.0 | `AutoModelForCausalLM`, `AutoTokenizer` |
 | `fsdd` | Free Spoken Digit Dataset v1.0.10: 3,000 recordings of the digits 0 to 9 by six speakers, 8 kHz WAV, under `free-spoken-digit-dataset-1.0.10/recordings/` as `{digit}_{speaker}_{index}.wav` | CC-BY-SA-4.0 | `speechlab.read_audio` |
 | `librispeech-dev-clean` | LibriSpeech dev-clean: 5.4 hours, 40 speakers, 16 kHz FLAC, under `LibriSpeech/dev-clean/{speaker}/{chapter}/`, with one `*.trans.txt` transcript file per chapter | CC-BY-4.0 | `speechlab.read_audio` |

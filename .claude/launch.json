@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "speech-backend",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", ".venv/bin/uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8016"],
+      "port": 8016
+    },
+    {
+      "name": "speech-frontend",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd frontend && npx vite --host 127.0.0.1 --port 5176 --strictPort"],
+      "env": { "API_TARGET": "http://127.0.0.1:8016" },
+      "port": 5176
+    }
+  ]
+}

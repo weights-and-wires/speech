@@ -1,0 +1,841 @@
+/* ------------------------------------------------------------------------
+   The print layout for the PDF book. It sits on top of index.css, so
+   the chapter bodies keep the site's typography, and changes only what a
+   printed page needs: a page box, running heads, no scrolling, and breaks.
+   ------------------------------------------------------------------------ */
+
+/* ISO B5, the usual textbook trim, with the wider margin on the spine side. */
+@page {
+  size: 176mm 250mm;
+  margin: 19mm 17mm 20mm 21mm;
+
+  @top-left {
+    font-family: "Inter Variable", sans-serif;
+    font-size: 7.5pt;
+    color: #6b675d;
+    vertical-align: bottom;
+    padding-bottom: 4mm;
+  }
+  @top-right {
+    font-family: "Inter Variable", sans-serif;
+    font-size: 7.5pt;
+    color: #6b675d;
+    vertical-align: bottom;
+    padding-bottom: 4mm;
+  }
+  @bottom-left {
+    font-family: "Inter Variable", sans-serif;
+    font-size: 8pt;
+    color: #37352f;
+    vertical-align: top;
+    padding-top: 5mm;
+  }
+  @bottom-right {
+    font-family: "Inter Variable", sans-serif;
+    font-size: 8pt;
+    color: #37352f;
+    vertical-align: top;
+    padding-top: 5mm;
+  }
+}
+@page :left {
+  margin-left: 17mm;
+  margin-right: 21mm;
+  @bottom-left {
+    content: counter(page);
+  }
+}
+@page :right {
+  margin-left: 21mm;
+  margin-right: 17mm;
+  @bottom-right {
+    content: counter(page);
+  }
+}
+
+/* The cover bleeds and carries nothing in its margins. */
+@page cover {
+  margin: 0;
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+  @bottom-left {
+    content: none;
+  }
+  @bottom-right {
+    content: none;
+  }
+}
+
+/* Front matter, part pages, and chapter openers keep their folio but carry no
+   running head, the way a printed book does. */
+@page front {
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+}
+@page part {
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+  @bottom-left {
+    content: none;
+  }
+  @bottom-right {
+    content: none;
+  }
+}
+@page opener {
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+}
+
+html,
+body {
+  height: auto !important;
+  background: #fff;
+  /* 12.4px puts the body text, at 1.075rem, on 10pt. */
+  font-size: 12.4px;
+  overscroll-behavior: auto;
+}
+body {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.book {
+  --canvas: #fff;
+}
+
+/* ------------------------------------------------------------------------
+   The cover.
+   ------------------------------------------------------------------------ */
+
+.cover {
+  page: cover;
+  display: flex;
+  flex-direction: column;
+  height: 250mm;
+  box-sizing: border-box;
+  padding: 22mm 20mm 18mm 24mm;
+  background: var(--chrome);
+  break-after: page;
+  font-family: var(--font-sans);
+}
+.cover-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cover-site {
+  font-size: 9pt;
+  color: var(--ink-3);
+}
+.cover-main {
+  margin-top: 46mm;
+}
+.cover-kicker {
+  font-size: 9.5pt;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.cover-title {
+  margin-top: 4mm;
+  font-family: var(--font-serif);
+  font-size: 52pt;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.cover-subtitle {
+  margin-top: 5mm;
+  max-width: 110mm;
+  font-family: var(--font-serif);
+  font-size: 17pt;
+  font-style: italic;
+  line-height: 1.25;
+  color: var(--ink-2);
+}
+.cover-edition {
+  margin-top: 18mm;
+  max-width: 105mm;
+  border-top: 1.5px solid var(--ink);
+  padding-top: 4mm;
+}
+.cover-edition-name {
+  display: flex;
+  align-items: center;
+  gap: 2.5mm;
+  font-size: 12pt;
+  font-weight: 600;
+  color: var(--ink);
+}
+.cover-edition-blurb {
+  margin-top: 2mm;
+  font-family: var(--font-serif);
+  font-size: 11pt;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+.cover-foot {
+  margin-top: auto;
+}
+.cover-built {
+  margin-top: 4mm;
+  font-size: 7.5pt;
+  color: var(--ink-4);
+}
+
+/* ------------------------------------------------------------------------
+   Front matter: the contents and the note on how the book works.
+   ------------------------------------------------------------------------ */
+
+.front {
+  page: front;
+  break-before: page;
+}
+.front-title {
+  margin-bottom: 8mm;
+  font-family: var(--font-serif);
+  font-size: 22pt;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.toc {
+  font-family: var(--font-sans);
+  font-size: 9.5pt;
+  color: var(--ink-2);
+}
+.toc a {
+  color: inherit;
+  text-decoration: none;
+}
+.toc-row,
+.toc-part-title,
+.mini-toc a {
+  display: flex;
+  align-items: baseline;
+  gap: 2mm;
+}
+.toc-title {
+  min-width: 0;
+}
+/* The dot leader between a title and its page number. */
+.toc-leader {
+  flex: 1;
+  min-width: 6mm;
+  align-self: baseline;
+  border-bottom: 1px dotted var(--rule-strong);
+  transform: translateY(-0.25em);
+}
+.pg {
+  min-width: 2.2em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.toc-front {
+  margin-bottom: 5mm;
+}
+.toc-part {
+  margin-top: 5mm;
+  break-inside: avoid;
+}
+.toc-part-title {
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 1.2mm;
+  margin-bottom: 1.5mm;
+  font-weight: 600;
+  color: var(--ink);
+}
+.toc-part-n {
+  min-width: 13mm;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.toc-chapter {
+  padding-block: 0.9mm;
+}
+.toc-n {
+  min-width: 13mm;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.about .lesson {
+  font-size: 1.075rem;
+}
+/* ------------------------------------------------------------------------
+   Part pages.
+   ------------------------------------------------------------------------ */
+
+.part-page {
+  page: part;
+  break-before: page;
+  padding-top: 12mm;
+}
+.part-kicker {
+  font-family: var(--font-sans);
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.part-title {
+  margin-top: 3mm;
+  font-family: var(--font-serif);
+  font-size: 30pt;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.part-chapters {
+  margin-top: 10mm;
+  border-top: 1.5px solid var(--ink);
+}
+.part-chapters li {
+  display: flex;
+  gap: 5mm;
+  border-bottom: 1px solid var(--rule);
+  padding-block: 2mm;
+  break-inside: avoid;
+}
+.part-chapter-n {
+  min-width: 7mm;
+  font-family: var(--font-sans);
+  font-size: 10pt;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.part-chapter-title {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 12.5pt;
+  font-weight: 600;
+  color: var(--ink);
+}
+.part-chapter-q {
+  display: block;
+  margin-top: 0.6mm;
+  font-family: var(--font-serif);
+  font-size: 9.5pt;
+  line-height: 1.4;
+  font-style: italic;
+  color: var(--ink-3);
+}
+
+/* ------------------------------------------------------------------------
+   A lesson: the opener, then the sections and the exercise.
+   ------------------------------------------------------------------------ */
+
+.opener {
+  page: opener;
+  break-before: page;
+  padding-top: 8mm;
+}
+.opener-kicker {
+  display: flex;
+  align-items: baseline;
+  gap: 3mm;
+  font-family: var(--font-sans);
+  font-size: 9pt;
+  color: var(--ink-3);
+}
+.opener-n {
+  font-weight: 600;
+  color: var(--ink);
+}
+.opener-title {
+  margin-top: 3mm;
+  font-family: var(--font-serif);
+  font-size: 27pt;
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.opener-question {
+  margin-top: 3mm;
+  font-family: var(--font-serif);
+  font-size: 13pt;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--ink-3);
+}
+.opener-levels {
+  margin-top: 6mm;
+  break-inside: avoid;
+}
+
+/* The sections start on a page of their own, which is also what lets the
+   running head name the lesson. Book.tsx gives each lesson its named page. */
+.level {
+  break-before: page;
+}
+/* The lesson's own contents, on its opening page. */
+.mini-toc-label {
+  margin-bottom: 1.5mm;
+  font-family: var(--font-sans);
+  font-size: 8pt;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.mini-toc {
+  margin-top: 3.5mm;
+  font-family: var(--font-sans);
+  font-size: 8.8pt;
+  color: var(--ink-2);
+}
+.mini-toc li + li {
+  margin-top: 0.9mm;
+}
+.mini-toc a {
+  color: inherit;
+  text-decoration: none;
+}
+.mini-toc-n {
+  min-width: 7mm;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+.mini-toc-kind {
+  font-size: 7.8pt;
+  color: var(--ink-4);
+  white-space: nowrap;
+}
+.opener-levels .mini-toc {
+  margin-top: 0;
+}
+.opener-minutes {
+  margin-left: auto;
+}
+
+/* What the lesson promises, and what to read before it. */
+.opener-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5mm;
+  margin-top: 7mm;
+}
+.opener-box {
+  border-top: 1.5px solid var(--ink);
+  padding-top: 2.5mm;
+  break-inside: avoid;
+}
+.opener-objectives {
+  font-family: var(--font-serif);
+  font-size: 10pt;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.opener-objectives li {
+  position: relative;
+  padding-left: 5mm;
+}
+.opener-objectives li + li {
+  margin-top: 1.2mm;
+}
+.opener-objectives li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  font-family: var(--font-sans);
+  color: var(--ink-4);
+}
+.opener-prereqs {
+  font-family: var(--font-sans);
+  font-size: 8.8pt;
+  color: var(--ink-2);
+}
+.opener-prereqs li + li {
+  margin-top: 0.9mm;
+}
+.opener-prereqs a {
+  display: flex;
+  align-items: baseline;
+  gap: 2mm;
+  color: inherit;
+  text-decoration: none;
+}
+.opener-prereq-n {
+  min-width: 7mm;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+.mini-toc-exercise {
+  margin-top: 1.6mm !important;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.6mm;
+  font-weight: 500;
+  color: var(--ink);
+}
+.mini-toc-exercise .mini-toc-n {
+  color: var(--good);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------------
+   The lesson body, adjusted for paper.
+   ------------------------------------------------------------------------ */
+
+.level-body .lesson {
+  line-height: 1.6;
+  hyphens: auto;
+  text-align: left;
+}
+.lesson p,
+.lesson li {
+  orphans: 3;
+  widows: 3;
+}
+.lesson h2,
+.lesson h3,
+.lesson h4,
+.h2-kicker,
+.worked-label,
+.callout-label,
+.check-title,
+.exercise-kicker,
+.exercise-title,
+.codeblock-bar {
+  break-after: avoid;
+}
+.lesson h2,
+.lesson h3 {
+  break-inside: avoid;
+}
+.lesson-section {
+  margin-top: 2.6rem;
+  transition: none;
+}
+.level-body .lesson > :first-child {
+  margin-top: 0;
+}
+.h2-kicker {
+  font-size: 7.8pt;
+}
+.lesson-section.is-read .h2-num {
+  color: inherit;
+}
+
+/* Boxes keep their frame on both sides of a page break. */
+.lesson .worked,
+.lesson-section[data-kind="example"],
+.lesson .formula,
+.callout,
+.codeblock,
+.lesson .pitfall {
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.lesson .formula,
+.callout,
+.lesson table,
+.lesson li {
+  break-inside: avoid;
+}
+/* A whole section that works an example keeps its shading, but a long one
+   is allowed to run over a page. */
+.lesson-section[data-kind="example"] {
+  break-inside: auto;
+}
+.worked-label,
+.callout-label {
+  font-size: 7.8pt;
+}
+.lesson .readaloud-lead,
+.lesson .readaloud {
+  font-size: 8.8pt;
+}
+
+/* No scrolling on paper. Book.tsx shrinks anything too wide to fit, and
+   a code line too long for the page wraps. */
+.lesson .katex-display {
+  overflow: visible;
+}
+.lesson pre {
+  overflow: visible;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.74rem;
+  line-height: 1.55;
+}
+.lesson table {
+  display: table;
+  overflow: visible;
+  width: 100%;
+  font-size: 0.78rem;
+}
+.lesson thead {
+  display: table-header-group;
+}
+.codeblock-bar {
+  font-size: 7.5pt;
+  padding-bottom: 0.2rem;
+}
+.codeblock-bar button {
+  display: none;
+}
+
+/* Links stay live in the PDF, and read as ordinary text in print. */
+.lesson a {
+  text-decoration-thickness: 0.5px;
+  text-underline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------------
+   The exercise at the end of each lesson, and the solutions appendix.
+   ------------------------------------------------------------------------ */
+
+.exercise {
+  margin-top: 2.6rem;
+  border-top: 1.5px solid var(--ink);
+  padding-top: 4mm;
+}
+.exercise-kicker {
+  display: flex;
+  align-items: baseline;
+  gap: 3mm;
+  font-family: var(--font-sans);
+  font-size: 8.5pt;
+  font-weight: 600;
+  color: var(--good);
+}
+.exercise-packages {
+  margin-left: auto;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+.exercise-title {
+  margin-top: 1.5mm;
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.exercise-brief {
+  margin-top: 3mm;
+  font-family: var(--font-serif);
+  font-size: 1.075rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.exercise-online {
+  margin-top: 3mm;
+  font-family: var(--font-sans);
+  font-size: 8.5pt;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.exercise-online a,
+.solution-back {
+  color: var(--accent);
+  text-decoration: none;
+}
+.pg-inline {
+  min-width: 0;
+  text-align: left;
+}
+
+/* A whole file: the starter at the end of a lesson, or a solution. Long
+   files run over pages, so the box repeats its frame on each. */
+.codefile {
+  margin-top: 5mm;
+}
+.codefile .codeblock {
+  border-radius: 6px;
+}
+.codefile .codeblock-bar {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.codefile-lines {
+  padding-right: 0.6rem;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  color: var(--ink-4);
+}
+.codefile pre {
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.exercise-hints {
+  margin-top: 6mm;
+  break-inside: avoid;
+}
+.check-title {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.exercise-hints-note {
+  margin-top: 0.5mm;
+  font-family: var(--font-sans);
+  font-size: 8.5pt;
+  color: var(--ink-3);
+}
+.check-list {
+  margin-top: 3mm;
+  padding-left: 1.6em;
+  list-style: decimal;
+  font-family: var(--font-serif);
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  hyphens: auto;
+}
+.check-list > li + li {
+  margin-top: 2mm;
+}
+.check-list > li::marker {
+  font-family: var(--font-sans);
+  font-size: 0.85em;
+  color: var(--ink-3);
+}
+
+.solutions-note {
+  margin-top: 12mm;
+  max-width: 118mm;
+}
+.solutions-body {
+  page: solutions;
+  break-before: page;
+}
+.solution + .solution {
+  margin-top: 12mm;
+}
+.solution {
+  border-top: 1.5px solid var(--ink);
+  padding-top: 4mm;
+}
+.solution-back {
+  margin-left: auto;
+  font-weight: 400;
+}
+.solution-lesson {
+  margin-top: 1mm;
+  font-family: var(--font-serif);
+  font-size: 10pt;
+  font-style: italic;
+  color: var(--ink-3);
+}
+
+/* The page number that ends a part page's list of lessons. */
+.part-chapter-pg {
+  align-self: baseline;
+  font-family: var(--font-sans);
+  font-size: 9.5pt;
+  color: var(--ink-3);
+  text-decoration: none;
+}
+
+/* The cover's list of parts. */
+.cover-parts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.6mm 8mm;
+  border-top: 1px solid var(--rule-strong);
+  padding-top: 4mm;
+  font-size: 8.5pt;
+  color: var(--ink-2);
+}
+.cover-parts li {
+  display: flex;
+  gap: 2.5mm;
+}
+.cover-parts-n {
+  min-width: 3mm;
+  font-weight: 600;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+
+/* How to use this book. */
+.about .lesson {
+  font-size: 1.075rem;
+}
+.about-list {
+  margin-block: 6mm;
+  display: grid;
+  gap: 2.5mm;
+  font-family: var(--font-sans);
+}
+.about-list > div {
+  display: grid;
+  grid-template-columns: 30mm 1fr;
+  gap: 4mm;
+  border-top: 1px solid var(--rule);
+  padding-top: 3mm;
+}
+.about-list dt {
+  font-size: 9.5pt;
+  font-weight: 600;
+  color: var(--ink);
+}
+.about-list dd {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 10pt;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.about .lesson > p + p {
+  margin-top: 0.7em;
+}
+.about .front-title {
+  margin-bottom: 6mm;
+}
+
+/* One source line. A line that wraps hangs its continuation four columns
+   past its own indentation. See splitLines in Book.tsx. */
+.codefile .ln {
+  display: block;
+  padding-left: var(--indent);
+  text-indent: calc(-1 * var(--indent));
+}
+
+/* ------------------------------------------------------------------------
+   Demos, as still figures. The controls are hidden and each figure is
+   numbered within its lesson.
+   ------------------------------------------------------------------------ */
+
+.chapter {
+  counter-reset: figure;
+}
+.lesson figure.demo {
+  margin-block: 1.6rem;
+  counter-increment: figure;
+  break-inside: avoid;
+  font-family: var(--font-sans);
+}
+.demo-kicker::after {
+  content: " " counter(figure);
+}
+figure.demo button,
+figure.demo input {
+  display: none;
+}
+.demo-online a {
+  text-decoration: none;
+}

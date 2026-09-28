@@ -1,0 +1,24 @@
+# Add this block to the VM's Caddyfile, then reload Caddy from stdin, because
+# the Caddyfile is bind-mounted as a single file and rewriting it in place
+# orphans the mount:
+#
+#   docker exec -i caddy caddy validate --config - --adapter caddyfile < Caddyfile
+#   docker exec -i caddy caddy reload   --config - --adapter caddyfile < Caddyfile
+#
+# Point an A record for the host at this machine first, or the ACME HTTP-01
+# challenge cannot complete.
+
+speech.ifkash.dev {
+	encode zstd gzip
+
+	# A run is a server-sent event stream that stays open for as long as the
+	# exercise takes, so response buffering must be off and the timeouts must
+	# outlast the longest GPU lesson.
+	reverse_proxy speech:8000 {
+		flush_interval -1
+		transport http {
+			response_header_timeout 30m
+			read_timeout 30m
+		}
+	}
+}

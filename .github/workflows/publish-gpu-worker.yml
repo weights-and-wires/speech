@@ -1,0 +1,44 @@
+name: Publish the GPU worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - content/exercises/**
+      - backend/app/runner/harness.py
+      - backend/app/runner/speechcheck.py
+      - backend/app/runner/speechlab.py
+      - gpu/**
+      - .github/workflows/publish-gpu-worker.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: gpu/Dockerfile
+          platforms: linux/amd64
+          push: true
+          # For a gated Hugging Face repository in gpu/assets.json. Public
+          # repositories download without it.
+          secrets: |
+            hf_token=${{ secrets.HF_TOKEN }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/speech-gpu-worker:latest
+            ghcr.io/${{ github.repository_owner }}/speech-gpu-worker:${{ github.sha }}

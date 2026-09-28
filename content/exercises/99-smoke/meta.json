@@ -1,0 +1,13 @@
+{
+  "id": "99-smoke",
+  "title": "Draw the spectrogram of a tone sweep",
+  "brief": "Synthesise a one-second sweep, cut it into windowed frames, and track its pitch through a spectrogram you compute with numpy.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy"],
+  "hints": [
+    "The phase of a linear sweep is 2 pi (f0 t + (f1 - f0) t^2 / (2 T)). Its derivative over 2 pi is the frequency at time t.",
+    "Build the frame indices as np.arange(frame_length)[None, :] + hop * np.arange(n_frames)[:, None], then index the signal once.",
+    "np.fft.rfft(frames * window, axis=1) gives one row per frame; transpose it so rows are frequencies."
+  ]
+}

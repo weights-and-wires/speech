@@ -1,0 +1,16 @@
+.git
+.venv
+data
+node_modules
+frontend/node_modules
+frontend/dist
+frontend/dist-book
+# Mounted into the container instead, see docker-compose.yml.
+book
+**/__pycache__
+*.pyc
+.env
+.DS_Store
+*.tsbuildinfo
+# Fetched locally for the CPU runner; the GPU worker bakes its own.
+assets

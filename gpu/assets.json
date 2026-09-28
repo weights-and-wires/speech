@@ -1,0 +1,106 @@
+{
+  "$comment": "Models, clips, and small datasets baked into the GPU worker at /assets/<name>. Read docs/CONTENT_CONTRACT.md, section Assets, before adding one. Each entry is either {\"name\", \"type\": \"huggingface\", \"repo\", \"revision\", \"repo_type\", \"files\"} or {\"name\", \"type\": \"url\", \"url\", \"sha256\", \"filename\", \"extract\"}.",
+  "assets": [
+    {
+      "name": "whisper-tiny",
+      "type": "huggingface",
+      "repo": "openai/whisper-tiny",
+      "revision": "169d4a4341b33bc18d8881c4b69c2e104e1cc0af",
+      "repo_type": "model",
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "preprocessor_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "vocab.json",
+        "merges.txt",
+        "special_tokens_map.json",
+        "added_tokens.json",
+        "normalizer.json",
+        "model.safetensors"
+      ]
+    },
+    {
+      "name": "wav2vec2-base",
+      "type": "huggingface",
+      "repo": "facebook/wav2vec2-base",
+      "revision": "0b5b8e868dd84f03fd87d01f9c4ff0f080fecfe8",
+      "repo_type": "model",
+      "files": [
+        "config.json",
+        "preprocessor_config.json",
+        "pytorch_model.bin"
+      ]
+    },
+    {
+      "name": "hubert-base",
+      "type": "huggingface",
+      "repo": "facebook/hubert-base-ls960",
+      "revision": "dba3bb02fda4248b6e082697eee756de8fe8aa8a",
+      "repo_type": "model",
+      "files": [
+        "config.json",
+        "preprocessor_config.json",
+        "pytorch_model.bin"
+      ]
+    },
+    {
+      "name": "encodec-24khz",
+      "type": "huggingface",
+      "repo": "facebook/encodec_24khz",
+      "revision": "c1dbe2ae3f1de713481a3b3e7c47f357092ee040",
+      "repo_type": "model",
+      "files": [
+        "config.json",
+        "preprocessor_config.json",
+        "model.safetensors"
+      ]
+    },
+    {
+      "name": "mimi",
+      "type": "huggingface",
+      "repo": "kyutai/mimi",
+      "revision": "89091b3e466eb6a9d11e537bf26b144f194978f7",
+      "repo_type": "model",
+      "files": [
+        "config.json",
+        "preprocessor_config.json",
+        "model.safetensors"
+      ]
+    },
+    {
+      "name": "smollm2-135m",
+      "type": "huggingface",
+      "repo": "HuggingFaceTB/SmolLM2-135M",
+      "revision": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+      "repo_type": "model",
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "merges.txt",
+        "model.safetensors",
+        "special_tokens_map.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "vocab.json"
+      ]
+    },
+    {
+      "name": "fsdd",
+      "type": "url",
+      "url": "https://github.com/Jakobovski/free-spoken-digit-dataset/archive/refs/tags/v1.0.10.zip",
+      "sha256": "c680098f5d2355ba7cc4bd8b0ca9e0a24c00ebe3b4c552208889a4d28d4fbc2b",
+      "filename": "fsdd.zip",
+      "extract": "zip"
+    },
+    {
+      "name": "librispeech-dev-clean",
+      "type": "url",
+      "url": "https://openslr.trmal.net/resources/12/dev-clean.tar.gz",
+      "sha256": "76f87d090650617fca0cac8f88b9416e0ebf80350acb97b343a85fa903728ab3",
+      "filename": "dev-clean.tar.gz",
+      "extract": "tar"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+# The speech and audio course app.
+#
+# Caddy on this host terminates TLS and proxies to speech:8000 over the shared
+# `edge` network, the same way the other services here are reached. This bundle
+# must never publish 80 or 443 itself.
+#
+#   docker compose up -d --build
+#
+# This directory holds the committed tree, which scripts/deploy.sh ships from a
+# workstation with `git archive` and then runs the line above. The PDF book in
+# ./book is built on that workstation too, copied here, and mounted read-only;
+# without it the app runs as before, with no download button.
+
+name: speech
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # scripts/deploy.sh sets this to the commit being deployed.
+        GIT_SHA: ${GIT_SHA:-unknown}
+    image: speech-course:local
+    container_name: speech
+    restart: unless-stopped
+    expose:
+      - "8000"
+    ports:
+      # Localhost only. Caddy reaches the container over `edge`, so this is not
+      # a route in from outside; it exists so the app can be reached through an
+      # SSH tunnel before its DNS record resolves:
+      #   ssh -L 8096:127.0.0.1:8096 ifkash@vm.ifkash.dev
+      - "127.0.0.1:8096:8000"
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - speech-data:/data
+      - ./book:/app/book:ro
+    networks:
+      - edge
+    # A reader's submission is a subprocess inside this container, so cap what
+    # the container as a whole can take from the host.
+    # The VM has under 2 GB of memory and two cores to spare beside the other
+    # courses, so this is smaller than the ml course's, and LOCAL_WORKERS in
+    # .env stays at 2.
+    cpus: 1.5
+    mem_limit: 1536m
+    pids_limit: 512
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  speech-data:
+
+networks:
+  edge:
+    external: true

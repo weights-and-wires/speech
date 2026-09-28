@@ -40,87 +40,87 @@ export const DEMOS: Record<string, Entry> = {
   },
   "quantization-and-dither": {
     title: "Quantizing a signal, with and without dither",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./QuantizationDither")),
   },
   "window-leakage": {
     title: "How a window trades main-lobe width for side-lobe leakage",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./WindowLeakage")),
   },
   "griffin-lim-iterations": {
     title: "Recovering phase from magnitude, one iteration at a time",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./GriffinLim")),
   },
   "room-reverb": {
     title: "A room as an impulse response",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./RoomReverb")),
   },
   "mel-filterbank": {
     title: "Laying triangles along the mel scale",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./MelFilterbank")),
   },
   "mfcc-pipeline": {
     title: "From a frame of speech to thirteen numbers",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./MfccPipeline")),
   },
   "vowel-formants": {
     title: "Vowels as a source and a filter",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./VowelFormants")),
   },
   "pitch-tracker": {
     title: "Finding the pitch with YIN",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./PitchTracker")),
   },
   "dtw-path": {
     title: "Warping one sequence onto another",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./DtwPath")),
   },
   "viterbi-trellis": {
     title: "The best path through an HMM trellis",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./ViterbiTrellis")),
   },
   "ctc-lattice": {
     title: "Every alignment CTC adds up",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./CtcLattice")),
   },
   "beam-search": {
     title: "Keeping the best few hypotheses",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./BeamSearch")),
   },
   "attention-alignment": {
     title: "Where the decoder looks at each step",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./AttentionAlignment")),
   },
   "wavenet-receptive-field": {
     title: "How far back a dilated stack can see",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./WavenetReceptiveField")),
   },
   "rvq-2d": {
     title: "Quantizing the residual, stage by stage",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./Rvq2d")),
   },
   "codec-bitrate": {
     title: "Frames, codebooks, and bits per second",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./CodecBitrate")),
   },
   "delay-pattern": {
     title: "Interleaving codebooks with a delay",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./DelayPattern")),
   },
   "diffusion-1d": {
     title: "Noising a signal and walking it back",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./Diffusion1d")),
   },
   "flow-trajectories": {
     title: "Straight paths from noise to data",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./FlowTrajectories")),
   },
   "separation-pit": {
     title: "Masks, mixtures, and the permutation problem",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./SeparationPit")),
   },
   "latency-timeline": {
     title: "Where the time goes in a voice agent",
-    Component: lazy(() => import("./Placeholder")),
+    Component: lazy(() => import("./LatencyTimeline")),
   },
 };
 

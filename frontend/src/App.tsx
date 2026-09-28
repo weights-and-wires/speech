@@ -6,6 +6,7 @@ import Login from "./components/Login";
 import Mark from "./components/Mark";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
+import DemoGallery from "./pages/DemoGallery";
 import LessonPage from "./pages/LessonPage";
 import { api, type Part, type ProgressMap } from "./lib/api";
 import { useTheme, type ThemeMode } from "./lib/theme";
@@ -182,6 +183,8 @@ export default function App() {
                 <LessonPage gpuAvailable={gpu} lessons={lessons} onProgress={refresh} />
               }
             />
+            <Route path="/demos" element={<DemoGallery />} />
+            <Route path="/demos/:id" element={<DemoGallery />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

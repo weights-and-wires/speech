@@ -180,6 +180,12 @@ export default function Dashboard({ parts, progress }: Props) {
             </ul>
           </section>
         )}
+
+        <footer className="mt-14 border-t border-rule pt-4 text-[12px] text-ink-4">
+          <Link to="/demos" className="transition-colors hover:text-ink-2">
+            All demos
+          </Link>
+        </footer>
       </div>
     </div>
   );

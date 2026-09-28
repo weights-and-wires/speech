@@ -76,7 +76,11 @@ To add a demo, complete the following steps:
 
    Replace `SLUG` with the lesson's slug.
 
-5. Build the book and look at the demo's page, because the book prints the demo
+5. Open `/demos` in the running app, which lists every registered demo and
+   renders the one you choose. To see the still figure the book prints, select
+   **As the book prints it**. The dashboard's footer links to the gallery.
+
+6. Build the book and look at the demo's page, because the book prints the demo
    as a still figure:
 
    ```bash
@@ -220,6 +224,18 @@ against reference values from those libraries.
 | `sine`, `linearChirp` | `sine(hz, sampleRate, seconds, amplitude = 0.5, phase = 0): Float32Array` | Test signals. |
 | `fadeEdges` | `fadeEdges(samples, sampleRate, seconds = 0.02): Float32Array` | A raised-cosine fade in and out, in place. |
 | `linspace`, `isPowerOfTwo`, `nextPowerOfTwo` | | Helpers. |
+| `blackman` | `blackman(n, periodic = true): Float64Array` | `scipy.signal.get_window("blackman")`; `makeWindow` takes `"blackman"` too. |
+| `seededRandom`, `gaussian` | `seededRandom(seed): () => number`, `gaussian(random): number` | Seeded uniform and normal draws, so a printed figure never changes. |
+| `stftComplex`, `istft` | `stftComplex(signal, options): ComplexSpectrogram`, `istft(spec, { window?, center?, length? }): Float64Array` | `librosa.stft` with its phase, and `librosa.istft`. |
+| `fftConvolve` | `fftConvolve(a, b): Float64Array` | `scipy.signal.fftconvolve(a, b)`. |
+| `preEmphasis` | `preEmphasis(x, alpha = 0.97): Float64Array` | `scipy.signal.lfilter([1, -alpha], [1], x)`. |
+| `resonate` | `resonate(x, hz, bandwidth, sampleRate): Float64Array` | A Klatt two-pole formant resonator, with a gain of 1 at 0 Hz. |
+| `schroederDecay`, `decayTime` | `schroederDecay(ir): Float64Array`, `decayTime(edcDb, sampleRate, fromDb = -5, toDb = -35)` | The energy decay curve in dB, and the RT60 from a line fitted to it (T30 by default). |
+| `autocorrelation`, `levinsonDurbin`, `allPoleMagnitude` | `levinsonDurbin(r, order): { alpha, error, reflection }` | LPC: `alpha` matches `scipy.linalg.solve_toeplitz`, for `A(z) = 1 - sum alpha_k z^-k`. |
+| `polynomialRoots` | `polynomialRoots(coefficients): { re, im }` | `numpy.roots`, highest power first. |
+| `yinDifference`, `cumulativeMeanNormalized`, `yinPick` | `yinPick(dPrime, threshold, minLag?, maxLag?): { index, lag, value, belowThreshold }` | YIN's steps 2 to 5, from de Cheveigné and Kawahara (2002). |
+| `dtw` | `dtw(cost, n, m, { band?, pattern? }): { cumulative, distance, path }` | Dynamic time warping with a Sakoe-Chiba band and the `symmetric1`, `symmetric2`, and `asymmetric` step patterns. |
+| `idct2` | `idct2(c, norm = "ortho", length = c.length): Float64Array` | `scipy.fft.idct(type=2)`; zero-padding `c` rebuilds a smooth curve from a few coefficients. |
 
 When you add a function to `dsp.ts`, add a test to `frontend/tests/dsp.test.ts`,
 and when the test needs reference values, add them to

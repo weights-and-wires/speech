@@ -8,13 +8,23 @@
 # Point an A record for the host at this machine first, or the ACME HTTP-01
 # challenge cannot complete.
 
+# Export SSO_PROXY_SECRET in the Caddy container's environment; use the same
+# value as the speech app's SSO_PROXY_SECRET setting.
 speech.ifkash.dev {
 	encode zstd gzip
+
+	# Authenticate every request before it reaches the app. The proxy overwrites
+	# any client-supplied identity marker with the trusted shared secret.
+	forward_auth authelia:9091 {
+		uri /api/authz/forward-auth
+		copy_headers Remote-User
+	}
 
 	# A run is a server-sent event stream that stays open for as long as the
 	# exercise takes, so response buffering must be off and the timeouts must
 	# outlast the longest GPU lesson.
 	reverse_proxy speech:8000 {
+		header_up X-SSO-Proxy {$SSO_PROXY_SECRET}
 		flush_interval -1
 		transport http {
 			response_header_timeout 30m

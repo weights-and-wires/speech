@@ -1,9 +1,7 @@
-"""The HTTP surface: auth, content, progress, drafts, and the run stream.
+"""The HTTP surface: SSO identity, content, progress, drafts, and run streams.
 
-Everything under `/api` needs a session cookie except `/api/health`,
-`/api/session`, and `/api/login`, and so does the PDF book under `/book`.
-Everything else is the single-page app, served from `frontend/dist` with a
-catch-all so client-side routes survive a reload.
+All course APIs and the PDF book require a Caddy-authenticated identity.
+Health and session are public; the SPA is served from `frontend/dist`.
 """
 
 from __future__ import annotations
@@ -13,13 +11,13 @@ import json
 from pathlib import Path
 from typing import Any, AsyncIterator
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import curriculum, db
-from .auth import clear_session, current_user, issue_session, read_session, verify_credentials
+from .auth import current_user, sso_user
 from .config import Settings, get_settings
 from .runner import RunRequest, RunnerError, choose_backend, run_local, run_runpod
 from .runner import runpod as runpod_backend
@@ -33,11 +31,6 @@ def startup() -> None:
 
 
 # Models -----------------------------------------------------------------
-
-
-class LoginBody(BaseModel):
-    username: str = Field(min_length=1, max_length=64)
-    password: str = Field(min_length=1, max_length=256)
 
 
 class DraftBody(BaseModel):
@@ -75,36 +68,11 @@ def health(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
 def session_state(
     request: Request, settings: Settings = Depends(get_settings)
 ) -> dict[str, Any]:
-    name = read_session(request, settings)
+    name = sso_user(request, settings)
     return {"signed_in": bool(name), "username": name}
 
-
-@app.post("/api/login")
-def login(
-    body: LoginBody,
-    response: Response,
-    settings: Settings = Depends(get_settings),
-) -> dict[str, Any]:
-    username = body.username.strip()
-    if not verify_credentials(username, body.password, settings):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="That username and password do not match.",
-        )
-    canonical = next(
-        (u for u in settings.users if u.lower() == username.lower()), username
-    )
-    issue_session(response, canonical, settings)
-    return {"signed_in": True, "username": canonical}
-
-
-@app.post("/api/logout")
-def logout(response: Response, settings: Settings = Depends(get_settings)) -> dict[str, Any]:
-    clear_session(response, settings)
-    return {"signed_in": False}
-
-
 # Content ----------------------------------------------------------------
+
 
 
 @app.get("/api/lessons")

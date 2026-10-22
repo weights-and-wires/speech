@@ -95,16 +95,15 @@ research notes behind the lessons, with their sources, are in
 
 You need Python 3.12 or later and Node 20 or later.
 
-1. Copy the environment file and set a session secret:
+1. Copy the environment file and configure SSO:
 
    ```bash
    cp .env.example .env
-   python3 -c "import secrets; print(secrets.token_urlsafe(48))"
    ```
 
-   Put that value in `SESSION_SECRET`, and set `DATA_DIR` to a local
-   directory such as `data`.
-
+   Set `SSO_PROXY_SECRET` to a strong shared value and configure the same value
+   in Caddy. `SSO_USERS` optionally maps Authelia usernames to existing course
+   usernames so stored progress and drafts remain attached to the same person.
 2. Install and start the backend:
 
    ```bash
@@ -123,8 +122,9 @@ You need Python 3.12 or later and Node 20 or later.
 
 Open `http://localhost:5173`. The Vite dev server proxies `/api` to the backend
 on port 8000. To use a backend on another port, set `API_TARGET`, for example
-`API_TARGET=http://127.0.0.1:8016 npm run dev`.
-Sign in with one of the names in `APP_USERS` and the password in `APP_PASSWORD`.
+`API_TARGET=http://127.0.0.1:8016 npm run dev`. Sign-in requires requests to pass
+through Caddy's Authelia `forward_auth`; direct local API requests are
+intentionally unauthenticated only for public health/session endpoints.
 
 `.claude/launch.json` holds the same two servers on ports 8016 and 5176, for
 the preview tools.
@@ -187,11 +187,15 @@ filesystem and the network.
 
 ## Authentication
 
-Two people share one password, set in `APP_PASSWORD`, and sign in under one of
-the names in `APP_USERS`. The username isn't a secret: it scopes progress,
-drafts, and run history so that two readers keep separate state. A signed,
-HTTP-only cookie carries the session. Set `COOKIE_SECURE=true` once the app is
-served over HTTPS.
+The course has no local password or session login. Caddy must run Authelia
+`forward_auth` before proxying to the app, copy the trusted `Remote-User`
+identity, and set `X-SSO-Proxy` to the same secret as `SSO_PROXY_SECRET`.
+`backend/app/auth.py` accepts identity only when that secret matches, and every
+course API and the PDF book remains protected by the identity dependency.
+
+Set `SSO_USERS` as comma-separated `authelia_name:course_name` pairs to preserve
+existing progress, drafts, and run history. Unmapped Authelia usernames are
+used directly. `Caddyfile.example` shows the site's forward-auth configuration.
 
 ## The GPU backend
 

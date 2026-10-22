@@ -180,13 +180,6 @@ export const api = {
   session: () =>
     request<{ signed_in: boolean; username: string | null }>("/api/session"),
 
-  login: (username: string, password: string) =>
-    request<{ signed_in: boolean; username: string }>("/api/login", {
-      method: "POST",
-      body: JSON.stringify({ username, password }),
-    }),
-
-  logout: () => request<{ signed_in: boolean }>("/api/logout", { method: "POST" }),
 
   lessons: () =>
     request<{ parts: Part[]; progress: ProgressMap }>("/api/lessons"),

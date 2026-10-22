@@ -87,7 +87,7 @@ export default function App() {
   }
 
   if (!username) {
-    return <Login onSignedIn={setUsername} />;
+    return <Login />;
   }
 
   const onLesson = location.pathname.startsWith("/lessons/");
@@ -152,12 +152,11 @@ export default function App() {
 
         <AccountMenu
           username={username}
-          onSignOut={() =>
-            api
-              .logout()
-              .then(() => setUsername(null))
-              .catch(() => undefined)
-          }
+          onSignOut={() => {
+            const portal = new URL("https://auth.ifkash.dev/logout");
+            portal.searchParams.set("rd", window.location.href);
+            window.location.assign(portal.href);
+          }}
         />
       </header>
 

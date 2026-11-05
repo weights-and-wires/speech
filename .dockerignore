@@ -9,7 +9,10 @@ frontend/dist-book
 book
 **/__pycache__
 *.pyc
-.env
+.env*
+CREDENTIALS.md
+*.bak*
+.github
 .DS_Store
 *.tsbuildinfo
 # Fetched locally for the CPU runner; the GPU worker bakes its own.

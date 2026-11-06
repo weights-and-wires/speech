@@ -1,0 +1,228 @@
+"""Train hidden Markov models with Baum-Welch, and recognize isolated words.
+
+Fill in the four functions below, then press Run to train one HMM per
+synthetic word, watch Baum-Welch raise the likelihood at every iteration, and
+recognize 40 noisy words. Press Check to test your code.
+
+`log_gaussian_diag`, `forward`, and `flat_start` are given in full: you built
+the first two in the previous chapter. The array conventions are the same:
+log_pi has shape (N,), log_A has shape (N, N) with log_A[i, j] = log P(next
+state j | state i), and log_B has shape (T, N) with log_B[t, j] = log p(o_t |
+state j). log(0) is -np.inf.
+"""
+
+import numpy as np
+from scipy.fft import dct
+from scipy.signal import butter, sosfilt
+from scipy.special import logsumexp
+
+from speechlab import show_plot
+
+
+def log_gaussian_diag(X: np.ndarray, means: np.ndarray, variances: np.ndarray) -> np.ndarray:
+    """Given in full from the previous chapter. log N(x_t; mu_j, diag(var_j)) for every frame t and state j, shape (T, N)."""
+    D = X.shape[1]
+    diff2 = (X[:, None, :] - means[None, :, :]) ** 2 / variances[None, :, :]
+    return -0.5 * (D * np.log(2 * np.pi) + np.sum(np.log(variances), axis=1)[None, :] + diff2.sum(axis=2))
+
+
+def forward(log_pi: np.ndarray, log_A: np.ndarray, log_B: np.ndarray) -> tuple[np.ndarray, float]:
+    """Given in full from the previous chapter. The forward table log alpha, shape (T, N), and log P(O | model)."""
+    T, N = log_B.shape
+    log_alpha = np.empty((T, N))
+    log_alpha[0] = log_pi + log_B[0]
+    for t in range(1, T):
+        log_alpha[t] = logsumexp(log_alpha[t - 1][:, None] + log_A, axis=0) + log_B[t]
+    return log_alpha, float(logsumexp(log_alpha[-1]))
+
+
+def flat_start(sequences, n_states, self_loop=0.6):
+    """A left-to-right HMM initialized from an even split of every sequence.
+
+    Provided. State s starts from the mean and variance of the s-th of
+    n_states equal chunks of each sequence. The model starts in state 0 and
+    can only stay put or move one state to the right.
+    """
+    chunks = [[] for _ in range(n_states)]
+    for X in sequences:
+        for s, part in enumerate(np.array_split(X, n_states)):
+            chunks[s].append(part)
+    means = np.array([np.concatenate(c).mean(axis=0) for c in chunks])
+    variances = np.array([np.maximum(np.concatenate(c).var(axis=0), 1e-3) for c in chunks])
+    A = np.eye(n_states) * self_loop + np.eye(n_states, k=1) * (1 - self_loop)
+    A[-1, -1] = 1.0
+    with np.errstate(divide="ignore"):
+        return np.log(np.eye(n_states)[0]), np.log(A), means, variances
+
+
+def backward(log_A: np.ndarray, log_B: np.ndarray) -> np.ndarray:
+    """The backward algorithm in log space.
+
+    Args:
+        log_A: Log transition probabilities, shape (N, N).
+        log_B: Log emission likelihoods, shape (T, N).
+
+    Returns:
+        log_beta, shape (T, N), with log_beta[t, i] = log P(o_{t+1} .. o_T |
+        state i at t). The last row is 0.
+    """
+    raise NotImplementedError("backward")
+
+
+def baum_welch_step(sequences, log_pi, log_A, means, variances, var_floor=1e-3):
+    """One EM update of an HMM with one diagonal Gaussian per state.
+
+    Args:
+        sequences: A list of observation arrays, each shape (T_k, D).
+        log_pi: Shape (N,).
+        log_A: Shape (N, N).
+        means: Shape (N, D).
+        variances: Shape (N, D).
+        var_floor: The smallest variance allowed after the update.
+
+    Returns:
+        (log_pi, log_A, means, variances, total_log_likelihood): the updated
+        parameters, with the statistics summed over every sequence, and the
+        sum of log P(O_k) under the parameters that were passed in.
+    """
+    raise NotImplementedError("baum_welch_step")
+
+
+def train_word_hmm(sequences, n_states, n_iter=5):
+    """Train one word's HMM: flat_start, then n_iter calls to baum_welch_step.
+
+    Args:
+        sequences: The word's training takes, each shape (T_k, D).
+        n_states: The number of HMM states.
+        n_iter: The number of Baum-Welch steps.
+
+    Returns:
+        (params, history): params is (log_pi, log_A, means, variances) after
+        the last step; history lists the total log-likelihood each step
+        returned, one float per step.
+    """
+    raise NotImplementedError("train_word_hmm")
+
+
+def recognize(X, models):
+    """Isolated-word recognition by maximum likelihood.
+
+    Args:
+        X: The features of one utterance, shape (T, D).
+        models: A dict from word name to (log_pi, log_A, means, variances).
+
+    Returns:
+        The name whose model gives X the highest forward log-likelihood.
+    """
+    raise NotImplementedError("recognize")
+
+
+# ---------------------------------------------------------------------------
+# Provided: synthetic spoken "words" and their features. You don't need to
+# change anything in this block.
+#
+# A word is a sequence of phone-like segments. A vowel is a harmonic tone at a
+# random pitch, shaped by three formant peaks. A fricative is a burst of
+# band-pass noise. Every segment gets a random duration, and the whole word
+# gets silence at both ends and white noise at a chosen SNR.
+# ---------------------------------------------------------------------------
+
+RATE = 16000
+PHONES = ["sil", "a", "e", "i", "o", "u", "s", "sh", "f"]
+FORMANTS = {"a": (800, 1200, 2500), "e": (500, 1800, 2500), "i": (300, 2300, 3000),
+            "o": (500, 900, 2400), "u": (320, 800, 2300)}
+NOISE_BANDS = {"s": (4000, 7000, 0.5), "sh": (2000, 4000, 0.6), "f": (1000, 7500, 0.25)}
+WORDS = {"sa": ["s", "a"], "shi": ["sh", "i"], "fu": ["f", "u"], "ai": ["a", "i"],
+         "ia": ["i", "a"], "osa": ["o", "s", "a"], "ue": ["u", "e"], "eshu": ["e", "sh", "u"]}
+
+
+def _vowel(name, n, f0, rng):
+    t = np.arange(n) / RATE
+    out = np.zeros(n)
+    for k in range(1, int(5000 // f0) + 1):
+        gain = sum(1.0 / (1.0 + ((k * f0 - f) / 90.0) ** 2) for f in FORMANTS[name])
+        out += gain * np.sin(2 * np.pi * k * f0 * t + rng.uniform(0, 2 * np.pi))
+    return out / np.sqrt(np.mean(out**2))
+
+
+def _fricative(name, n, rng):
+    low, high, level = NOISE_BANDS[name]
+    sos = butter(4, [low, high], btype="band", fs=RATE, output="sos")
+    out = sosfilt(sos, rng.standard_normal(n))
+    return level * out / np.sqrt(np.mean(out**2))
+
+
+def synth_word(phones, rng, snr_db=20.0):
+    """Synthesize one utterance of a word, given as a list of phone names.
+
+    Returns (samples, labels): float64 samples at RATE with peak 0.25, and the
+    index into PHONES of the segment each sample belongs to (0 is silence).
+    """
+    f0 = rng.uniform(100, 160)
+    ramp_n = int(0.01 * RATE)
+    ramp = 0.5 - 0.5 * np.cos(np.pi * np.arange(ramp_n) / ramp_n)
+    lead = int(rng.uniform(0.04, 0.08) * RATE)
+    pieces, labels = [np.zeros(lead)], [np.zeros(lead, dtype=int)]
+    for p in phones:
+        if p in FORMANTS:
+            n = int(rng.uniform(0.06, 0.30) * RATE)
+            seg = _vowel(p, n, f0 * rng.uniform(0.95, 1.05), rng)
+        else:
+            n = int(rng.uniform(0.05, 0.18) * RATE)
+            seg = _fricative(p, n, rng)
+        seg[:ramp_n] *= ramp
+        seg[-ramp_n:] *= ramp[::-1]
+        pieces.append(seg)
+        labels.append(np.full(n, PHONES.index(p)))
+    tail = int(rng.uniform(0.04, 0.08) * RATE)
+    pieces.append(np.zeros(tail))
+    labels.append(np.zeros(tail, dtype=int))
+    x, lab = np.concatenate(pieces), np.concatenate(labels)
+    speech_rms = np.sqrt(np.mean(x[lab > 0] ** 2))
+    x = x + rng.standard_normal(x.size) * speech_rms * 10 ** (-snr_db / 20)
+    return 0.25 * x / np.max(np.abs(x)), lab
+
+
+def log_mel(x, n_mels=24, n_fft=512, win=400, hop=160):
+    """Log mel energies, shape (n_frames, n_mels): 25 ms frames every 10 ms."""
+    mel = lambda f: 2595 * np.log10(1 + f / 700)
+    edges = 700 * (10 ** (np.linspace(0, mel(RATE / 2), n_mels + 2) / 2595) - 1)
+    freqs = np.arange(n_fft // 2 + 1) * RATE / n_fft
+    low, mid, high = edges[:-2, None], edges[1:-1, None], edges[2:, None]
+    bank = np.maximum(0, np.minimum((freqs - low) / (mid - low), (high - freqs) / (high - mid)))
+    n_frames = 1 + (len(x) - win) // hop
+    index = np.arange(win)[None, :] + hop * np.arange(n_frames)[:, None]
+    window = 0.5 - 0.5 * np.cos(2 * np.pi * np.arange(win) / win)
+    power = np.abs(np.fft.rfft(x[index] * window, n=n_fft, axis=1)) ** 2
+    return np.log(power @ bank.T + 1e-8)
+
+
+def mfcc(x, n_ceps=13):
+    """Thirteen MFCCs per frame with the utterance mean removed, shape (n_frames, 13)."""
+    c = dct(log_mel(x), type=2, norm="ortho", axis=1)[:, :n_ceps]
+    return c - c.mean(axis=0)
+
+
+if __name__ == "__main__":
+    rng = np.random.default_rng(3)
+    names = list(WORDS)
+
+    # One left-to-right HMM per word: two states per phone and one for each silence.
+    models, curves = {}, []
+    for name in names:
+        takes = [mfcc(synth_word(WORDS[name], rng)[0]) for _ in range(4)]
+        params, history = train_word_hmm(takes, 2 * len(WORDS[name]) + 2, n_iter=6)
+        models[name] = params
+        curves.append(np.array(history) / sum(len(x) for x in takes))
+    show_plot(*curves[:6], labels=names[:6], label="Baum-Welch: log-likelihood per frame never falls",
+              xlabel="Iteration", ylabel="Log-likelihood per frame (nats)")
+    print("Log-likelihood per frame for 'osa', one entry per iteration:",
+          np.round(curves[names.index("osa")], 2))
+    print("Every curve rises:", all(np.all(np.diff(c) >= -1e-9) for c in curves))
+
+    # Recognize 40 noisy words.
+    correct = 0
+    for _ in range(5):
+        for name in names:
+            correct += recognize(mfcc(synth_word(WORDS[name], rng, snr_db=10.0)[0]), models) == name
+    print(f"HMM recognizer accuracy at 10 dB SNR: {correct} of 40 words")

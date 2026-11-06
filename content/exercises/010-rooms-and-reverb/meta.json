@@ -1,0 +1,14 @@
+{
+  "id": "010-rooms-and-reverb",
+  "title": "Build a room and measure its RT60",
+  "brief": "Build a synthetic room impulse response, measure its Schroeder decay curve, and read the reverberation time from the curve's slope.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy"],
+  "hints": [
+    "The envelope that falls by a factor of 1000 in rt60 seconds is np.exp(-np.log(1000.0) * t / rt60).",
+    "The energy still to come is a reversed cumulative sum: np.cumsum((h ** 2)[::-1])[::-1].",
+    "Energy is a squared quantity, so convert it to decibels with 10 * np.log10, not 20.",
+    "Fit np.polyfit(t, decay, 1) against time in seconds, not against sample index, then extrapolate with -60 / slope."
+  ]
+}

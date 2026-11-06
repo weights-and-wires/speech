@@ -1,6 +1,6 @@
 # Content contract
 
-Every lesson in this course is two things on disk: one Markdown file that the
+Every chapter in this course is two things on disk: one Markdown file that the
 reader reads, and one exercise directory that the reader's code is checked
 against. This document is the exact contract both must satisfy. The loader in
 `backend/app/curriculum.py` and the harness in `backend/app/runner/harness.py`
@@ -16,34 +16,64 @@ neural network, gradient descent, backpropagation, and a transformer are, at
 the level of the companion machine learning course: they can train a small
 model in PyTorch, but they have not trained one on audio. They know nothing
 about signal processing, acoustics, phonetics, or speech, and the course
-teaches all of it from scratch. Write for them:
+teaches all of it from scratch.
 
-- Start with the intuition in plain words. Before any formula, say what the
-  method does, in one or two sentences a first-year student could repeat to a
-  friend. Use an everyday analogy when one fits: a spectrogram is sheet music,
-  a codec is a very short vocabulary for sound.
-- Make every formula earn its place. Include a formula only when the exercise
-  implements it or the reader needs it to follow the next step. Everything else
-  is stated in words.
+Students said an earlier version of this course was "easy to read but not easy
+to understand", and that it threw things at them instead of building intuition.
+Short sentences were not the problem. The problem was facts in a row with no
+reason connecting them. Every rule below serves one goal: the reader should be
+able to say *why* each step happens before they see *how* to compute it.
+
+## Build intuition first
+
+- One chapter, one idea. A chapter teaches a single idea well enough that the
+  reader could explain it to a friend without notes. When a draft needs a
+  second big idea, that idea is the next chapter.
+- Start from a question the reader already cares about, with a concrete
+  situation: a phone call that sounds tinny, a voice assistant that mishears a
+  name, a tone that comes out at the wrong pitch. Say what goes wrong without
+  the idea before you introduce it.
+- Climb the ladder in order: picture, then words, then a tiny example with real
+  numbers, then the formula, then code. The formula comes last, as a compact
+  summary of something the reader already believes. Use an everyday analogy
+  when one fits: a spectrogram is sheet music, a codec is a very short
+  vocabulary for sound.
+- Try the obvious approach first and show where it fails. "Why not just…?" is
+  the question the reader is asking. Answer it before they have to.
+- Explain the reason, not only the step. Connect sentences with "because",
+  "so", and "which means". A paragraph is a short argument, not a list of
+  facts. Prefer three connected sentences to five disconnected ones.
+- Use one running example through the chapter, and reuse it across chapters
+  of the same part where it fits, so the reader is not decoding a new signal
+  on every page.
 - Read each formula aloud. After every display equation, say in plain English
-  what each piece is and what the whole thing computes. Then show the same
-  formula as one or two lines of numpy or torch.
+  what each piece is and what the whole thing computes, then show it as one or
+  two lines of numpy or torch. Include a formula only when the exercise
+  implements it or the reader needs it to follow the next step.
 - Work one small example by hand. Use tiny numbers, a four-sample signal, a
   two-state HMM, a three-frame CTC lattice, and show every intermediate value,
   so the reader can check their code against it.
 - Define every symbol and every term the first time it appears, including ones
   that feel basic, such as "sample rate", "frame", "bin", or "decibel". Prefer
   an ordinary word to jargon when both mean the same thing.
+- Avoid heavy notation. No measure-theoretic language and no proofs. Prefer
+  `x[n]`, `X[k]`, and `w` with plain subscripts, and write every symbol the
+  first time it appears next to the numpy name the reader will type.
+- Keep the conditions honest. When a result needs an assumption, such as a
+  stationary signal inside one frame, say so in plain words and say what goes
+  wrong without it.
+- Close the loop. End the substance with a short "what you now know" paragraph
+  in a `[!KEY]` callout that ties the idea back to the opening question.
+
+Audio adds four habits:
+
 - Say the units. A number in this course is in samples, frames, seconds, hertz,
   mel, or decibels, and the reader must always know which. Most bugs in audio
   code are unit bugs: frames confused with samples, power confused with
   magnitude, natural log confused with `log10`.
-- Make it audible. When a lesson is about sound, the reader should hear it: the
+- Make it audible. When a chapter is about sound, the reader should hear it: the
   alias, the leakage, the reconstruction, the generated clip. The **Run** block
   plays what the reader built.
-- Keep the conditions honest. When a result needs an assumption, such as a
-  stationary signal inside one frame, say so in plain words and say what goes
-  wrong without it.
 - Connect ideas to code. The reader should finish every section knowing which
   numpy or torch operations they will write.
 - Name the systems. When an idea lives on in a real model, such as the mel
@@ -57,14 +87,76 @@ change what a result says.
 
 Use American spelling: "normalization", "color", "modeling".
 
+## Figures
+
+Every chapter has at least one static SVG figure, and most have two or three. A
+figure earns its place when it shows something words struggle with: a shape (a
+spectrum with a leaky peak, an HMM trellis), a motion (a window sliding along a
+signal, a phasor rotating), a flow (audio through a mel front end and an
+encoder), or a comparison (before and after, good and bad). Put the main figure
+near the top, where it carries the chapter's central picture, and refer to it
+in the text.
+
+A figure is a fenced block tagged `figure`. It holds one inline SVG, then a
+caption on the lines after `</svg>`:
+
+````markdown
+```figure
+<svg viewBox="0 0 560 220" role="img" aria-label="A sine wave sampled at eight points">
+  <line x1="40" y1="110" x2="520" y2="110" class="stroke-muted"/>
+  <path d="M40 110 C 120 10, 200 10, 280 110 S 440 210, 520 110" class="stroke-b" fill="none"/>
+  <circle cx="120" cy="45" r="5" class="fill-a"/>
+  <text x="430" y="40">one period</text>
+</svg>
+Figure 1. Eight samples are enough to pin down this tone, because they fall at least twice per period.
+```
+````
+
+Interactive `demo` blocks are additional to figures, not a replacement. The
+PDF book prints a demo as a still, and a reader on a slow connection may never
+load one, so a chapter that has a demo still needs at least one SVG figure.
+For more information about demos, see [Demos](#demos).
+
+Rules for figures:
+
+- Color only with these classes, never with `fill="#..."`, `stroke="red"`, or
+  a `style` color, so the figure follows the light and dark themes and prints
+  in the PDF book. Shapes draw nothing until a class colors them, so give an
+  unfilled path `fill="none"` or no fill class.
+  - Fills: `fill-ink`, `fill-muted`, `fill-paper`, `fill-sunk`, `fill-a`,
+    `fill-b`, `fill-c`, `fill-d`, `fill-bad`, and the pale area fills
+    `fill-soft-a`, `fill-soft-b`, `fill-soft-c`, `fill-soft-d`.
+  - Strokes: `stroke-ink`, `stroke-muted`, `stroke-grid`, `stroke-a`,
+    `stroke-b`, `stroke-c`, `stroke-d`, `stroke-bad`, plus `dashed`.
+  - Text is ink-colored at 13 px by default. Add `fig-small`, `fig-bold`, or
+    `fig-mono` as needed. `a` is blue, `b` is orange, `c` is green, `d` is
+    purple. Use them consistently: `a` for the input signal, `b` for what the
+    method produces.
+- Set a `viewBox` about 560 to 640 units wide and no `width` or `height`. The
+  figure scales to the column. Keep text at least 11 units high.
+- Give the `svg` an `aria-label` that says what it shows.
+- Draw from real numbers. If the figure plots the chapter's worked example,
+  the samples must be the example's samples, computed, not eyeballed.
+- Label the axes with their units: seconds, hertz, decibels, or samples.
+- Text inside SVG is plain text. KaTeX does not render there, so write
+  `x[n]`, `f0`, or `ω` instead of `$x[n]$`.
+- Arrowheads need a `<marker>` in `<defs>` whose path carries a fill class.
+  Give each marker an `id` prefixed with the chapter number, such as
+  `c007-arrow`, because every figure on a page shares one document.
+- Start the caption with `Figure N.` and say what the reader should notice,
+  not only what is drawn.
+- To look at a figure while you draw it, run
+  `node scripts/render_figures.mjs OUT_DIR content/lessons/NNN-slug.md`. It
+  writes one PNG per figure with the site's own styles, and `--dark` renders
+  the dark theme. It needs Chrome, from `CHROME_PATH` or a usual location.
+
 ## Prose style
 
 Follow the Google developer documentation style guide:
 
 - Address the reader as "you". Use active voice and present tense.
-- One idea per sentence. Split any sentence that needs a second comma-spliced
-  clause to land. Long subordinate chains are the main thing that made these
-  lessons hard to read.
+- Keep sentences short, but never at the cost of the connection between them.
+  A sentence that says why something happens is worth its length.
 - Sentence case for every heading. Start task headings with a bare infinitive.
 - Serial commas. Em dashes with no surrounding spaces.
 - Code, filenames, and identifiers in code font. No `simply`, `just`, `easily`,
@@ -75,27 +167,28 @@ Follow the Google developer documentation style guide:
 
 ## Lesson file
 
-Path: `content/lessons/NN-slug.md`, where `NN` is the two-digit order prefix and
-`slug` matches the `slug` field.
+Path: `content/lessons/NNN-slug.md`, where `NNN` is the three-digit order prefix
+and `slug` matches the `slug` field. Prefixes run `001` upward with no gaps, so
+a plain filename sort gives the reading order.
 
 The file starts with YAML front matter:
 
 ```yaml
 ---
 title: The short-time Fourier transform
-slug: 04-the-short-time-fourier-transform
-part: "Part 1 — Signals"
-summary: One sentence, under 140 characters, that says what the lesson delivers.
-minutes: 55
+slug: 007-the-short-time-fourier-transform
+part: "Part 1 — Sound and signals"
+summary: One sentence, under 140 characters, that says what the chapter delivers.
+minutes: 35
 gpu: false
 objectives:
   - Cut a signal into overlapping windowed frames, and take the FFT of each.
   - "Explain the trade-off between time and frequency resolution: a longer window sees finer frequency and coarser time."
   - Draw a spectrogram in decibels and read a chirp, a tone, and a click from it.
 prereqs:
-  - 01-sound-and-sampling
-  - 03-the-dft-and-the-fft
-exercise: 04-the-short-time-fourier-transform
+  - 002-sampling-and-aliasing
+  - 006-the-fft-and-windows
+exercise: 007-the-short-time-fourier-transform
 ---
 ```
 
@@ -137,33 +230,41 @@ The body is Markdown with these conventions:
   | `[!RECAP]` | Before you build | Three to five bullets, placed right before `## Build it step by step`. One per lesson. |
 
   `scripts/check_content.py` rejects any other marker, and a second recap.
+- Figures, written as a fenced block tagged `figure` that holds one SVG and a
+  caption. For more information, see [Figures](#figures).
 - Interactive demos, written as a fenced block tagged `demo` that holds one JSON
   object. For more information, see [Demos](#demos).
 
-Every lesson body includes, in this order:
+Every chapter body includes, in this order:
 
-1. An opening that says, in plain words, what problem the lesson solves and why
-   it matters. Two or three short paragraphs. No heading, and no formulas.
-2. `## What you already know` — a short list of the ideas the lesson builds on,
+1. An opening that says, in plain words, what problem the chapter solves and
+   why it matters, starting from a concrete situation. Two or three short
+   paragraphs. No heading, and no formulas.
+2. `## What you already know` — a short list of the ideas the chapter builds on,
    each in one plain sentence. Keep it to five bullets.
-3. The substance, in as many `##` sections as the material needs. Each section
-   leads with intuition, then gives the formula, reads it aloud, and shows it
-   as numpy. Include at least one small example worked by hand with real
-   numbers.
+3. The substance, in as many `##` sections as the material needs, following
+   the ladder in "Build intuition first": picture, words, a tiny example, the
+   formula, code. Include at least one small example worked by hand with real
+   numbers, and at least one SVG figure.
 4. `## Build it step by step` — a numbered walkthrough of the exercise, one
    step per function in the order the checks test them. Each step says what the
    function takes and returns, the numpy operations it needs, and the mistake
    people most often make. It gives the shape of the code, never the full
    answer.
-5. `## Cost and scaling` — how the running time and memory grow as the data or
-   the model gets bigger, in plain words. A short table works well.
-6. `## Where this breaks` — the common ways the method fails in practice, and
-   what people do about each one.
+5. `## Cost and scaling` — optional. How the running time and memory grow as
+   the data or the model gets bigger, in plain words. Include it when cost is
+   part of the idea, and leave it out of a chapter where it is filler.
+6. `## Where this breaks` — optional. The common ways the method fails in
+   practice, and what people do about each one.
 7. `## The exercise` — one or two paragraphs that say what the reader builds
    and what the checks verify. Name the functions by their exact identifiers.
 
-Aim for 1500 to 2600 words of body, plus math. Short sentences and short
-paragraphs matter more than the word count.
+Aim for 900 to 2000 words of body, plus math, figures, and demos. A chapter is
+a sitting of about 30 to 45 minutes, reading and building together. When a
+draft runs past 2000 words, it holds two ideas: split it.
+`scripts/check_content.py` rejects a chapter under 800 or over 2600 words, and
+one with no figure. It does not count the words inside `figure` and `demo`
+blocks.
 
 ## Exercise directory
 
@@ -174,7 +275,7 @@ field. It holds exactly four files.
 
 ```json
 {
-  "id": "04-the-short-time-fourier-transform",
+  "id": "007-the-short-time-fourier-transform",
   "title": "Build a spectrogram from frames",
   "brief": "Frame a signal, window it, and take the magnitude of each frame's FFT.",
   "needs_gpu": false,
@@ -347,7 +448,7 @@ is also what keeps a run fast.
 
 ## Demos
 
-A demo is an interactive figure inside a lesson: sliders, a plot, and often a
+A demo is an interactive figure inside a chapter: sliders, a plot, and often a
 button that plays sound. A lesson places one with a fenced block tagged `demo`
 that holds one JSON object:
 
@@ -365,9 +466,10 @@ The following rules apply:
   notice, shown under the demo's title.
 - `props` is optional: an object passed to the demo as extra properties, for a
   demo that documents the options it takes. No other key is allowed.
-- Use at most three demos in a lesson. Introduce each with a sentence in the
+- Use at most three demos in a chapter. Introduce each with a sentence in the
   text, and never make a demo the only place a result appears: the PDF book
-  prints it as a still figure.
+  prints it as a still figure. A demo does not replace the chapter's SVG
+  figure, which every chapter still needs.
 - Place a demo after the idea it illustrates, not before it.
 
 To build a demo, see `docs/DEMOS.md`.

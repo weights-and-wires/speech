@@ -24,6 +24,30 @@ export default function LessonPage({ gpuAvailable, lessons, onProgress }: Props)
   // Narrow screens show the lesson and the exercise one at a time.
   const [tab, setTab] = useState<"first" | "second">("first");
   const wide = useMediaQuery(WIDE);
+  // A wide screen can fold the editor away to read with the whole width.
+  const [editorHidden, setEditorHidden] = useState(() => remembered(HIDDEN_KEY));
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(HIDDEN_KEY, editorHidden ? "1" : "0");
+    } catch {
+      // Storage switched off still leaves a working toggle.
+    }
+  }, [editorHidden]);
+
+  // Cmd or Ctrl with "." folds and unfolds the editor. It listens in the
+  // capture phase so the shortcut also works while the editor has focus.
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key === ".") {
+        event.preventDefault();
+        event.stopPropagation();
+        setEditorHidden((v) => !v);
+      }
+    }
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -74,7 +98,10 @@ export default function LessonPage({ gpuAvailable, lessons, onProgress }: Props)
   // On a narrow screen, a jump to the editor has to show the exercise tab
   // first. The editor itself handles the jump.
   useEffect(() => {
-    const onReveal = () => setTab("second");
+    const onReveal = () => {
+      setTab("second");
+      setEditorHidden(false);
+    };
     window.addEventListener(REVEAL_EVENT, onReveal);
     return () => window.removeEventListener(REVEAL_EVENT, onReveal);
   }, []);
@@ -146,6 +173,8 @@ export default function LessonPage({ gpuAvailable, lessons, onProgress }: Props)
         label="Resize the lesson and the editor"
         stacked={!wide}
         active={tab}
+        collapsed={editorHidden}
+        rail={<EditorRail title={lesson.exercise_detail.title} onOpen={() => setEditorHidden(false)} />}
         first={reading}
         second={
           <ExercisePane
@@ -156,10 +185,42 @@ export default function LessonPage({ gpuAvailable, lessons, onProgress }: Props)
             gpuLesson={lesson.gpu}
             next={lesson.next ? { slug: lesson.next, title: titleOf(lesson.next, lessons) } : null}
             onSolved={onSolved}
+            onCollapse={wide ? () => setEditorHidden(true) : undefined}
           />
         }
       />
     </div>
+  );
+}
+
+const HIDDEN_KEY = "speech.editor.hidden";
+
+function remembered(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** The strip a folded editor leaves behind. Clicking it brings the editor back. */
+function EditorRail({ title, onOpen }: { title: string; onOpen: () => void }) {
+  const mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Show the code editor: ${title}`}
+      title={`Show the code editor (${mac ? "⌘" : "Ctrl"} .)`}
+      className="flex w-10 shrink-0 flex-col items-center gap-3 border-l border-rule bg-chrome py-3 text-ink-3 transition-colors hover:bg-sunk hover:text-ink"
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+        <rect x="1.75" y="2.75" width="12.5" height="10.5" rx="2" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M9.75 3v10" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M7 6L5 8l2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span className="text-[12.5px] font-medium [writing-mode:vertical-rl]">Code editor</span>
+    </button>
   );
 }
 

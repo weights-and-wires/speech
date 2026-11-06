@@ -1,7 +1,7 @@
 // Compiles every $...$ and $$...$$ segment in the named lessons with the
 // frontend's own KaTeX, so math that fails only at render time fails here.
 //
-//   node scripts/check_math.mjs content/lessons/01-the-learning-problem.md
+//   node scripts/check_math.mjs content/lessons/001-sound-and-sampling.md
 //   node scripts/check_math.mjs            # every lesson
 
 import fs from "node:fs";

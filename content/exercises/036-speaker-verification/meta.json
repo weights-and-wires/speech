@@ -1,0 +1,19 @@
+{
+  "id": "036-speaker-verification",
+  "title": "Train and score speaker embeddings",
+  "brief": "Build the additive angular margin softmax, cosine trial scores, the equal error rate, and the normalized minimum detection cost, then train embeddings for unseen synthetic voices.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": [
+    "numpy",
+    "scipy",
+    "torch"
+  ],
+  "hints": [
+    "cosine_scores: divide the row-wise dot product np.sum(a * b, axis=1) by the product of the row norms from np.linalg.norm(..., axis=1).",
+    "In aam_softmax_loss, compute cos(theta + m) from the identity cos(theta) cos(m) - sin(theta) sin(m), with sin(theta) = sqrt(clamp(1 - cos^2, 0)), then torch.where picks the fallback where cos(theta) <= cos(pi - m).",
+    "Replace only the true class's logit: clone the cosine matrix and write into logits[rows, labels], then call torch.nn.functional.cross_entropy on scale * logits.",
+    "For equal_error_rate, broadcasting target[None, :] < thresholds[:, None] gives the miss indicator for every threshold at once; take the mean over axis 1.",
+    "min_dcf reuses the same two rates: compute the weighted cost at every threshold, take the minimum, and divide by the cost of the better trivial system."
+  ]
+}

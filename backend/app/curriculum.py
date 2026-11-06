@@ -48,6 +48,18 @@ def _exercises_dir() -> Path:
     return get_settings().content_dir / "exercises"
 
 
+def renames() -> dict[str, list[str]]:
+    """Old lesson slugs and the slugs that replaced them, from `renames.json`.
+
+    When a lesson is split or renamed, its entry here lets readers keep their
+    progress. A missing file means nothing was renamed.
+    """
+    path = get_settings().content_dir / "renames.json"
+    if not path.is_file():
+        return {}
+    return {str(k): [str(s) for s in v] for k, v in json.loads(path.read_text()).items()}
+
+
 @lru_cache
 def load_lessons() -> list[dict[str, Any]]:
     """Every lesson, ordered by the numeric prefix of its filename."""

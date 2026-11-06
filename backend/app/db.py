@@ -109,6 +109,32 @@ def get_progress(username: str) -> dict[str, dict[str, Any]]:
     }
 
 
+def carry_progress(renames: dict[str, list[str]]) -> int:
+    """Move progress on renamed lessons to the lessons that replaced them.
+
+    `renames` maps an old slug to its new slugs. Every reader's status on an
+    old slug is copied to each new one, without overwriting a status the
+    reader already has there, and the old row is deleted, so a second run
+    changes nothing. Returns the number of old rows carried over.
+    """
+    carried = 0
+    with session() as connection:
+        for old, new in renames.items():
+            rows = connection.execute(
+                "SELECT username, status, updated_at FROM progress WHERE slug = ?", (old,)
+            ).fetchall()
+            for row in rows:
+                for slug in new:
+                    connection.execute(
+                        "INSERT OR IGNORE INTO progress (username, slug, status, updated_at) "
+                        "VALUES (?, ?, ?, ?)",
+                        (row["username"], slug, row["status"], row["updated_at"]),
+                    )
+                carried += 1
+            connection.execute("DELETE FROM progress WHERE slug = ?", (old,))
+    return carried
+
+
 # Drafts -----------------------------------------------------------------
 
 

@@ -28,6 +28,7 @@ app = FastAPI(title="Weights and Wires — Speech and audio", docs_url=None, red
 @app.on_event("startup")
 def startup() -> None:
     db.init()
+    db.carry_progress(curriculum.renames())
 
 
 # Models -----------------------------------------------------------------

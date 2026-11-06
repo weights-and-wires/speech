@@ -29,6 +29,13 @@ type Props = {
   stacked?: boolean;
   /** Which pane `stacked` shows. Ignored while the panes are split. */
   active?: "first" | "second";
+  /**
+   * Fold the second pane away and give the first the whole width. The second
+   * pane stays mounted, hidden, so it keeps its state, and `rail` takes its
+   * place as a slim strip that brings it back. Ignored while stacked.
+   */
+  collapsed?: boolean;
+  rail?: ReactNode;
 };
 
 function remembered(key: string, fallback: number): number {
@@ -58,11 +65,14 @@ export default function SplitPane({
   label = "Resize the panes",
   stacked = false,
   active = "first",
+  collapsed = false,
+  rail,
 }: Props) {
   const [size, setSize] = useState(() => remembered(storageKey, initial));
   const [dragging, setDragging] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   const row = direction === "row";
+  const folded = collapsed && !stacked;
 
   useEffect(() => {
     try {
@@ -114,13 +124,14 @@ export default function SplitPane({
 
   // While stacked, the visible pane fills the container and the other is
   // display:none. Monaco relays itself out when it comes back into view.
-  const firstStyle: CSSProperties | undefined = stacked
+  const firstStyle: CSSProperties | undefined = stacked || folded
     ? undefined
     : row
       ? { width: `${size}%` }
       : { height: `${size}%` };
 
   function paneClass(which: "first" | "second") {
+    if (folded) return which === "first" ? "flex min-h-0 min-w-0 flex-1 flex-col" : "hidden";
     if (!stacked) return "flex min-h-0 min-w-0 flex-col";
     return active === which
       ? "flex min-h-0 min-w-0 flex-1 flex-col"
@@ -145,8 +156,8 @@ export default function SplitPane({
         aria-valuenow={Math.round(size)}
         aria-valuemin={min}
         aria-valuemax={max}
-        tabIndex={stacked ? -1 : 0}
-        aria-hidden={stacked}
+        tabIndex={stacked || folded ? -1 : 0}
+        aria-hidden={stacked || folded}
         onPointerDown={(event) => {
           event.preventDefault();
           setDragging(true);
@@ -162,7 +173,7 @@ export default function SplitPane({
           event.preventDefault();
         }}
         className={`group relative shrink-0 touch-none transition-colors ${
-          stacked ? "hidden" : ""
+          stacked || folded ? "hidden" : ""
         } ${row ? "w-px cursor-col-resize" : "h-px cursor-row-resize"} ${
           dragging ? "bg-accent" : "bg-rule hover:bg-accent/60"
         }`}
@@ -178,11 +189,13 @@ export default function SplitPane({
 
       <div
         className={
-          stacked ? paneClass("second") : "flex min-h-0 min-w-0 flex-1 flex-col"
+          stacked || folded ? paneClass("second") : "flex min-h-0 min-w-0 flex-1 flex-col"
         }
       >
         {second}
       </div>
+
+      {folded && rail}
     </div>
   );
 }

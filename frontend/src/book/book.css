@@ -839,3 +839,9 @@ figure.demo input {
 .demo-online a {
   text-decoration: none;
 }
+
+/* Static SVG figures (```figure blocks) come from index.css, which the book
+   imports. They are not numbered like demos; keep each one on a single page. */
+.lesson figure.figure {
+  break-inside: avoid;
+}

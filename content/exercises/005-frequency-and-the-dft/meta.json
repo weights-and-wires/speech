@@ -1,0 +1,14 @@
+{
+  "id": "005-frequency-and-the-dft",
+  "title": "Build the DFT and read its bins in hertz",
+  "brief": "Build the DFT as a matrix of complex sinusoids, keep the half of it a real signal needs, and convert bin numbers to hertz to find the tones in a frame.",
+  "needs_gpu": false,
+  "timeout": 20,
+  "packages": ["numpy"],
+  "hints": [
+    "np.outer(k, k) with k = np.arange(n) gives every product k * m at once, so np.exp(-2j * np.pi * np.outer(k, k) / n) is the whole matrix.",
+    "The DFT is the matrix times the signal: W @ x. Each row of W is the complex sinusoid for one bin.",
+    "A real signal has X[n - k] equal to the conjugate of X[k], so keep bins 0 to n // 2: that is n // 2 + 1 of them.",
+    "Bin k sits at k * sample_rate / n_fft hertz."
+  ]
+}

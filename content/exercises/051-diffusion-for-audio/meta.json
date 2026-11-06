@@ -1,0 +1,14 @@
+{
+  "id": "051-diffusion-for-audio",
+  "title": "Build a diffusion vocoder",
+  "brief": "Build DiffWave's step embedding and gated residual block, align a 6-step fast schedule to the training schedule, write the loss and fast sampler, and compute Grad-TTS's forward statistics; the run trains a small DiffWave on spoken digits.",
+  "needs_gpu": true,
+  "timeout": 900,
+  "packages": ["numpy", "torch"],
+  "hints": [
+    "diffusion_embedding: freqs = 10 ** (4 * arange(h) / (h - 1)); angle = t[:, None] * freqs[None, :]; concatenate sin and cos along dim 1.",
+    "In ResidualBlock.forward, diffusion_projection(emb) has shape (B, C); add [:, :, None] so it broadcasts over time.",
+    "diffwave_alignment interpolates linearly in sqrt(alpha_bar), not in alpha_bar, between the two training steps that bracket gamma_bar_s.",
+    "fast_sample walks the fast schedule backwards: its last entry, the noisiest, is used first."
+  ]
+}

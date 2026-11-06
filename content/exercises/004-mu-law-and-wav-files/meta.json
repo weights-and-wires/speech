@@ -1,0 +1,16 @@
+{
+  "id": "004-mu-law-and-wav-files",
+  "title": "Compand with mu-law and write a WAV file",
+  "brief": "Build 8-bit mu-law encoding and decoding, convert floats to 16-bit PCM, and write and read WAV files with struct so the bytes match Python's wave module.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "soundfile"],
+  "hints": [
+    "np.log1p(mu * np.abs(x)) is ln(1 + mu |x|), and it stays accurate for tiny x.",
+    "Map F(x) from [-1, 1] to [0, mu] with np.floor((y + 1) / 2 * mu + 0.5), and invert it with y = 2 * codes / mu - 1.",
+    "Clip before astype(np.int16): 1.0 times 32768 is 32768, which wraps to -32768 without the clip.",
+    "struct.pack('<HHIIHH', 1, channels, rate, rate * 2 * channels, 2 * channels, 16) is the whole 16-byte fmt body.",
+    "An int16 array shaped (frames, channels) is already in interleaved order: pcm.astype('<i2').tobytes() writes L0 R0 L1 R1 and so on.",
+    "When walking chunks, advance by 8 + size, plus 1 more when size is odd."
+  ]
+}

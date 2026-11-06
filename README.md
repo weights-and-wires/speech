@@ -1,9 +1,9 @@
 # Speech and audio
 
 A hands-on course in speech and audio processing that you learn by building it.
-Each lesson explains an idea in plain words, works a small example by hand, and
-then walks you through implementing it, in an editor beside the text, against
-checks that verify the results rather than the shape of your code.
+Each chapter teaches one idea. It explains the idea in plain words, works a
+small example by hand, and then walks you through implementing it, in an editor
+beside the text, against checks that verify the results rather than the shape of your code.
 
 The reading pane is on the left and the editor is on the right, the way a
 programming-problem site arranges them. **Run** executes your file and streams
@@ -43,7 +43,10 @@ The repository is laid out as follows.
 
 ## The curriculum
 
-The course has 42 lessons in eight parts, and 21 interactive demos.
+The course has 60 short chapters in eight parts, and 21 interactive demos. Each
+chapter teaches one idea. Readers of the earlier 42-lesson course keep their
+progress: `content/renames.json` maps each old slug to the chapters that
+replaced it.
 
 **Part 1 — Sound and signals.** Sampling and aliasing, quantization and WAV
 files, the DFT and the FFT, the short-time Fourier transform, phase and
@@ -79,7 +82,7 @@ metrics.
 audio classification and voice conversion, spoken language models and the
 adapter pattern, and full-duplex models and voice agents.
 
-Nine lessons run a real experiment on the GPU: training a Conformer-CTC on
+Eight chapters run a real experiment on the GPU: training a Conformer-CTC on
 spoken digits, probing `wav2vec2-base` and `hubert-base` layer by layer,
 decoding `whisper-tiny` with your own beam search, training a HiFi-GAN-style
 vocoder, measuring EnCodec and Mimi, training a DiffWave-style vocoder and a
@@ -140,11 +143,11 @@ demo.
 Validate what you write:
 
 ```bash
-.venv/bin/python scripts/check_content.py 99-smoke
+.venv/bin/python scripts/check_content.py 999-smoke
 ```
 
 ```bash
-node scripts/check_math.mjs content/lessons/99-smoke.md
+node scripts/check_math.mjs content/lessons/999-smoke.md
 ```
 
 That checks the front matter, the required sections, the word count, and every

@@ -23,7 +23,7 @@ type Props = {
  * Renders a lesson body: GitHub-flavoured Markdown, KaTeX for the maths, and
  * highlight.js for the code blocks, then `rehypeLesson` for the callouts,
  * sections, and highlights. A fenced ```demo block becomes an interactive
- * demo from `demos/index.ts`. Memoised because a lesson body is long and the
+ * demo from `demos/index.ts`, and a ```figure block becomes a static SVG. Memoised because a lesson body is long and the
  * pane around it rerenders on every keystroke in the editor.
  */
 function Markdown({ children, symbols, inline = false }: Props) {
@@ -124,7 +124,26 @@ function MissingDemo({ reason }: { reason: string }) {
   );
 }
 
-/** A code block, or a demo when the block is tagged `demo`. */
+/**
+ * A ```figure block: one inline SVG, then an optional caption on the lines
+ * after `</svg>`. The SVG colours itself with the `fig-*`, `fill-*`, and
+ * `stroke-*` classes in index.css, so it follows the light and dark themes and
+ * prints in the book. Lessons are authored in this repository, so the SVG is
+ * trusted. Unlike a `demo`, a figure is static and needs no registry entry.
+ */
+function Figure({ source }: { source: string }) {
+  const end = source.lastIndexOf("</svg>");
+  const svg = end >= 0 ? source.slice(0, end + "</svg>".length).trim() : source.trim();
+  const caption = end >= 0 ? source.slice(end + "</svg>".length).trim() : "";
+  return (
+    <figure className="figure">
+      <div className="figure-art" dangerouslySetInnerHTML={{ __html: svg }} />
+      {caption && <figcaption>{caption}</figcaption>}
+    </figure>
+  );
+}
+
+/** A code block, or a demo or figure when the block is tagged `demo` or `figure`. */
 function CodeBlock(props: ComponentProps<"pre"> & { node?: unknown }) {
   const first = (props.node as { children?: unknown[] } | undefined)?.children?.[0] as
     | { type?: string; tagName?: string; properties?: Record<string, unknown> }
@@ -133,6 +152,7 @@ function CodeBlock(props: ComponentProps<"pre"> & { node?: unknown }) {
     const names = first.properties?.className;
     const list = Array.isArray(names) ? names.map(String) : [String(names ?? "")];
     if (list.includes("language-demo")) return <DemoBlock source={nodeText(first)} />;
+    if (list.includes("language-figure")) return <Figure source={nodeText(first)} />;
   }
   return <PlainCodeBlock {...props} />;
 }

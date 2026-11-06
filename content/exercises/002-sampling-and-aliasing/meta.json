@@ -1,0 +1,14 @@
+{
+  "id": "002-sampling-and-aliasing",
+  "title": "Predict aliases and resample with a windowed sinc",
+  "brief": "Predict the frequency a sampled tone shows, build a Kaiser-windowed sinc low-pass filter, and use it in a resampler that matches scipy's resample_poly.",
+  "needs_gpu": false,
+  "timeout": 40,
+  "packages": ["numpy", "scipy"],
+  "hints": [
+    "The alias is the distance to the nearest multiple of the sample rate: abs(f - fs * np.round(f / fs)).",
+    "np.sinc(u) is sin(pi u) / (pi u), so 2 * fc * np.sinc(2 * fc * m) is the ideal low-pass response for a cutoff of fc cycles per sample.",
+    "Zero-stuff with stuffed = np.zeros(len(x) * up); stuffed[::up] = x. After np.convolve, the first output sample you keep is at index half, not 0.",
+    "The ceiling of a / b for positive integers is -(-a // b)."
+  ]
+}

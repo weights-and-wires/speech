@@ -16,6 +16,8 @@ type Props = {
   /** The next lesson, offered once every check passes. */
   next?: { slug: string; title: string } | null;
   onSolved: () => void;
+  /** Folds the editor away so the lesson takes the whole width. */
+  onCollapse?: () => void;
 };
 
 const AUTOSAVE_MS = 1200;
@@ -27,6 +29,7 @@ export default function ExercisePane({
   gpuLesson,
   next,
   onSolved,
+  onCollapse,
 }: Props) {
   const [code, setCode] = useState(initialCode);
   const [lines, setLines] = useState<ConsoleLine[]>([]);
@@ -211,6 +214,17 @@ export default function ExercisePane({
           <span className="shrink-0 text-[12px] text-ink-4">
             {exercise.timeout}s limit
           </span>
+          {onCollapse && (
+            <button
+              type="button"
+              onClick={onCollapse}
+              aria-label="Hide the code editor"
+              title={`Hide the code editor (${mod} .)`}
+              className="icon-btn -my-1 -mr-1.5 self-center"
+            >
+              <FoldIcon />
+            </button>
+          )}
         </div>
         <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-ink-3" title={exercise.brief}>
           {exercise.brief}
@@ -375,5 +389,16 @@ export default function ExercisePane({
         />
       )}
     </div>
+  );
+}
+
+/** A pane with an arrow pushing it off to the right. */
+function FoldIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <rect x="1.75" y="2.75" width="12.5" height="10.5" rx="2" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M9.75 3v10" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M5 6l2 2-2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

@@ -1,0 +1,14 @@
+{
+  "id": "001-what-sound-is",
+  "title": "Measure the level of a tone",
+  "brief": "Build the RMS, the peak and RMS levels in dBFS, and a sampled cosine, then measure the running 440 Hz example.",
+  "needs_gpu": false,
+  "timeout": 20,
+  "packages": ["numpy"],
+  "hints": [
+    "The RMS is np.sqrt(np.mean(x ** 2)): square, average, then take the root.",
+    "A level in dBFS is 20 * np.log10(max(value, eps)); use 20 because the value is an amplitude, not a power.",
+    "Sample n is taken at time n / sample_rate, so build n = np.arange(N) and compute 2 * np.pi * frequency * n / sample_rate.",
+    "A half-scale sine has a peak of 0.5, which is -6.02 dBFS, and an RMS of 0.5 / sqrt(2), which is -9.03 dBFS."
+  ]
+}

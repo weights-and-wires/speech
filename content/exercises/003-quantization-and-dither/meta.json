@@ -1,0 +1,14 @@
+{
+  "id": "003-quantization-and-dither",
+  "title": "Quantize to N bits and add dither",
+  "brief": "Quantize a signal to N bits, predict its signal-to-noise ratio from the 6.02N + 1.76 dB rule, and add triangular dither so the error stops following the signal.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy"],
+  "hints": [
+    "A 3-bit step is 2 ** (1 - 3) = 0.25, so 0.9 / 0.25 = 3.6 rounds to 4, which clips to the top code 3, giving 0.75.",
+    "10 * np.log10(1.5 * 4.0 ** bits) is exactly the full-scale prediction; 6.02 N + 1.76 is its rounded form.",
+    "Triangular dither is the sum of two independent draws from rng.uniform(-step / 2, step / 2, x.shape). Add it before you call quantize.",
+    "Clip the integer codes to [-2 ** (bits - 1), 2 ** (bits - 1) - 1], then multiply by the step."
+  ]
+}

@@ -1,0 +1,146 @@
+{
+ "01-sound-and-sampling": [
+  "001-what-sound-is",
+  "002-sampling-and-aliasing"
+ ],
+ "02-quantization-and-audio-files": [
+  "003-quantization-and-dither",
+  "004-mu-law-and-wav-files"
+ ],
+ "03-the-dft-and-the-fft": [
+  "005-frequency-and-the-dft",
+  "006-the-fft-and-windows"
+ ],
+ "04-the-short-time-fourier-transform": [
+  "007-the-short-time-fourier-transform"
+ ],
+ "05-phase-and-griffin-lim": [
+  "008-phase-and-griffin-lim"
+ ],
+ "06-filters-convolution-and-reverb": [
+  "009-convolution-and-filters",
+  "010-rooms-and-reverb"
+ ],
+ "07-hearing-and-the-mel-scale": [
+  "011-hearing-and-the-mel-scale",
+  "012-log-mel-spectrograms"
+ ],
+ "08-mfccs-and-normalization": [
+  "013-mfccs",
+  "014-deltas-and-normalization"
+ ],
+ "09-speech-production-and-lpc": [
+  "015-the-source-filter-model",
+  "016-linear-prediction"
+ ],
+ "10-pitch-tracking": [
+  "017-pitch-tracking"
+ ],
+ "11-phonetics-text-and-voice-activity": [
+  "018-phonemes-and-text-normalization",
+  "019-voice-activity-detection"
+ ],
+ "12-dynamic-time-warping": [
+  "020-dynamic-time-warping"
+ ],
+ "13-hidden-markov-models": [
+  "021-hidden-markov-models",
+  "022-training-hmms"
+ ],
+ "14-language-models-and-word-error-rate": [
+  "023-n-gram-language-models",
+  "024-word-error-rate"
+ ],
+ "15-neural-acoustic-models": [
+  "025-neural-acoustic-models"
+ ],
+ "16-connectionist-temporal-classification": [
+  "026-ctc-many-paths-one-label",
+  "027-ctc-forward-backward"
+ ],
+ "17-decoding-ctc": [
+  "028-decoding-ctc",
+  "029-language-model-fusion"
+ ],
+ "18-attention-encoder-decoders": [
+  "030-attention-encoder-decoders"
+ ],
+ "19-transducers-and-streaming": [
+  "031-transducers",
+  "032-streaming-encoders"
+ ],
+ "20-conformers-and-specaugment": [
+  "033-conformers-and-specaugment"
+ ],
+ "21-self-supervised-speech": [
+  "034-self-supervised-speech"
+ ],
+ "22-whisper-and-large-scale-recognition": [
+  "035-whisper"
+ ],
+ "23-speaker-recognition-and-diarization": [
+  "036-speaker-verification",
+  "037-diarization-and-forced-alignment"
+ ],
+ "24-text-to-speech-and-tacotron": [
+  "038-text-to-speech-and-tacotron"
+ ],
+ "25-durations-and-alignment-search": [
+  "039-durations-and-alignment-search"
+ ],
+ "26-wavenet-and-autoregressive-vocoders": [
+  "040-wavenet"
+ ],
+ "27-gan-vocoders": [
+  "041-gan-vocoders"
+ ],
+ "28-normalizing-flows-and-vits": [
+  "042-normalizing-flows-and-vits"
+ ],
+ "29-evaluating-synthetic-speech": [
+  "043-evaluating-synthetic-speech"
+ ],
+ "30-vector-quantization": [
+  "044-vector-quantization",
+  "045-residual-and-scalar-quantization"
+ ],
+ "31-neural-audio-codecs": [
+  "046-neural-audio-codecs"
+ ],
+ "32-codec-language-models": [
+  "047-codec-language-models"
+ ],
+ "33-diffusion-from-scratch": [
+  "048-diffusion-from-scratch"
+ ],
+ "34-samplers-scores-and-guidance": [
+  "049-fast-samplers",
+  "050-classifier-free-guidance"
+ ],
+ "35-diffusion-for-audio": [
+  "051-diffusion-for-audio"
+ ],
+ "36-flow-matching": [
+  "052-flow-matching",
+  "053-straighter-paths-and-better-solvers"
+ ],
+ "37-flow-matching-for-speech": [
+  "054-flow-matching-for-speech"
+ ],
+ "38-few-step-generation-and-audio-metrics": [
+  "055-few-step-generation-and-audio-metrics"
+ ],
+ "39-enhancement-and-separation": [
+  "056-speech-enhancement",
+  "057-source-separation"
+ ],
+ "40-classification-and-voice-conversion": [
+  "058-classification-and-voice-conversion"
+ ],
+ "41-spoken-language-models": [
+  "059-spoken-language-models"
+ ],
+ "42-full-duplex-and-voice-agents": [
+  "060-full-duplex-and-voice-agents"
+ ]
+}

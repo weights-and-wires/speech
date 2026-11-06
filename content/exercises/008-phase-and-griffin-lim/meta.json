@@ -1,0 +1,15 @@
+{
+  "id": "008-phase-and-griffin-lim",
+  "title": "Recover phase with Griffin-Lim, and stretch time",
+  "brief": "Measure spectral convergence, build Griffin-Lim and its fast momentum version, and time-stretch a signal with a phase vocoder that keeps its pitch.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy"],
+  "hints": [
+    "np.exp(1j * np.angle(c)) keeps only the phase of c, and is 1 where c is 0, so no division by zero is needed.",
+    "Keep the previous projection t outside the loop, starting as None, and update it after you compute the momentum step.",
+    "griffin_lim with n_iter=0 skips the loop and inverts the random-phase start directly; the checks use this to test your start.",
+    "In phase_vocoder, wrap a phase difference d to [-pi, pi] with d - 2 * np.pi * np.round(d / (2 * np.pi)).",
+    "The running phase in phase_vocoder advances by expected + deviation after each output frame, not before the first one."
+  ]
+}

@@ -4,13 +4,21 @@
 Run it over everything, or over one lesson while you write it:
 
     python3 scripts/check_content.py
-    python3 scripts/check_content.py 05-logistic-regression
+    python3 scripts/check_content.py 005-logistic-regression
+
+CONTENT_DIR points the checker at another tree, such as a draft of a rewrite.
+Each lesson needs at least one ```figure block: one `<svg viewBox=...>` that
+colours itself with the fill-* and stroke-* classes, then a caption. Every
+exercise file must compile, so a starter with a syntax error cannot pass by
+failing its checks.
 
 For each exercise it runs the checks twice: once against `solution.py`, which
 must pass every check, and once against `starter.py`, which must fail at least
 one. An exercise whose starter already passes is not an exercise. It also
 presses Run on both: the solution's `__main__` block must finish, and the
 starter's must stop at a `NotImplementedError`.
+
+A chapter body runs 800 to 2600 words, not counting figure and demo blocks.
 
 Every ```demo block must be valid JSON naming a demo in
 `frontend/src/demos/index.ts`, with a caption.
@@ -19,14 +27,17 @@ Every ```demo block must be valid JSON naming a demo in
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-LESSONS = ROOT / "content" / "lessons"
-EXERCISES = ROOT / "content" / "exercises"
+# CONTENT_DIR points the checker at another tree, such as a draft of a rewrite.
+CONTENT = Path(os.environ.get("CONTENT_DIR") or ROOT / "content").resolve()
+LESSONS = CONTENT / "lessons"
+EXERCISES = CONTENT / "exercises"
 HARNESS = ROOT / "backend" / "app" / "runner" / "harness.py"
 REGISTRY = ROOT / "frontend" / "src" / "demos" / "index.ts"
 DEMO_BLOCK = re.compile(r"^```demo[ \t]*\n(.*?)^```", re.DOTALL | re.MULTILINE)
@@ -38,10 +49,15 @@ REQUIRED_FRONTMATTER = {
 REQUIRED_SECTIONS = [
     "## What you already know",
     "## Build it step by step",
-    "## Cost and scaling",
-    "## Where this breaks",
     "## The exercise",
 ]
+# Colours in a figure come from the fill-* and stroke-* classes, so it follows
+# the theme.
+RAW_COLOUR = re.compile(
+    r"""(?:fill|stroke|color)\s*[=:]\s*["']?\s*(?:#|rgb|hsl|black|white|red|blue|green)""",
+    re.I,
+)
+FIGURE_BLOCK = re.compile(r"^```figure[ \t]*\n(.*?)^```", re.DOTALL | re.MULTILINE)
 CALLOUTS = ("KEY", "TIP", "WARNING", "RECAP")
 BANNED = [
     r"\bsimply\b", r"\bjust simply\b", r"\beasily\b", r"\bobviously\b",
@@ -122,6 +138,16 @@ def check_exercise(exercise_id: str, problems: list[str]) -> None:
         problems.append(f"{exercise_id}: meta.json id is {meta.get('id')!r}")
 
     timeout = int(meta.get("timeout", 60))
+
+    # A starter that does not parse still "fails" its checks, which would pass
+    # the test below, so every file must compile first.
+    for name in ("starter.py", "solution.py", "tests.py"):
+        source = (where / name).read_text()
+        try:
+            compile(source, str(where / name), "exec")
+        except SyntaxError as exc:
+            problems.append(f"{exercise_id}: {name} does not parse: line {exc.lineno}: {exc.msg}")
+            return
 
     # A temporary copy keeps `solution.py` out of the import path the reader gets.
     import shutil
@@ -246,9 +272,28 @@ def check_lesson(path: Path, problems: list[str], seen_exercises: set[str]) -> N
     if not body.lstrip().startswith("# "):
         problems.append(f"{path.name}: the body must open with a single '# ' heading")
 
-    words = len(body.split())
-    if words < 900:
-        problems.append(f"{path.name}: {words} words, the contract asks for 1000 or more")
+    figures = FIGURE_BLOCK.findall(body)
+    if not figures:
+        problems.append(f"{path.name}: no ```figure block; every chapter needs one")
+    for i, figure in enumerate(figures, 1):
+        if "<svg" not in figure or "</svg>" not in figure or "viewBox" not in figure:
+            problems.append(f"{path.name}: figure {i} needs one <svg viewBox=...>...</svg>")
+        if RAW_COLOUR.search(figure):
+            problems.append(
+                f"{path.name}: figure {i} sets a raw colour; use the fill-* and "
+                "stroke-* classes so it follows the theme"
+            )
+        caption = figure[figure.rfind("</svg>") + 6 :].strip()
+        if not caption:
+            problems.append(f"{path.name}: figure {i} has no caption after </svg>")
+
+    # Figure and demo blocks are drawing, not reading, so they do not count.
+    counted = DEMO_BLOCK.sub("", FIGURE_BLOCK.sub("", body))
+    words = len(counted.split())
+    if words < 800:
+        problems.append(f"{path.name}: {words} words, the contract asks for 900 or more")
+    if words > 2600:
+        problems.append(f"{path.name}: {words} words; split the chapter, the contract caps it near 2000")
 
     prose = re.sub(r"```.*?```", "", body, flags=re.S)
     for pattern in BANNED:

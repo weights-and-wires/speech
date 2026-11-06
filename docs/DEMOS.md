@@ -74,7 +74,9 @@ To add a demo, complete the following steps:
    cd frontend && npm run build
    ```
 
-   Replace `SLUG` with the lesson's slug.
+   Replace `SLUG` with the lesson's slug, such as `007-the-short-time-fourier-transform`.
+   A demo is in addition to the chapter's static SVG figure, which
+   `check_content.py` still requires.
 
 5. Open `/demos` in the running app, which lists every registered demo and
    renders the one you choose. To see the still figure the book prints, select

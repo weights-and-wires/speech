@@ -262,9 +262,15 @@ Every chapter body includes, in this order:
 Aim for 900 to 2000 words of body, plus math, figures, and demos. A chapter is
 a sitting of about 30 to 45 minutes, reading and building together. When a
 draft runs past 2000 words, it holds two ideas: split it.
-`scripts/check_content.py` rejects a chapter under 800 or over 2600 words, and
-one with no figure. It does not count the words inside `figure` and `demo`
-blocks.
+`scripts/check_content.py` rejects a chapter under 800 words unless it sets
+`draft: true`, rejects any chapter over 2600 words, and rejects one with no
+figure. It does not count the words inside `figure` and `demo` blocks.
+
+Set `draft: true` on a stub that holds a place in the numbering. The checker
+still checks the structure, the figure, and the exercise, and it exempts that
+file from the 800-word minimum. The upper bound stays. While `frontend/dist`
+is absent, the app includes the stub in the lesson list. When the app serves
+that bundle, it omits the stub.
 
 ## Exercise directory
 

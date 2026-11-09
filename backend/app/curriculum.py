@@ -5,6 +5,11 @@ holding `meta.json`, `starter.py`, `tests.py`, and `solution.py`. Both are cache
 after the first read; `reload_content` clears the cache while you are writing.
 
 The format is specified in `docs/CONTENT_CONTRACT.md`.
+
+A lesson with `draft: true` stays in this list while `frontend/dist` is
+absent. The deployed app serves that bundle, and `main._mount_frontend`
+mounts it only when the directory exists. Drafts follow the same check, so
+a stub is hidden when the bundle is served.
 """
 
 from __future__ import annotations
@@ -48,6 +53,36 @@ def _exercises_dir() -> Path:
     return get_settings().content_dir / "exercises"
 
 
+def _drafts_visible() -> bool:
+    """Whether draft lessons belong in the list this process serves.
+
+    Production serves the built frontend from `frontend/dist`. That is the
+    directory `main._mount_frontend` mounts, and it mounts nothing when the
+    directory is absent. A local checkout has no bundle there, so drafts stay
+    visible while you write them.
+    """
+    return not get_settings().frontend_dist.is_dir()
+
+
+def _draft_exercise_ids() -> set[str]:
+    """Exercise ids of draft lessons, when this process hides drafts."""
+    if _drafts_visible():
+        return set()
+    directory = _lessons_dir()
+    if not directory.is_dir():
+        return set()
+    hidden: set[str] = set()
+    for path in directory.glob("*.md"):
+        meta = frontmatter.load(path).metadata
+        if meta.get("draft") is not True:
+            continue
+        hidden.add(str(meta.get("slug") or path.stem))
+        exercise = meta.get("exercise")
+        if exercise:
+            hidden.add(str(exercise))
+    return hidden
+
+
 def renames() -> dict[str, list[str]]:
     """Old lesson slugs and the slugs that replaced them, from `renames.json`.
 
@@ -62,7 +97,11 @@ def renames() -> dict[str, list[str]]:
 
 @lru_cache
 def load_lessons() -> list[dict[str, Any]]:
-    """Every lesson, ordered by the numeric prefix of its filename."""
+    """Every lesson, ordered by the numeric prefix of its filename.
+
+    Draft lessons are included while `frontend/dist` is absent, and omitted
+    when that bundle is on disk.
+    """
     lessons: list[dict[str, Any]] = []
     directory = _lessons_dir()
     if not directory.is_dir():
@@ -70,6 +109,8 @@ def load_lessons() -> list[dict[str, Any]]:
     for path in sorted(directory.glob("*.md")):
         post = frontmatter.load(path)
         meta = dict(post.metadata)
+        if meta.get("draft") is True and not _drafts_visible():
+            continue
         slug = str(meta.get("slug") or path.stem)
         lessons.append(
             {
@@ -127,6 +168,7 @@ def load_exercises() -> dict[str, dict[str, Any]]:
     root = _exercises_dir()
     if not root.is_dir():
         return exercises
+    hidden = _draft_exercise_ids()
     for path in sorted(root.iterdir()):
         meta_file = path / "meta.json"
         if not meta_file.is_file():
@@ -136,6 +178,8 @@ def load_exercises() -> dict[str, dict[str, Any]]:
         except json.JSONDecodeError:
             continue
         exercise_id = str(meta.get("id", path.name))
+        if exercise_id in hidden or path.name in hidden:
+            continue
 
         def read(name: str) -> str:
             target = path / name

@@ -212,7 +212,7 @@ The checks test the functions in this order. The file gives you `log_gaussian_di
 
 **A bad start gives a bad model.** EM climbs from wherever it starts. The flat start is a reasonable guess for a left-to-right word, and not for every model.
 
-**Whole-word models do not scale.** Each word needs several takes of its own. Large-vocabulary systems share phone models between words, which [Word error rate](/lessons/024-word-error-rate) describes.
+**Whole-word models do not scale.** Each word needs several takes of its own. Large-vocabulary systems share phone models between words, which [Word error rate](/lessons/025-word-error-rate) describes.
 
 ## The exercise
 

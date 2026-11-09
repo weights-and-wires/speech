@@ -128,7 +128,7 @@ Work the sentence by hand, left to right:
 2. `21st` has an ordinal suffix. The cardinal of 21 is "twenty one", so its last word becomes "first".
 3. `$3.50` is money. The whole part, 3, gives "three dollars", and the first two decimal digits, 50, give "fifty cents".
 
-The result is "the twenty first voice costs three dollars fifty cents". One regular expression finds all the tokens, with money tried first, so the `$` is not left behind. Whisper uses the inverse direction for scoring: it ships an `EnglishTextNormalizer` so that "twenty one" and "21" count as the same word, as [Whisper and large-scale recognition](/lessons/036-whisper) explains.
+The result is "the twenty first voice costs three dollars fifty cents". One regular expression finds all the tokens, with money tried first, so the `$` is not left behind. Whisper uses the inverse direction for scoring: it ships an `EnglishTextNormalizer` so that "twenty one" and "21" count as the same word, as [Whisper and large-scale recognition](/lessons/037-whisper) explains.
 
 ## Look the words up, then guess
 
@@ -196,7 +196,7 @@ Take "nation" with the exercise's rules, as in Figure 2. At "n" the longest matc
 Figure 2. The rules get ship right, but they put a short AE1 in nation and cake where the dictionary has a long EY1. Notice that the rules never look past the letter group in front of them, so they cannot see that the final e or the following letters change the vowel.
 ```
 
-The *phone error rate* (PER) scores a G2P system: the edit distance between the predicted and true phone sequences, divided by the length of the true one. Edit distance counts the fewest insertions, deletions, and substitutions that turn one sequence into the other, which [Word error rate](/lessons/024-word-error-rate) builds in full. Here "nation" has one substitution in five phones, a PER of 20%. On 46 held-out CMUdict words, with stress digits removed, the rules make 18 phone errors in 155 phones, a PER of 11.6%. Twelve of the 46 words have an error, and they are the ones that need more than one letter of context: the silent "e" that lengthens the vowel in "cake", "time", "home", and "phone", the "gh" in "laugh", and the "kn" in "knife".
+The *phone error rate* (PER) scores a G2P system: the edit distance between the predicted and true phone sequences, divided by the length of the true one. Edit distance counts the fewest insertions, deletions, and substitutions that turn one sequence into the other, which [Word error rate](/lessons/025-word-error-rate) builds in full. Here "nation" has one substitution in five phones, a PER of 20%. On 46 held-out CMUdict words, with stress digits removed, the rules make 18 phone errors in 155 phones, a PER of 11.6%. Twelve of the 46 words have an error, and they are the ones that need more than one letter of context: the silent "e" that lengthens the vowel in "cake", "time", "home", and "phone", the "gh" in "laugh", and the "kn" in "knife".
 
 Better fallbacks learn from the dictionary itself. Joint-sequence models such as Sequitur G2P and neural sequence-to-sequence models read the whole word before they write any phone. None of them solves *homographs*, words spelled alike but said differently, such as "read", "live", and "record". Those need the sentence.
 

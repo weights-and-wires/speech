@@ -1,0 +1,14 @@
+{
+  "id": "051-fast-samplers",
+  "title": "Sample faster with DDIM and EDM",
+  "brief": "Build DDIM's deterministic and stochastic updates, the VP probability-flow ODE, EDM's noise levels, and Heun sampler, all checked against closed-form Gaussian answers.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy"],
+  "hints": [
+    "ddim_step: form x0_hat first, then rebuild x at the new noise level from x0_hat and the same eps_hat.",
+    "In ddim_sample, append 0 to the steps so the last update lands on alpha_bar[0] = 1, the data.",
+    "pf_ode_sample steps backward in time, so t_next - t is negative.",
+    "edm_sample: Heun averages the slope at the current point and at the Euler guess; skip the correction on the step to sigma = 0, where the slope would divide by zero."
+  ]
+}

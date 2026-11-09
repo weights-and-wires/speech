@@ -288,7 +288,7 @@ The checks test the functions in this order. The file provides `flat_start`, the
 
 **Durations are geometric.** A self-loop with probability $a$ keeps the model in a state for a geometrically distributed number of frames, with mean $1/(1-a)$, and one frame is the most likely stay in every state. Chaining several states per phone enforces a minimum duration.
 
-**Whole-word models do not scale.** Each word gets its own states. Large-vocabulary systems share phone models between words, as [Word error rate](/lessons/024-word-error-rate) shows.
+**Whole-word models do not scale.** Each word gets its own states. Large-vocabulary systems share phone models between words, as [Word error rate](/lessons/025-word-error-rate) shows.
 
 ## The exercise
 

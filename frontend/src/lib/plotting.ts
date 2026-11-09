@@ -101,20 +101,24 @@ export type ThemeColours = {
   series: string[];
 };
 
-/** The theme's colours, read from the CSS variables on `<html>`. */
-export function themeColours(): ThemeColours {
-  const style = getComputedStyle(document.documentElement);
+/**
+ * The theme's colours, read from the CSS variables at `node`, or at `<html>`
+ * when there is none. Pass the canvas, so a plot on the dark code slab, such
+ * as one in the run console, takes the slab's colours in both themes.
+ */
+export function themeColours(node?: Element | null): ThemeColours {
+  const style = getComputedStyle(node ?? document.documentElement);
   const read = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback;
   return {
-    canvas: read("--canvas", "#fcfbf8"),
-    raise: read("--raise", "#ffffff"),
-    ink: read("--ink", "#1c1b18"),
-    ink2: read("--ink-2", "#37352f"),
-    ink3: read("--ink-3", "#6b675d"),
-    ink4: read("--ink-4", "#9a9589"),
-    rule: read("--rule", "#e6e3da"),
-    ruleStrong: read("--rule-strong", "#d4d0c4"),
-    series: [1, 2, 3, 4, 5, 6].map((i) => read(`--series-${i}`, "#2b59c3")),
+    canvas: read("--canvas", "#f7f6f0"),
+    raise: read("--raise", "#fffef9"),
+    ink: read("--ink", "#263e33"),
+    ink2: read("--ink-2", "#263e33"),
+    ink3: read("--ink-3", "#637065"),
+    ink4: read("--ink-4", "#8d968c"),
+    rule: read("--rule", "#d9ddd1"),
+    ruleStrong: read("--rule-strong", "#b8c2b3"),
+    series: [1, 2, 3, 4, 5, 6].map((i) => read(`--series-${i}`, "#1d4939")),
   };
 }
 

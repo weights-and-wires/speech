@@ -1,98 +1,20 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
-@import "@fontsource-variable/source-serif-4/opsz.css";
-@import "@fontsource-variable/source-serif-4/opsz-italic.css";
-@import "@fontsource-variable/inter/index.css";
-@import "@fontsource-variable/jetbrains-mono/index.css";
+
+/* The shared course design system, vendored from weights-and-wires/sites by
+   scripts/sync-ui.sh. Edit it there, never in src/ui/. tokens.css sets the
+   palette for both themes and the aliases (--canvas, --rule, --ink-3, and the
+   rest) that the components here already use. */
+@import "./ui/tokens.css";
+@import "./ui/type.css";
+@import "./ui/components.css";
 
 /* ------------------------------------------------------------------------
-   Tokens. Components name a role (canvas, rule, ink-3) and never a raw
-   colour, so the light and dark themes differ only in the two blocks below.
+   Tailwind colours and fonts. Every colour names a token, so the light and
+   dark themes come from tokens.css alone. The kit does not alias --accent,
+   because this app uses "accent" for interactive colour, which the palette
+   spells --forest.
    ------------------------------------------------------------------------ */
-
-:root,
-[data-theme="light"] {
-  --canvas: #fcfbf8;
-  --chrome: #f5f3ee;
-  --sunk: #f0eee7;
-  --raise: #ffffff;
-  --rule: #e6e3da;
-  --rule-strong: #d4d0c4;
-
-  --ink: #1c1b18;
-  --ink-2: #37352f;
-  --ink-3: #6b675d;
-  --ink-4: #9a9589;
-
-  --accent: #2b59c3;
-  --good: #1b7a4a;
-  --bad: #b3261e;
-  --warn: #975a00;
-  --mark: #fae7a0;
-
-  --primary: #1c1b18;
-  --on-primary: #fcfbf8;
-  --shadow: 0 1px 2px rgb(28 27 24 / 0.05), 0 8px 24px -8px rgb(28 27 24 / 0.14);
-
-  --hl-keyword: #7b3fa0;
-  --hl-string: #2d7a36;
-  --hl-number: #a85300;
-  --hl-comment: #8c887d;
-  --hl-title: #2b59c3;
-  --hl-builtin: #0d6b78;
-  --hl-meta: #6b675d;
-
-  /* Lines in a plot, in order. Distinct in hue and in lightness, so two
-     series still read apart for a reader who cannot tell red from green. */
-  --series-1: #2b59c3;
-  --series-2: #c2560c;
-  --series-3: #1b7a4a;
-  --series-4: #8a3fb8;
-  --series-5: #b3261e;
-  --series-6: #0d6b78;
-  /* The colour of the demos: their kicker, sliders, and main curve. */
-  --demo: var(--accent);
-}
-
-[data-theme="dark"] {
-  --canvas: #1a1a18;
-  --chrome: #151513;
-  --sunk: #22221f;
-  --raise: #242421;
-  --rule: #2e2d29;
-  --rule-strong: #3d3c37;
-
-  --ink: #eeece6;
-  --ink-2: #d3d0c7;
-  --ink-3: #a19d92;
-  --ink-4: #75726a;
-
-  --accent: #8cadff;
-  --good: #5fc48f;
-  --bad: #f08074;
-  --warn: #e3a94f;
-  --mark: rgb(227 169 79 / 0.3);
-
-  --primary: #eeece6;
-  --on-primary: #1a1a18;
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -10px rgb(0 0 0 / 0.6);
-
-  --hl-keyword: #c9a3ee;
-  --hl-string: #a3d69c;
-  --hl-number: #efb46c;
-  --hl-comment: #7f7c72;
-  --hl-title: #8cadff;
-  --hl-builtin: #7fd0d8;
-  --hl-meta: #a19d92;
-
-  --series-1: #8cadff;
-  --series-2: #f0a060;
-  --series-3: #5fc48f;
-  --series-4: #c9a3ee;
-  --series-5: #f08074;
-  --series-6: #7fd0d8;
-  --demo: var(--accent);
-}
 
 @theme inline {
   --color-canvas: var(--canvas);
@@ -105,19 +27,29 @@
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
   --color-ink-4: var(--ink-4);
-  --color-accent: var(--accent);
+  --color-accent: var(--forest);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-forest: var(--forest);
+  --color-forest-soft: var(--forest-soft);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-strong-line: var(--strong-line);
+  --color-error: var(--error);
+  --color-error-soft: var(--error-soft);
   --color-good: var(--good);
   --color-bad: var(--bad);
   --color-warn: var(--warn);
   --color-primary: var(--primary);
   --color-on-primary: var(--on-primary);
   --color-demo: var(--demo);
-}
 
-@theme {
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-serif: "Source Serif 4 Variable", "Iowan Old Style", Georgia, serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: var(--sans);
+  --font-serif: var(--serif);
+  --font-mono: var(--mono);
 }
 
 /* ------------------------------------------------------------------------
@@ -140,22 +72,9 @@
     /* The app scrolls inside its panes. Letting a pane's overscroll chain up
        to the document is what triggers pull-to-refresh mid-lesson. */
     overscroll-behavior: none;
-    background: var(--canvas);
-    color: var(--ink-2);
-    font-family: var(--font-sans);
-    font-feature-settings: "cv11", "ss01";
-    -webkit-font-smoothing: antialiased;
+    background: var(--paper);
+    color: var(--ink);
     text-rendering: optimizeLegibility;
-  }
-
-  ::selection {
-    background: color-mix(in oklab, var(--accent) 24%, transparent);
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-    border-radius: 4px;
   }
 
   * {
@@ -181,18 +100,66 @@
   }
 }
 
-/* Honour a reader who has asked the system for less motion. */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
 @layer components {
+  /* ----------------------------------------------------------------------
+     The code slab. The exercise pane, its console, and lesson code blocks
+     are dark green in both themes, as arm64 draws its code. Inside .slab the
+     app's own token names point at the slab colours, so the components
+     there keep their classes. Every alias is restated, because an alias set
+     on :root has already resolved against the page palette.
+     ---------------------------------------------------------------------- */
+
+  .slab {
+    /* The kit has no error colour for the slab; this is the dark theme's
+       --error, which reads on the slab in both themes. */
+    --slab-bad: #f0a49a;
+
+    color-scheme: dark;
+    --paper: var(--code-bg);
+    --surface: var(--code-active-line);
+    --surface-muted: var(--code-active-line);
+    --ink: var(--code-ink);
+    --muted: var(--code-muted);
+    --forest: var(--hl-title);
+    --forest-soft: var(--code-selection);
+    --line: var(--code-line);
+    --strong-line: var(--code-button-line);
+    --error: var(--slab-bad);
+    --error-soft: color-mix(in oklab, var(--slab-bad) 14%, var(--code-bg));
+
+    --canvas: var(--code-bg);
+    --chrome: var(--code-bg);
+    --sunk: var(--code-active-line);
+    --raise: var(--code-active-line);
+    --rule: var(--code-line);
+    --rule-strong: var(--code-button-line);
+    --ink-2: var(--code-ink);
+    --ink-3: var(--code-muted);
+    --ink-4: var(--code-muted);
+    --good: var(--hl-title);
+    --bad: var(--slab-bad);
+    --warn: var(--hl-keyword);
+    --mark: var(--code-selection);
+    --primary: var(--hl-title);
+    --on-primary: var(--code-bg);
+
+    /* Plots in the run console sit on the slab, so they take the dark
+       theme's series, which read on dark green in both themes. */
+    --series-1: #b6d3b2;
+    --series-2: #e5a16e;
+    --series-3: #8fb8dd;
+    --series-4: #c9a3e0;
+    --series-5: #f0a49a;
+    --series-6: #c3d98f;
+    --demo: var(--hl-title);
+
+    background: var(--code-bg);
+    color: var(--code-ink);
+  }
+  .slab :focus-visible {
+    outline-color: var(--hl-keyword);
+  }
+
   /* ----------------------------------------------------------------------
      Controls shared across the app.
      ---------------------------------------------------------------------- */
@@ -203,10 +170,11 @@
     justify-content: center;
     gap: 0.45rem;
     min-height: 2rem;
-    border-radius: 6px;
-    padding: 0 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 0 0.8rem;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1;
     white-space: nowrap;
     transition:
@@ -218,38 +186,40 @@
     opacity: 0.45;
   }
   .btn-primary {
+    border-color: var(--primary);
     background: var(--primary);
     color: var(--on-primary);
   }
   .btn-primary:not(:disabled):hover {
-    background: color-mix(in oklab, var(--primary) 86%, var(--canvas));
+    background: color-mix(in oklab, var(--primary) 84%, var(--ink));
   }
   .btn-secondary {
-    border: 1px solid var(--rule-strong);
+    border-color: var(--rule-strong);
     background: var(--raise);
-    color: var(--ink);
+    color: var(--forest);
   }
   .btn-secondary:not(:disabled):hover {
-    border-color: var(--ink-4);
+    border-color: var(--forest);
+    background: var(--forest-soft);
   }
   .btn-ghost {
     color: var(--ink-3);
   }
   .btn-ghost:not(:disabled):hover {
-    background: color-mix(in oklab, var(--ink) 6%, transparent);
+    background: var(--sunk);
     color: var(--ink);
   }
   .btn-ghost[aria-pressed="true"],
   .btn-ghost[aria-expanded="true"] {
-    background: color-mix(in oklab, var(--ink) 7%, transparent);
-    color: var(--ink);
+    background: var(--forest-soft);
+    color: var(--forest);
   }
   .btn-danger {
-    border: 1px solid color-mix(in oklab, var(--bad) 40%, var(--rule));
+    border-color: color-mix(in oklab, var(--bad) 45%, var(--rule));
     color: var(--bad);
   }
   .btn-danger:hover {
-    background: color-mix(in oklab, var(--bad) 8%, transparent);
+    background: var(--error-soft);
   }
   /* A phone needs a finger-sized target; a desktop wants the dense toolbar. */
   @media (max-width: 1023px) {
@@ -266,15 +236,15 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
+    border-radius: 5px;
     color: var(--ink-3);
     transition:
       background-color 120ms,
       color 120ms;
   }
   .icon-btn:hover {
-    background: color-mix(in oklab, var(--ink) 6%, transparent);
-    color: var(--ink);
+    background: var(--sunk);
+    color: var(--forest);
   }
   @media (max-width: 1023px) {
     .icon-btn {
@@ -289,23 +259,23 @@
     gap: 1px;
     border-radius: 4px;
     padding: 0.1rem 0.3rem;
-    font-family: var(--font-sans);
-    font-size: 10.5px;
+    font-family: var(--mono);
+    font-size: 10px;
     font-weight: 500;
     line-height: 1.2;
-    color: var(--ink-4);
+    color: var(--ink-3);
     box-shadow: inset 0 0 0 1px var(--rule-strong);
   }
   .btn-primary .kbd {
-    color: color-mix(in oklab, var(--on-primary) 65%, transparent);
+    color: color-mix(in oklab, var(--on-primary) 70%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--on-primary) 30%, transparent);
   }
 
   .field {
     width: 100%;
-    border-radius: 6px;
+    border-radius: 5px;
     border: 1px solid var(--rule-strong);
-    background: var(--raise);
+    background: var(--surface);
     padding: 0.55rem 0.7rem;
     /* 16px on a phone: iOS Safari zooms in on a smaller field and never
        zooms back out. */
@@ -323,14 +293,14 @@
   }
   .field:focus {
     outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);
+    border-color: var(--forest);
+    box-shadow: 0 0 0 3px var(--forest-soft);
   }
 
   .menu {
-    border: 1px solid var(--rule);
-    background: var(--raise);
-    border-radius: 8px;
+    border: 1px solid var(--strong-line);
+    background: var(--surface);
+    border-radius: 7px;
     padding: 0.3rem;
     box-shadow: var(--shadow);
   }
@@ -343,74 +313,99 @@
     padding: 0.45rem 0.6rem;
     text-align: left;
     font-size: 13px;
-    color: var(--ink-2);
+    color: var(--ink);
   }
   .menu-item:hover {
-    background: color-mix(in oklab, var(--ink) 5%, transparent);
-    color: var(--ink);
+    background: var(--forest-soft);
+    color: var(--forest);
   }
   .menu-item[aria-current="true"],
   .menu-item[aria-checked="true"] {
-    color: var(--ink);
-    font-weight: 550;
+    color: var(--forest);
+    font-weight: 600;
   }
 
   .fade-in {
     animation: fade-in 140ms ease-out;
   }
 
+  /* The search button in the top bar and the rail. */
+  .search-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    padding: 0 8px 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 13px;
+    transition: border-color 120ms;
+  }
+  .search-trigger:hover {
+    border-color: var(--strong-line);
+    color: var(--ink);
+  }
+
   /* ----------------------------------------------------------------------
      The lesson body. Tailwind's typography plugin is not installed, so the
-     element rules a Markdown document needs live here.
+     element rules a Markdown document needs live here. Prose is 16px sans
+     at 1.8, headings are serif, and labels are mono kickers.
      ---------------------------------------------------------------------- */
 
   .lesson {
-    font-family: var(--font-serif);
-    font-optical-sizing: auto;
-    font-size: 1.075rem;
-    line-height: 1.68;
-    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: 1rem;
+    line-height: var(--prose-line);
+    color: var(--ink);
+    overflow-wrap: break-word;
+    counter-reset: figure;
   }
   .lesson > * + *,
   .lesson .lesson-intro > * + *,
   .lesson .lesson-section > * + *,
   .lesson .worked > * + *,
   .lesson .callout-body > * + * {
-    margin-top: 1em;
+    margin-top: 1.1em;
   }
   .lesson p {
     margin-block: 0;
   }
-  .lesson h2,
-  .lesson h3 {
-    font-family: var(--font-serif);
+  .lesson h2 {
+    font-family: var(--serif);
+    font-size: clamp(25px, 2.4vw, 29px);
+    font-weight: 500;
+    letter-spacing: var(--heading-tracking);
+    line-height: 1.18;
     color: var(--ink);
     text-wrap: balance;
   }
-  .lesson h2 {
-    font-size: 1.55rem;
-    font-weight: 600;
-    letter-spacing: -0.012em;
-    line-height: 1.25;
-  }
   .lesson h3 {
-    font-size: 1.18rem;
+    font-family: var(--sans);
+    font-size: 18px;
     font-weight: 600;
+    letter-spacing: -0.01em;
     line-height: 1.35;
     margin-top: 1.9em;
+    color: var(--ink);
+    text-wrap: balance;
   }
   .lesson strong {
     color: var(--ink);
-    font-weight: 620;
+    font-weight: 650;
   }
   .lesson em {
     font-style: italic;
   }
   .lesson a {
-    color: var(--accent);
+    color: var(--forest);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
+  }
+  .lesson a:hover {
+    text-decoration-thickness: 2px;
   }
   .lesson ul,
   .lesson ol {
@@ -426,7 +421,7 @@
     margin-top: 0.4em;
   }
   .lesson li::marker {
-    color: var(--ink-4);
+    color: var(--forest);
   }
   /* A ligature turns `->` into one arrow glyph, which a beginner copying
      the code by eye would type wrong. */
@@ -435,59 +430,66 @@
     font-variant-ligatures: none;
   }
   .lesson code {
-    font-family: var(--font-mono);
-    font-size: 0.8em;
-    background: var(--sunk);
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--surface-muted);
+    border: 1px solid var(--line);
     border-radius: 4px;
-    padding: 0.12em 0.34em;
+    padding: 0.08em 0.32em;
     color: var(--ink);
     overflow-wrap: anywhere;
   }
+  /* Lesson code is the slab, in both themes. */
   .lesson pre {
-    background: var(--sunk);
-    border-radius: 8px;
-    padding: 0.9rem 1.05rem;
+    border: 1px solid var(--code-line);
+    border-radius: 6px;
+    background: var(--code-bg);
+    color: var(--code-ink);
+    padding: 1rem 1.15rem;
     overflow-x: auto;
     overscroll-behavior-x: contain;
-    font-size: 0.8rem;
-    line-height: 1.65;
+    font-size: 13px;
+    line-height: 1.75;
+    tab-size: 4;
   }
   .lesson pre code {
+    border: 0;
     background: none;
     padding: 0;
+    color: inherit;
     font-size: inherit;
     overflow-wrap: normal;
   }
   .lesson blockquote {
-    border-left: 2px solid var(--rule-strong);
+    border-left: 3px solid var(--strong-line);
     padding-left: 1rem;
-    color: var(--ink-3);
+    color: var(--muted);
   }
   .lesson table {
     width: 100%;
     border-collapse: collapse;
-    font-family: var(--font-sans);
-    font-size: 0.84rem;
-    line-height: 1.5;
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.55;
     display: block;
     overflow-x: auto;
     overscroll-behavior-x: contain;
   }
   .lesson th,
   .lesson td {
-    border-bottom: 1px solid var(--rule);
-    padding: 0.5rem 0.9rem 0.5rem 0;
+    border: 1px solid var(--line);
+    padding: 0.5rem 0.8rem;
     text-align: left;
     vertical-align: top;
   }
   .lesson th {
-    border-bottom-color: var(--rule-strong);
-    color: var(--ink);
+    background: var(--forest-soft);
+    color: var(--forest);
     font-weight: 600;
   }
   .lesson hr {
     border: none;
-    border-top: 1px solid var(--rule);
+    border-top: 1px solid var(--line);
   }
 
   .lesson .katex {
@@ -506,8 +508,8 @@
 
   /* The opening paragraph carries the lesson's promise. */
   .lesson .lesson-intro > p:first-child {
-    font-size: 1.16rem;
-    line-height: 1.6;
+    font-size: 1.12rem;
+    line-height: 1.75;
     color: var(--ink);
   }
 
@@ -517,16 +519,18 @@
     scroll-margin-top: 64px;
     transition: opacity 240ms ease;
   }
+  /* "§3 · Example" above each section title, as a mono kicker. */
   .h2-kicker {
     display: flex;
     align-items: baseline;
     gap: 0.6rem;
-    margin-bottom: 0.4rem;
-    font-family: var(--font-sans);
-    font-size: 12px;
+    margin-bottom: 0.5rem;
+    font-family: var(--mono);
+    font-size: var(--kicker-size);
     font-weight: 500;
-    letter-spacing: 0;
-    color: var(--ink-4);
+    letter-spacing: var(--kicker-tracking);
+    text-transform: uppercase;
+    color: var(--accent-ink);
   }
   .h2-num::before {
     content: "§";
@@ -547,17 +551,14 @@
     display: block;
   }
   .lesson-section.is-read .h2-num {
-    color: var(--good);
+    color: var(--forest);
   }
   .lesson-section[data-kind="pitfalls"] .h2-kind {
-    color: var(--bad);
+    color: var(--error);
   }
   .lesson-section[data-kind="build"] .h2-kind,
   .lesson-section[data-kind="exercise"] .h2-kind {
-    color: var(--good);
-  }
-  .lesson-section[data-kind="example"] .h2-kind {
-    color: var(--warn);
+    color: var(--forest);
   }
 
   /* Focus mode dims every section but the one being read. */
@@ -582,8 +583,7 @@
     content: "✓";
     position: absolute;
     left: 0.1em;
-    color: var(--good);
-    font-family: var(--font-sans);
+    color: var(--forest);
     font-weight: 600;
   }
 
@@ -605,18 +605,17 @@
     content: counter(step);
     position: absolute;
     left: 0;
-    top: 0.15em;
+    top: 0.2em;
     display: flex;
     width: 1.65rem;
     height: 1.65rem;
     align-items: center;
     justify-content: center;
-    border-radius: 999px;
-    background: var(--canvas);
-    box-shadow: inset 0 0 0 1px var(--rule-strong);
-    color: var(--ink);
-    font-family: var(--font-sans);
-    font-size: 12px;
+    border-radius: 5px;
+    background: var(--forest-soft);
+    color: var(--forest);
+    font-family: var(--mono);
+    font-size: 11px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
@@ -624,15 +623,15 @@
     content: "";
     position: absolute;
     left: calc(0.825rem - 0.5px);
-    top: calc(0.15em + 1.9rem);
+    top: calc(0.2em + 1.9rem);
     bottom: -0.95rem;
     width: 1px;
-    background: var(--rule-strong);
+    background: var(--line);
   }
 
   /* "Where this breaks": one entry per failure mode. */
   .lesson .pitfall {
-    border-left: 2px solid color-mix(in oklab, var(--bad) 55%, transparent);
+    border-left: 3px solid color-mix(in oklab, var(--error) 60%, transparent);
     padding-left: 1rem;
   }
   .lesson .pitfall .runin {
@@ -650,10 +649,10 @@
   /* Worked examples, and whole sections that work one by hand. */
   .lesson .worked,
   .lesson-section[data-kind="example"] {
-    border-radius: 10px;
-    background: var(--chrome);
-    box-shadow: inset 0 0 0 1px var(--rule);
-    padding: 1.15rem 1.3rem 1.3rem;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--surface);
+    padding: 1.2rem 1.35rem 1.35rem;
   }
   .lesson .worked {
     margin-top: 2em !important;
@@ -662,26 +661,16 @@
     margin-top: 0.15rem;
   }
   .worked-label {
-    font-family: var(--font-sans);
-    font-size: 12px;
+    font-family: var(--mono);
+    font-size: var(--kicker-size);
     font-weight: 600;
-    color: var(--warn);
+    letter-spacing: var(--kicker-tracking);
+    text-transform: uppercase;
+    color: var(--accent-ink);
   }
   .lesson .worked .formula,
-  .lesson-section[data-kind="example"] .formula,
-  .lesson .worked pre,
-  .lesson-section[data-kind="example"] pre,
-  .lesson .worked .codeblock,
-  .lesson-section[data-kind="example"] .codeblock {
-    background: var(--canvas);
-  }
-  .lesson .worked code,
-  .lesson-section[data-kind="example"] code {
-    background: color-mix(in oklab, var(--ink) 7%, transparent);
-  }
-  .lesson .worked pre code,
-  .lesson-section[data-kind="example"] pre code {
-    background: none;
+  .lesson-section[data-kind="example"] .formula {
+    background: var(--paper);
   }
 
   .lesson strong.runin {
@@ -701,22 +690,24 @@
   /* "Common mistake" becomes a small warning label. */
   .mistake-tag {
     display: inline-block;
-    margin-right: 0.35em;
+    margin-right: 0.4em;
     border-radius: 4px;
-    padding: 0.05em 0.4em;
-    font-family: var(--font-sans);
-    font-size: 0.7em;
+    padding: 0.1em 0.45em;
+    font-family: var(--mono);
+    font-size: 0.62em;
     font-weight: 600;
-    vertical-align: 0.12em;
-    color: var(--warn);
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--warn) 40%, transparent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    vertical-align: 0.15em;
+    color: var(--error);
+    background: var(--error-soft);
   }
 
   /* Display maths sits in a frame, with its plain-English reading beneath. */
   .lesson .formula {
-    border-radius: 10px;
-    background: var(--raise);
-    box-shadow: inset 0 0 0 1px var(--rule);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--surface);
     padding: 0.1rem 1.2rem;
     margin-block: 1.4em;
   }
@@ -726,26 +717,24 @@
   /* "Read it aloud" is a sentence, sometimes followed by a list, that says
      the formula above it in words. */
   .lesson .readaloud-lead {
-    font-family: var(--font-sans);
-    font-size: 13.5px;
-    line-height: 1.6;
-    color: var(--ink-3);
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--muted);
   }
   .lesson .formula > .readaloud-lead {
     margin-top: 0;
     padding-top: 0.75rem;
     padding-bottom: 0.85rem;
-    border-top: 1px solid var(--rule);
+    border-top: 1px solid var(--line);
   }
   .lesson .formula > .readaloud-lead:has(+ .readaloud) {
     padding-bottom: 0;
   }
   .lesson .readaloud {
     margin-top: 0.5em !important;
-    font-family: var(--font-sans);
-    font-size: 13.5px;
-    line-height: 1.6;
-    color: var(--ink-2);
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--ink);
   }
   .lesson .formula > .readaloud {
     margin-bottom: 1rem;
@@ -754,47 +743,22 @@
   }
   .lesson .formula > .readaloud > li {
     padding-left: 0.85em;
-    border-left: 2px solid var(--rule-strong);
+    border-left: 2px solid var(--strong-line);
   }
 
-  /* Callouts from `> [!KEY]` and friends. */
-  .callout {
-    --c: var(--accent);
-    border-left: 3px solid var(--c);
-    border-radius: 0 8px 8px 0;
-    background: color-mix(in oklab, var(--c) 6%, var(--canvas));
-    padding: 0.8rem 1.1rem 0.9rem 1rem;
+  /* Callouts from `> [!KEY]` and friends. The box, bar, and title colours
+     come from .callout and .callout-* in ui/components.css. */
+  .lesson .callout {
+    margin: 0;
+    font-size: 15px;
   }
-  .callout-key {
-    --c: var(--accent);
-  }
-  .callout-tip {
-    --c: var(--good);
-  }
-  .callout-warning {
-    --c: var(--warn);
-  }
-  .callout-recap {
-    --c: var(--ink-4);
-  }
-  .callout-label {
-    margin-bottom: 0.3rem;
-    font-family: var(--font-sans);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--c);
-  }
-  .callout-recap .callout-label {
-    color: var(--ink-3);
-  }
-  .callout-key .callout-body {
-    color: var(--ink);
+  .lesson > .callout,
+  .lesson .lesson-section > .callout,
+  .lesson .lesson-intro > .callout {
+    margin-top: 1.6em;
   }
   .callout-body > * + * {
     margin-top: 0.6em;
-  }
-  .callout code {
-    background: color-mix(in oklab, var(--ink) 7%, transparent);
   }
   .callout-recap .callout-body ul {
     list-style: none;
@@ -808,8 +772,7 @@
     content: "→";
     position: absolute;
     left: 0;
-    color: var(--ink-4);
-    font-family: var(--font-sans);
+    color: var(--forest);
   }
 
   /* Inline code that names an exercise function: a link into the editor. */
@@ -820,64 +783,76 @@
     color: inherit;
   }
   .lesson .symbol code {
-    color: var(--accent);
-    background: color-mix(in oklab, var(--accent) 9%, transparent);
-    transition: background-color 120ms;
+    border-color: color-mix(in oklab, var(--forest) 30%, var(--line));
+    color: var(--forest);
+    background: var(--forest-soft);
+    transition: border-color 120ms;
   }
   .lesson .symbol:hover code {
-    background: color-mix(in oklab, var(--accent) 16%, transparent);
+    border-color: var(--forest);
   }
   .symbol-arrow {
     margin-left: 0.1em;
-    font-family: var(--font-sans);
     font-size: 0.7em;
-    color: var(--accent);
+    color: var(--forest);
   }
 
-  /* Code blocks carry their language and a copy button. */
+  /* Code blocks carry their language and a copy button, in the slab's
+     toolbar. */
   .codeblock {
-    border-radius: 8px;
-    background: var(--sunk);
     overflow: hidden;
+    border: 1px solid var(--code-line);
+    border-radius: 6px;
+    background: var(--code-bg);
+    color: var(--code-ink);
   }
   .codeblock-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.35rem 0.45rem 0 1.05rem;
-    font-family: var(--font-sans);
-    font-size: 11.5px;
-    color: var(--ink-4);
+    min-height: 34px;
+    padding: 0.3rem 0.6rem 0.3rem 1.1rem;
+    border-bottom: 1px solid var(--code-line);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--code-muted);
   }
   .codeblock-bar button {
+    border: 1px solid var(--code-button-line);
     border-radius: 4px;
-    padding: 0.15rem 0.45rem;
-    color: var(--ink-3);
+    padding: 0.15rem 0.5rem;
+    color: var(--code-ink);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
   .codeblock-bar button:hover {
-    background: color-mix(in oklab, var(--ink) 7%, transparent);
-    color: var(--ink);
+    background: var(--code-hover);
   }
   .lesson .codeblock pre {
+    border: 0;
     border-radius: 0;
     margin: 0;
-    padding-top: 0.45rem;
     background: transparent;
   }
 
   /* Figures: inline SVG from a ```figure block. Shapes draw nothing until a
-     fig-* class colours them, so every colour comes from a theme token. */
+     fig-* class colours them, so every colour comes from a theme token. The
+     four figure colours keep the hues the captions name: a is blue, b is
+     orange, c is green, and d is purple. */
   .figure {
-    --fig-a: var(--accent);
-    --fig-b: #c4622d;
-    --fig-c: var(--good);
-    --fig-d: #8a4fb8;
-    margin: 1.5rem 0;
+    --fig-a: var(--series-3);
+    --fig-b: var(--series-2);
+    --fig-c: var(--series-1);
+    --fig-d: var(--series-4);
+    margin: 1.8rem 0;
+    padding: 1.1rem 1.1rem 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--surface);
     break-inside: avoid;
-  }
-  [data-theme="dark"] .figure {
-    --fig-b: #f0a46e;
-    --fig-d: #c9a3ee;
+    counter-increment: figure;
   }
   .figure-art svg {
     display: block;
@@ -885,54 +860,69 @@
     max-width: 640px;
     height: auto;
     margin: 0 auto;
-    font-family: var(--font-sans);
+    font-family: var(--sans);
   }
   .figure-art svg :where(rect, circle, ellipse, path, line, polyline, polygon) {
     fill: none;
     stroke: none;
   }
   .figure-art svg :where(text) {
-    fill: var(--ink-2);
+    fill: var(--ink);
     font-size: 13px;
   }
   .figure-art svg .fig-small { font-size: 11px; }
   .figure-art svg .fig-bold { font-weight: 600; }
-  .figure-art svg .fig-mono { font-family: var(--font-mono); }
-  .figure-art svg .fill-ink { fill: var(--ink-2); }
-  .figure-art svg .fill-muted { fill: var(--ink-4); }
-  .figure-art svg .fill-paper { fill: var(--canvas); }
-  .figure-art svg .fill-sunk { fill: var(--sunk); }
+  .figure-art svg .fig-mono { font-family: var(--mono); }
+  .figure-art svg .fill-ink { fill: var(--ink); }
+  .figure-art svg .fill-muted { fill: var(--muted); }
+  .figure-art svg .fill-paper { fill: var(--surface); }
+  .figure-art svg .fill-sunk { fill: var(--surface-muted); }
   .figure-art svg .fill-a { fill: var(--fig-a); }
   .figure-art svg .fill-b { fill: var(--fig-b); }
   .figure-art svg .fill-c { fill: var(--fig-c); }
   .figure-art svg .fill-d { fill: var(--fig-d); }
-  .figure-art svg .fill-bad { fill: var(--bad); }
+  .figure-art svg .fill-bad { fill: var(--series-5); }
   .figure-art svg .fill-soft-a { fill: color-mix(in oklab, var(--fig-a) 16%, transparent); }
   .figure-art svg .fill-soft-b { fill: color-mix(in oklab, var(--fig-b) 18%, transparent); }
   .figure-art svg .fill-soft-c { fill: color-mix(in oklab, var(--fig-c) 16%, transparent); }
   .figure-art svg .fill-soft-d { fill: color-mix(in oklab, var(--fig-d) 16%, transparent); }
-  .figure-art svg .stroke-ink { stroke: var(--ink-2); stroke-width: 1.5; }
-  .figure-art svg .stroke-muted { stroke: var(--ink-4); stroke-width: 1.25; }
-  .figure-art svg .stroke-grid { stroke: var(--rule); stroke-width: 1; }
+  .figure-art svg .stroke-ink { stroke: var(--ink); stroke-width: 1.5; }
+  .figure-art svg .stroke-muted { stroke: var(--muted); stroke-width: 1.25; }
+  .figure-art svg .stroke-grid { stroke: var(--line); stroke-width: 1; }
   .figure-art svg .stroke-a { stroke: var(--fig-a); stroke-width: 2; }
   .figure-art svg .stroke-b { stroke: var(--fig-b); stroke-width: 2; }
   .figure-art svg .stroke-c { stroke: var(--fig-c); stroke-width: 2; }
   .figure-art svg .stroke-d { stroke: var(--fig-d); stroke-width: 2; }
-  .figure-art svg .stroke-bad { stroke: var(--bad); stroke-width: 2; }
+  .figure-art svg .stroke-bad { stroke: var(--series-5); stroke-width: 2; }
   .figure-art svg .dashed { stroke-dasharray: 5 4; }
   .figure figcaption {
-    margin-top: 0.6rem;
-    font-family: var(--font-sans);
-    font-size: 0.84rem;
-    line-height: 1.5;
-    color: var(--ink-3);
-    text-align: center;
+    margin-top: 0.9rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--line);
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  /* "Figure 3" as a mono label. A caption that does not number itself gets
+     its number from the order of figures in the lesson. */
+  .figure-num {
+    display: block;
+    margin-bottom: 0.2rem;
+    font-family: var(--mono);
+    font-size: var(--kicker-size);
+    font-weight: 600;
+    letter-spacing: var(--kicker-tracking);
+    text-transform: uppercase;
+    color: var(--accent-ink);
+  }
+  .figure-num:empty::before {
+    content: "Figure " counter(figure);
   }
 
   /* One sentence rendered on its own, such as a flashcard's back. */
   .lesson-inline {
-    font-size: 0.98rem;
-    line-height: 1.55;
+    font-size: 0.95rem;
+    line-height: 1.6;
   }
   .lesson-inline strong {
     background: linear-gradient(180deg, transparent 62%, var(--mark) 62%);
@@ -942,23 +932,23 @@
   .card {
     display: flex;
     flex-direction: column;
-    border-radius: 8px;
-    background: var(--raise);
-    box-shadow: inset 0 0 0 1px var(--rule);
-    transition: box-shadow 150ms, background-color 150ms;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--surface);
+    transition: border-color 150ms, background-color 150ms;
   }
   .card:hover {
-    box-shadow: inset 0 0 0 1px var(--rule-strong);
+    border-color: var(--strong-line);
   }
   .card.is-flipped {
-    background: var(--chrome);
+    background: var(--forest-soft);
   }
   .card-face {
     flex: 1;
     min-height: 5.25rem;
     padding: 0.9rem 1rem;
     text-align: left;
-    border-radius: 8px;
+    border-radius: 7px;
   }
   .card.is-flipped .card-back {
     display: block;
@@ -966,11 +956,12 @@
   }
 
   /* ----------------------------------------------------------------------
-     Syntax colours for lesson code, from the theme tokens above.
+     Syntax colours for lesson code. Code always sits on the slab, so these
+     are the slab's --hl-* tokens in both themes.
      ---------------------------------------------------------------------- */
 
   .hljs {
-    color: var(--ink);
+    color: var(--code-ink);
     background: transparent;
   }
   .hljs-keyword,
@@ -1004,23 +995,29 @@
     color: var(--hl-builtin);
   }
   .hljs-meta,
-  .hljs-attr,
-  .hljs-attribute,
   .hljs-params,
   .hljs-variable {
     color: var(--hl-meta);
   }
+  .hljs-attr,
+  .hljs-attribute {
+    color: var(--hl-attr);
+  }
+  .hljs-punctuation,
+  .hljs-operator {
+    color: var(--hl-punct);
+  }
   .hljs-deletion {
-    color: var(--bad);
+    color: var(--hl-number);
   }
 
   /* Monaco: the line a jump from the lesson lands on. */
   .monaco-editor .reveal-line {
-    background: color-mix(in oklab, var(--accent) 16%, transparent);
+    background: color-mix(in oklab, var(--hl-keyword) 18%, transparent);
     animation: reveal-fade 1.8s ease-out forwards;
   }
   .monaco-editor .reveal-gutter {
-    background: var(--accent);
+    background: var(--hl-keyword);
     width: 3px !important;
     margin-left: 3px;
   }

@@ -135,10 +135,18 @@ function Figure({ source }: { source: string }) {
   const end = source.lastIndexOf("</svg>");
   const svg = end >= 0 ? source.slice(0, end + "</svg>".length).trim() : source.trim();
   const caption = end >= 0 ? source.slice(end + "</svg>".length).trim() : "";
+  // Most captions open with their own "Figure 3." Lift that into the label;
+  // an empty label takes its number from the figure's place in the lesson.
+  const numbered = /^(Figure\s+\d+)[.:]?\s*/i.exec(caption);
   return (
     <figure className="figure">
       <div className="figure-art" dangerouslySetInnerHTML={{ __html: svg }} />
-      {caption && <figcaption>{caption}</figcaption>}
+      {caption && (
+        <figcaption>
+          <span className="figure-num">{numbered ? numbered[1] : ""}</span>
+          {numbered ? caption.slice(numbered[0].length) : caption}
+        </figcaption>
+      )}
     </figure>
   );
 }

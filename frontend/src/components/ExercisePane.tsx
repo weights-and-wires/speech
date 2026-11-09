@@ -205,13 +205,16 @@ export default function ExercisePane({
   const mod = mac ? "⌘" : "Ctrl";
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-canvas">
+    <div className="slab flex min-h-0 flex-1 flex-col">
       <header className="shrink-0 border-b border-rule bg-chrome px-3 pb-2.5 pt-2.5">
         <div className="flex items-baseline gap-2">
           <h2 className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ink">
+            <span className="mr-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--hl-keyword)]">
+              Exercise
+            </span>
             {exercise.title}
           </h2>
-          <span className="shrink-0 text-[12px] text-ink-4">
+          <span className="shrink-0 font-mono text-[10px] text-ink-3">
             {exercise.timeout}s limit
           </span>
           {onCollapse && (
@@ -320,11 +323,11 @@ export default function ExercisePane({
         </div>
 
         {hintsShown > 0 && (
-          <div className="fade-in mt-2.5 rounded-lg bg-raise p-3 shadow-[inset_0_0_0_1px_var(--rule)]">
+          <div className="fade-in mt-2.5 rounded-[6px] border border-rule bg-raise p-3">
             <ol className="space-y-2">
               {exercise.hints.slice(0, hintsShown).map((hint, index) => (
                 <li key={index} className="fade-in flex gap-2.5 text-[13.5px] leading-snug text-ink-2">
-                  <span className="w-12 shrink-0 text-[12px] font-medium text-ink-4">Hint {index + 1}</span>
+                  <span className="w-12 shrink-0 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-ink-3">Hint {index + 1}</span>
                   <span>{hint}</span>
                 </li>
               ))}

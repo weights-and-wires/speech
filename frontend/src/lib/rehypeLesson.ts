@@ -74,7 +74,7 @@ function callout(node: Element): Element | null {
     (c) => !(c === first && !textOf(first).trim() && first.children.length <= 1),
   );
   return el("aside", { className: ["callout", `callout-${kind.toLowerCase()}`], role: "note" }, [
-    el("div", { className: ["callout-label"] }, [{ type: "text", value: label }]),
+    el("div", { className: ["callout-label", "callout-title"] }, [{ type: "text", value: label }]),
     el("div", { className: ["callout-body"] }, body),
   ]);
 }

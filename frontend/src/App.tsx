@@ -4,6 +4,7 @@ import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import DownloadBook from "./components/DownloadBook";
 import Login from "./components/Login";
 import Mark from "./components/Mark";
+import SearchDialog from "./components/SearchDialog";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import DemoGallery from "./pages/DemoGallery";
@@ -31,6 +32,7 @@ export default function App() {
   // menuOpen drives the drawer on a narrow screen; collapsed hides the lesson
   // list on a wide one, which a reader wants once the editor is open.
   const [collapsed, setCollapsed] = useState(rememberedCollapse);
+  const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
   const lessons = useMemo(() => parts.flatMap((part) => part.lessons), [parts]);
 
@@ -82,8 +84,29 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // "/" opens the search, as on tpu, when the keyboard is not busy in a field
+  // or the editor. Cmd or Ctrl with K opens it from anywhere.
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        !!target &&
+        (target.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) ||
+          !!target.closest(".monaco-editor"));
+      const slash = event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey && !typing;
+      const commandK = (event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "k";
+      if (!slash && !commandK) return;
+      event.preventDefault();
+      setMenuOpen(false);
+      setSearchOpen(true);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   if (!ready) {
-    return <div className="h-full bg-canvas" aria-busy="true" />;
+    return <div className="h-full bg-paper" aria-busy="true" />;
   }
 
   if (!username) {
@@ -93,8 +116,8 @@ export default function App() {
   const onLesson = location.pathname.startsWith("/lessons/");
 
   return (
-    <div className="flex h-full flex-col bg-canvas">
-      <header className="z-40 flex h-12 shrink-0 items-center gap-1 border-b border-rule bg-chrome px-2 lg:h-11">
+    <div className="flex h-full flex-col bg-paper">
+      <header className="z-40 flex h-[52px] shrink-0 items-center gap-1 border-b border-line bg-paper px-2 lg:gap-1.5 lg:px-3">
         <button
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
@@ -118,32 +141,56 @@ export default function App() {
 
         <Link
           to="/"
-          className="ml-1 flex min-h-10 items-center gap-2 rounded-md px-1.5 transition-opacity hover:opacity-80 lg:min-h-8"
+          className="ml-1 flex min-h-10 min-w-0 items-center gap-2.5 rounded-[5px] px-1 transition-opacity hover:opacity-80"
           aria-label="Speech and audio, course contents"
         >
-          <Mark size={20} />
-          <span className="font-serif text-[15.5px] font-semibold tracking-tight text-ink">
-            Speech and audio
+          <Mark size={26} />
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate font-serif text-[18px] font-medium leading-none tracking-[-0.03em] text-ink">
+              Speech and audio
+            </span>
+            <span className="mt-[5px] hidden font-mono text-[9px] uppercase leading-none tracking-[0.21em] text-muted sm:block">
+              Weights and wires
+            </span>
           </span>
         </Link>
 
-        {onLesson && (
-          <Link
-            to="/"
-            className="ml-1 hidden rounded-md px-2 py-1 text-[13px] text-ink-3 transition-colors hover:text-ink sm:block"
-          >
-            Contents
-          </Link>
-        )}
+        <nav aria-label="Course" className="ml-3 hidden items-center gap-1 md:flex">
+          {onLesson && (
+            <Link
+              to="/"
+              className="rounded-[5px] px-2 py-1 text-[13px] text-muted transition-colors hover:text-forest"
+            >
+              Contents
+            </Link>
+          )}
+        </nav>
 
         <div className="flex-1" />
 
+        <button
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          aria-label="Search the lessons"
+          title="Search the lessons (/)"
+          className="search-trigger mr-1 hidden w-56 sm:flex"
+        >
+          <SearchIcon />
+          <span className="flex-1 text-left">Search</span>
+          <kbd className="key">/</kbd>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          aria-label="Search the lessons"
+          className="icon-btn sm:hidden"
+        >
+          <SearchIcon />
+        </button>
+
         {gpu && (
-          <span
-            title="A RunPod GPU endpoint is configured"
-            className="mr-2 hidden items-center gap-1.5 text-[12px] text-ink-3 sm:inline-flex"
-          >
-            <span className="size-1.5 rounded-full bg-good" aria-hidden />
+          <span title="A RunPod GPU endpoint is configured" className="chip chip-forest mr-1 hidden lg:inline-flex">
+            <span className="size-1.5 rounded-full bg-forest" aria-hidden />
             GPU available
           </span>
         )}
@@ -164,10 +211,15 @@ export default function App() {
         <Sidebar
           parts={parts}
           progress={progress}
+          username={username}
           open={menuOpen}
           collapsed={collapsed}
           onClose={() => setMenuOpen(false)}
           onCollapse={() => setCollapsed(true)}
+          onSearch={() => {
+            setMenuOpen(false);
+            setSearchOpen(true);
+          }}
         />
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -188,6 +240,8 @@ export default function App() {
           </Routes>
         </main>
       </div>
+
+      <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} parts={parts} />
     </div>
   );
 }
@@ -227,9 +281,9 @@ function AccountMenu({ username, onSignOut }: { username: string; onSignOut: () 
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex min-h-10 items-center gap-2 rounded-md px-1.5 text-[13px] text-ink-2 transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_6%,transparent)] lg:min-h-8"
+        className="flex min-h-10 items-center gap-2 rounded-[5px] px-1.5 text-[13px] text-ink transition-colors hover:bg-sunk lg:min-h-9"
       >
-        <span className="flex size-6 items-center justify-center rounded-full bg-primary text-[11px] font-semibold uppercase text-on-primary">
+        <span className="flex size-7 items-center justify-center rounded-full bg-forest-soft font-mono text-[11px] font-semibold uppercase text-forest">
           {username.slice(0, 1)}
         </span>
         <span className="hidden sm:inline">{username}</span>
@@ -240,9 +294,9 @@ function AccountMenu({ username, onSignOut }: { username: string; onSignOut: () 
 
       {open && (
         <div role="menu" className="menu fade-in absolute right-0 top-[calc(100%+6px)] z-50 w-56">
-          <p className="px-2.5 pb-1 pt-1.5 text-[11.5px] text-ink-4">Signed in as {username}</p>
+          <p className="px-2.5 pb-1 pt-1.5 text-[12px] text-muted">Signed in as {username}</p>
           <div className="my-1 border-t border-rule" />
-          <p className="px-2.5 pb-1 pt-1 text-[11.5px] font-medium text-ink-3">Appearance</p>
+          <p className="kicker px-2.5 pb-1 pt-1.5">Appearance</p>
           {THEMES.map((theme) => (
             <button
               key={theme.mode}
@@ -252,7 +306,7 @@ function AccountMenu({ username, onSignOut }: { username: string; onSignOut: () 
               onClick={() => setMode(theme.mode)}
               className="menu-item"
             >
-              <span className="w-3 text-accent" aria-hidden>
+              <span className="w-3 text-forest" aria-hidden>
                 {mode === theme.mode ? "✓" : ""}
               </span>
               {theme.label}
@@ -266,6 +320,15 @@ function AccountMenu({ username, onSignOut }: { username: string; onSignOut: () 
         </div>
       )}
     </div>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 12 12" aria-hidden className="shrink-0">
+      <circle cx="5" cy="5" r="3.4" stroke="currentColor" strokeWidth="1.2" fill="none" />
+      <path d="M7.6 7.6 10.5 10.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
   );
 }
 

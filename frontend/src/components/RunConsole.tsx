@@ -71,7 +71,7 @@ export default function RunConsole({
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-canvas">
       <header className="flex h-9 shrink-0 items-center gap-2.5 border-b border-rule px-3">
-        <span className="text-[12.5px] font-semibold text-ink-2">
+        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-2">
           {mode === "check" ? "Checks" : "Output"}
         </span>
         {backend && (
@@ -245,7 +245,7 @@ function CheckRow({
         disabled={!expandable}
         aria-expanded={expandable ? shown : undefined}
         onClick={() => setOpen(!shown)}
-        className="flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left enabled:hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]"
+        className="flex w-full items-start gap-2.5 rounded-md px-2 py-1.5 text-left enabled:hover:bg-sunk"
       >
         <Glyph pending={pending} failed={failed} running={running} />
         <span

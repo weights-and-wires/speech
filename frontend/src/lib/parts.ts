@@ -16,3 +16,8 @@ export function titleOf(slug: string, lessons: LessonMeta[]): string {
   const words = slug.replace(/^\d+-/, "").replace(/-/g, " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+/** The number each lesson shows in lists and search: 1, 2, 3, in course order. */
+export function lessonNumbers(lessons: Pick<LessonMeta, "slug">[]): Map<string, string> {
+  return new Map(lessons.map((lesson, index) => [lesson.slug, String(index + 1)]));
+}

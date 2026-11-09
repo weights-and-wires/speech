@@ -108,7 +108,7 @@ export default function LineCanvas({
     if (!node || width <= 0) return;
     const ctx = prepareCanvas(node, width, cssHeight);
     if (!ctx) return;
-    const colours = themeColours();
+    const colours = themeColours(node);
 
     const xTicks = logX ? logTicks(...domains.x) : niceTicks(...domains.x, Math.max(3, Math.floor(plotW / 55)));
     const yTicks = logY ? logTicks(...domains.y) : niceTicks(...domains.y, Math.max(3, Math.floor(plotH / 28)));

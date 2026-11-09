@@ -33,7 +33,7 @@ export default function DownloadBook() {
       download
       aria-label={label}
       title={label}
-      className="mr-1 flex min-h-10 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-ink-3 transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_6%,transparent)] hover:text-ink lg:min-h-8"
+      className="mr-1 flex min-h-10 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-ink-3 transition-colors hover:bg-sunk hover:text-ink lg:min-h-8"
     >
       <DownloadIcon />
       <span className="hidden sm:inline">PDF</span>

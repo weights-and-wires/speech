@@ -4,36 +4,39 @@
    printed page needs: a page box, running heads, no scrolling, and breaks.
    ------------------------------------------------------------------------ */
 
-/* ISO B5, the usual textbook trim, with the wider margin on the spine side. */
+/* ISO B5, the usual textbook trim, with the wider margin on the spine side.
+   Page-margin boxes do not inherit custom properties from the document, so
+   the running heads spell out the light palette: --sans, --muted (#637065),
+   and --ink (#263e33) from src/ui. */
 @page {
   size: 176mm 250mm;
   margin: 19mm 17mm 20mm 21mm;
 
   @top-left {
-    font-family: "Inter Variable", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 7.5pt;
-    color: #6b675d;
+    color: #637065;
     vertical-align: bottom;
     padding-bottom: 4mm;
   }
   @top-right {
-    font-family: "Inter Variable", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 7.5pt;
-    color: #6b675d;
+    color: #637065;
     vertical-align: bottom;
     padding-bottom: 4mm;
   }
   @bottom-left {
-    font-family: "Inter Variable", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 8pt;
-    color: #37352f;
+    color: #263e33;
     vertical-align: top;
     padding-top: 5mm;
   }
   @bottom-right {
-    font-family: "Inter Variable", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 8pt;
-    color: #37352f;
+    color: #263e33;
     vertical-align: top;
     padding-top: 5mm;
   }
@@ -116,8 +119,33 @@ body {
   print-color-adjust: exact;
 }
 
+/* Paper is always the light theme: book.html pins data-theme="light". White
+   pages print cleanly, and the code slab turns into a light panel with the
+   light palette's own colours for syntax, so a printed page carries no dark
+   blocks. */
 .book {
   --canvas: #fff;
+  --paper: #fff;
+  --code-bg: var(--surface-muted);
+  --code-ink: var(--ink);
+  --code-line: var(--line);
+  --code-muted: var(--muted);
+  --code-button-line: var(--strong-line);
+  --hl-keyword: var(--accent-ink);
+  --hl-string: var(--series-6);
+  --hl-number: var(--series-2);
+  --hl-comment: var(--muted);
+  --hl-title: var(--forest);
+  --hl-builtin: var(--series-3);
+  --hl-type: var(--series-3);
+  --hl-meta: var(--muted);
+  --hl-punct: var(--ink);
+  --hl-attr: var(--series-4);
+}
+
+/* The app sets lesson prose at 1rem; the book keeps its 10pt body. */
+.book .lesson {
+  font-size: 1.075rem;
 }
 
 /* ------------------------------------------------------------------------
@@ -233,8 +261,15 @@ body {
   align-items: baseline;
   gap: 2mm;
 }
+/* src/ui styles .toc-title as the app's "On this page" label. In the book it
+   is a contents entry, so it takes the entry's own type. */
 .toc-title {
   min-width: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: normal;
+  text-transform: none;
 }
 /* The dot leader between a title and its page number. */
 .toc-leader {

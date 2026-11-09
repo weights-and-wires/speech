@@ -1,0 +1,15 @@
+{
+  "id": "030-decoding-ctc",
+  "title": "Decode CTC with greedy search and a beam",
+  "brief": "Build greedy decoding and CTC prefix beam search, and check the beam against brute-force enumeration of every path.",
+  "needs_gpu": false,
+  "timeout": 20,
+  "packages": [
+    "numpy"
+  ],
+  "hints": [
+    "greedy_decode: np.argmax(log_probs, axis=1) gives the path. Walk it once, keeping a symbol when it differs from the previous frame's symbol and is not the blank.",
+    "prefix_beam_search keeps two numbers per prefix because a repeated label means two different things: after a blank it starts a new copy (use p_b), and straight after the same label it merges into the old one (use p_nb).",
+    "Accumulate with np.logaddexp into a defaultdict whose default is (-inf, -inf). Rank by np.logaddexp(p_b, p_nb) plus the extra prefix score, and keep the top beam_width."
+  ]
+}

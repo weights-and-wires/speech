@@ -36,18 +36,18 @@ services:
       - .env
     environment:
       DATA_DIR: /data
+      # Set here so this example overrides env_file.
+      LOCAL_WORKERS: "1"
     volumes:
       - speech-data:/data
       - ./book:/app/book:ro
     networks:
       - edge
     # A reader's submission is a subprocess inside this container, so cap what
-    # the container as a whole can take from the host.
-    # The VM has under 2 GB of memory and two cores to spare beside the other
-    # courses, so this is smaller than the ml course's, and LOCAL_WORKERS in
-    # .env stays at 2.
+    # the container as a whole can take from the host. This service shares the
+    # VM with the other courses, so it gets 1 GiB and one local worker.
     cpus: 1.5
-    mem_limit: 1536m
+    mem_limit: 1g
     pids_limit: 512
     healthcheck:
       test:

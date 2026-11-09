@@ -19,6 +19,8 @@ presses Run on both: the solution's `__main__` block must finish, and the
 starter's must stop at a `NotImplementedError`.
 
 A chapter body runs 800 to 2600 words, not counting figure and demo blocks.
+A lesson with `draft: true` skips the 800-word minimum. The upper bound and
+the other published-lesson checks stay in place.
 
 Every ```demo block must be valid JSON naming a demo in
 `frontend/src/demos/index.ts`, with a caption.
@@ -288,9 +290,12 @@ def check_lesson(path: Path, problems: list[str], seen_exercises: set[str]) -> N
             problems.append(f"{path.name}: figure {i} has no caption after </svg>")
 
     # Figure and demo blocks are drawing, not reading, so they do not count.
+    # A draft stub is exempt from the minimum. The upper bound still applies,
+    # and so does every other published-lesson check.
     counted = DEMO_BLOCK.sub("", FIGURE_BLOCK.sub("", body))
     words = len(counted.split())
-    if words < 800:
+    draft = meta.get("draft") is True
+    if words < 800 and not draft:
         problems.append(f"{path.name}: {words} words, the contract asks for 900 or more")
     if words > 2600:
         problems.append(f"{path.name}: {words} words; split the chapter, the contract caps it near 2000")

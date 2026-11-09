@@ -1,0 +1,21 @@
+{
+  "id": "038-whisper",
+  "title": "Decode Whisper with your own loops",
+  "brief": "Build Whisper's forced prompt, greedy and beam-search decoding over any decoder's logits, the timestamp rules, a Whisper-style text normalizer, and corpus WER, then transcribe LibriSpeech with whisper-tiny.",
+  "needs_gpu": true,
+  "timeout": 300,
+  "packages": [
+    "numpy",
+    "torch",
+    "transformers"
+  ],
+  "hints": [
+    "build_prompt is three or four dictionary lookups; the language id comes from LANGUAGES and the task id from SPECIAL[f'<|{task}|>'].",
+    "In greedy_decode, apply logit_filter before the log-softmax, so the summed log-probability is measured on the filtered distribution, the way Whisper measures it.",
+    "For beam_search_decode, key a dictionary by tuple(tokens) so identical extensions from two beams collapse into one entry, then walk sorted(candidates, key=candidates.get, reverse=True).",
+    "A finished hypothesis's length for ranking is the number of tokens before eot. Divide its summed log-probability by max(length, 1).",
+    "apply_timestamp_rules works on a copy: np.array(logits, dtype=float). Apply the rules in the docstring's order, because rule 5 measures the mass left after rules 1 to 4.",
+    "np.logaddexp.reduce over the timestamp log-probabilities gives the log of their total probability.",
+    "In normalize_text, the regular expression [^\\w\\s]|_ matches every character that is neither a letter, a digit, nor whitespace."
+  ]
+}

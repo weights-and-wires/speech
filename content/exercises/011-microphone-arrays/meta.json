@@ -1,0 +1,14 @@
+{
+  "id": "011-microphone-arrays",
+  "title": "Steer an array and cancel the echo",
+  "brief": "Estimate a delay with GCC-PHAT, beamform with delay-and-sum and MVDR, and cancel a synthetic echo with NLMS.",
+  "needs_gpu": false,
+  "timeout": 60,
+  "packages": ["numpy"],
+  "hints": [
+    "gcc_phat: FFT at the signal length, divide X1 * conj(X2) by its magnitude, inverse-FFT, and negate the lag so a later x2 is a positive delay. Add 0.5 * (left - right) / (left - 2*peak + right) from the peak bin and its neighbors.",
+    "delay_and_sum: np.interp(n + delay, n, channel, left=0, right=0) advances a channel that arrived `delay` samples late. Average the aligned rows.",
+    "mvdr_weights: np.linalg.solve(R, a) divided by np.vdot(a, that vector). np.vdot conjugates its first argument, so np.vdot(w, a) is the distortionless constraint.",
+    "nlms_echo_cancel: at time n the taps see far[n], far[n-1], ... with zeros before the start. Subtract the prediction, then add mu * error * frame / (energy + delta)."
+  ]
+}

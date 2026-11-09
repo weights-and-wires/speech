@@ -43,14 +43,14 @@ The repository is laid out as follows.
 
 ## The curriculum
 
-The course has 64 short chapters in eight parts, and 21 interactive demos. Each
+The course has 66 short chapters in eight parts, and 21 interactive demos. Each
 chapter teaches one idea. Readers of the earlier 42-lesson course keep their
 progress: `content/renames.json` maps each old slug to the chapters that
 replaced it.
 
 **Part 1 — Sound and signals.** Sampling and aliasing, quantization and WAV
 files, the DFT and the FFT, the short-time Fourier transform, phase and
-Griffin-Lim, and filters, convolution, and reverb.
+Griffin-Lim, filters, convolution, reverb, and microphone arrays.
 
 **Part 2 — Hearing and speech production.** The mel scale and Whisper's
 log-mel front end, MFCCs and normalization, the source-filter model and linear

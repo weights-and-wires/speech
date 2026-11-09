@@ -1,0 +1,14 @@
+{
+  "id": "013-log-mel-spectrograms",
+  "title": "Build Whisper's log-mel front end",
+  "brief": "Compress a mel power matrix the way Whisper does, pad a clip to 30 seconds, and chain the power spectrogram, the filterbank, and the compression into Whisper's exact log-mel features.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "torch"],
+  "hints": [
+    "Clamp first, then take the log: np.log10(np.maximum(mel_power, 1e-10)). The clamp keeps zero powers from becoming minus infinity.",
+    "Whisper's floor is log_spec.max() - 8.0 over the whole matrix, not per frame: np.maximum(log_spec, log_spec.max() - 8.0).",
+    "np.pad(audio, (0, length - len(audio))) adds zeros at the end; slice audio[:length] when the clip is already long enough.",
+    "A centered STFT of N samples with hop 160 has 1 + N // 160 frames. Whisper keeps N // 160 of them: slice [:, :-1]."
+  ]
+}

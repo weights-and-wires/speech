@@ -1,0 +1,17 @@
+{
+  "id": "034-transducers",
+  "title": "Build the RNN-T lattice, greedy transducer decoding, and TDT",
+  "brief": "Implement the RNN-T forward recursion in torch and check it against brute force, decode greedily with a symbol cap, and extend the lattice to token-and-duration transducers, then train a tiny streaming transducer.",
+  "needs_gpu": false,
+  "timeout": 90,
+  "packages": [
+    "numpy",
+    "torch"
+  ],
+  "hints": [
+    "rnnt_log_alpha: keep alpha as a Python list of lists of (B,) tensors and stack at the end. Writing into one preallocated tensor in place breaks autograd.",
+    "Gather the label log probabilities once before the loop: log_probs[:, :, :U, :].gather(-1, targets[:, None, :, None].expand(B, T, U, 1)) gives log P(y_{u+1} | t, u) for every node.",
+    "rnnt_loss: index alpha with b = torch.arange(B), t = input_lengths - 1, u = target_lengths, and add the blank log probability at that same node.",
+    "tdt_log_likelihood: fill alpha of shape (T + 1, U + 1) in order of t, then u. A source node must be a real frame, 0 <= t - d <= T - 1, and label edges with d = 0 come from (t, u - 1) at the same t."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "027-wfsts-and-decoding-graphs",
+  "title": "Build a lexicon-bigram transducer",
+  "brief": "Compose a toy lexicon with a bigram, score the paths in the tropical and log semirings, and build the CTC blank topology.",
+  "needs_gpu": false,
+  "timeout": 60,
+  "packages": ["numpy"],
+  "hints": [
+    "Store one arc as (src, dst, ilabel, olabel, weight). The epsilon label is the string '<eps>', not the blank 0.",
+    "In compose, pair arcs only when the output of the first equals the input of the second and that label is not '<eps>'. Add the two costs. Take an output epsilon of the first transducer once, outside the loop over the second transducer's arcs.",
+    "A product state is final only when both states are final. Add the final costs. shortest_path is heapq over sums of costs: keep the minimum, and add the final cost at the end.",
+    "total_weight is -np.logaddexp.reduce(-costs) over every accepting path. In ctc_topology, a repeated label gets a blank state between the copies. Skip that blank only when the two labels differ."
+  ]
+}

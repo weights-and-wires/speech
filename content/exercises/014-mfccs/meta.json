@@ -1,0 +1,14 @@
+{
+  "id": "014-mfccs",
+  "title": "Build MFCCs from a mel power matrix",
+  "brief": "Convert mel power to decibels, apply an orthonormal DCT-II down the mel axis, keep the first 13 coefficients, and lifter them the HTK way.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "scipy"],
+  "hints": [
+    "Build the DCT as an (M, M) matrix: np.cos(np.pi * n[:, None] * (2 * m[None, :] + 1) / (2 * M)), scale row 0 by sqrt(1 / M) and the others by sqrt(2 / M), then multiply it by x.",
+    "power_to_db floors against the maximum of the whole matrix after the log: db = np.maximum(db, db.max() - top_db).",
+    "mfcc is three lines: power_to_db, then dct2_ortho down axis 0, then the slice [:n_mfcc].",
+    "The HTK lifter indexes rows from n = 0, so c0 keeps weight 1. librosa's lifter starts at n = 1 and scales c0 too; that is a different convention."
+  ]
+}

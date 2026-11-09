@@ -317,7 +317,7 @@ The checks test the functions in this order.
 
 ## Where this breaks
 
-**A long clip with pauses.** The RMS over a whole recording averages in the silences, so a clip that is mostly quiet reads low. Measure level over short stretches when you care about the speech itself. The chapter [Voice activity detection](/lessons/019-voice-activity-detection) does exactly that.
+**A long clip with pauses.** The RMS over a whole recording averages in the silences, so a clip that is mostly quiet reads low. Measure level over short stretches when you care about the speech itself. The chapter [Voice activity detection](/lessons/020-voice-activity-detection) does exactly that.
 
 **Clipping hides in the peak.** A float signal above 1.0 has no meaning in a 16-bit file, and the converter cuts it off. A peak level above 0 dBFS means the clip is damaged, or will be when saved.
 

@@ -1,0 +1,15 @@
+{
+  "id": "050-codec-language-models",
+  "title": "Lay out codec tokens for a language model",
+  "brief": "Build the MusicGen delay pattern and its inverse, VALL-E's autoregressive and non-autoregressive inputs, MaskGIT's cosine schedule and confidence-based decoding, and a tiny codec language model whose loss reaches a known entropy.",
+  "needs_gpu": false,
+  "timeout": 60,
+  "packages": ["numpy", "torch"],
+  "hints": [
+    "apply_delay: start from np.full((K, T + K - 1), pad) and write codes[k] into out[k, k:k + T].",
+    "maskgit_decode: set confidence[~masked] = np.inf, sort with np.argsort, and keep the first n_keep positions masked.",
+    "markov_code_entropy: the rows of A @ B are p(c1 at t | c0 at t - 1). Weight each row's entropy by the stationary distribution pi.",
+    "lm_inputs_targets: torch.cat([bos_column, grid[:, :, :-1]], dim=2).",
+    "masked_cross_entropy: torch.where(mask, targets, 0) gives valid classes everywhere; multiply the per-token losses by the mask and divide by mask.sum()."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "040-asr-recipe",
+  "title": "Build an ASR training recipe",
+  "brief": "Train byte-pair merges, perturb speed, mix noise at an SNR, pack length buckets, and schedule the learning rate.",
+  "needs_gpu": false,
+  "timeout": 60,
+  "packages": ["numpy", "scipy"],
+  "hints": [
+    "Count adjacent pairs on the symbols left after each merge. On cat/car/card, a count that stays on the original characters merges (a, r) second.",
+    "speed_perturb(x, 1.1) shortens the clip. The length is ceil(len(x) * 10 / 11), from resample_poly(x, 10, 11).",
+    "The noise gain is sqrt(P_clean / (P_noise * 10 ** (snr_db / 10))). The exponent is 10.",
+    "noam_lr multiplies d_model ** -0.5 by min(step ** -0.5, step * warmup ** -1.5). During the warmup the second term is smaller."
+  ]
+}

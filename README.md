@@ -81,7 +81,8 @@ speech in the style of Voicebox and F5-TTS, and few-step generation with audio
 metrics.
 
 **Part 8 — Beyond recognition and synthesis.** Enhancement and separation,
-audio classification and voice conversion, spoken language models and the
+audio classification and voice conversion, spoken language understanding
+with dialogue state and speech translation, spoken language models and the
 adapter pattern, and full-duplex models and voice agents.
 
 Eight chapters run a real experiment on the GPU: training a Conformer-CTC on

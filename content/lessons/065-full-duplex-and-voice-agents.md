@@ -1,6 +1,6 @@
 ---
 title: Full-duplex models and voice agents
-slug: 064-full-duplex-and-voice-agents
+slug: 065-full-duplex-and-voice-agents
 part: "Part 8 — Beyond recognition and synthesis"
 summary: Build a voice agent's streams, depth step, streaming convolution, and turn-taking, and see where its latency goes.
 minutes: 80
@@ -14,8 +14,8 @@ objectives:
 prereqs:
   - 034-streaming-encoders
   - 051-codec-language-models
-  - 063-spoken-language-models
-exercise: 064-full-duplex-and-voice-agents
+  - 064-spoken-language-models
+exercise: 065-full-duplex-and-voice-agents
 ---
 
 # Full-duplex models and voice agents

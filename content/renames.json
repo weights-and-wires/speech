@@ -138,10 +138,10 @@
   "062-classification-and-voice-conversion"
  ],
  "41-spoken-language-models": [
-  "063-spoken-language-models"
+  "064-spoken-language-models"
  ],
  "42-full-duplex-and-voice-agents": [
-  "064-full-duplex-and-voice-agents"
+  "065-full-duplex-and-voice-agents"
  ],
  "025-neural-acoustic-models": [
   "027-neural-acoustic-models"
@@ -246,10 +246,10 @@
   "062-classification-and-voice-conversion"
  ],
  "059-spoken-language-models": [
-  "063-spoken-language-models"
+  "064-spoken-language-models"
  ],
  "060-full-duplex-and-voice-agents": [
-  "064-full-duplex-and-voice-agents"
+  "065-full-duplex-and-voice-agents"
  ],
  "023-n-gram-language-models": [
   "024-n-gram-language-models"
@@ -363,10 +363,10 @@
   "062-classification-and-voice-conversion"
  ],
  "060-spoken-language-models": [
-  "063-spoken-language-models"
+  "064-spoken-language-models"
  ],
  "061-full-duplex-and-voice-agents": [
-  "064-full-duplex-and-voice-agents"
+  "065-full-duplex-and-voice-agents"
  ],
  "040-text-to-speech-and-tacotron": [
   "042-text-to-speech-and-tacotron"
@@ -432,10 +432,10 @@
   "062-classification-and-voice-conversion"
  ],
  "061-spoken-language-models": [
-  "063-spoken-language-models"
+  "064-spoken-language-models"
  ],
  "062-full-duplex-and-voice-agents": [
-  "064-full-duplex-and-voice-agents"
+  "065-full-duplex-and-voice-agents"
  ],
  "041-text-to-speech-and-tacotron": [
   "042-text-to-speech-and-tacotron"
@@ -501,9 +501,15 @@
   "062-classification-and-voice-conversion"
  ],
  "062-spoken-language-models": [
-  "063-spoken-language-models"
+  "064-spoken-language-models"
  ],
  "063-full-duplex-and-voice-agents": [
-  "064-full-duplex-and-voice-agents"
+  "065-full-duplex-and-voice-agents"
+ ],
+ "063-spoken-language-models": [
+  "064-spoken-language-models"
+ ],
+ "064-full-duplex-and-voice-agents": [
+  "065-full-duplex-and-voice-agents"
  ]
 }

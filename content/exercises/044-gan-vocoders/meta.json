@@ -1,0 +1,15 @@
+{
+  "id": "044-gan-vocoders",
+  "title": "Train a GAN vocoder",
+  "brief": "Implement Snake, the multi-period discriminator's reshape, the multi-resolution STFT loss, and the LSGAN and feature-matching losses, then train a HiFi-GAN-style vocoder on one LibriSpeech speaker.",
+  "needs_gpu": true,
+  "timeout": 900,
+  "packages": ["numpy", "torch", "soundfile"],
+  "hints": [
+    "snake: reshape alpha to (1, C, 1, ...) with alpha.reshape(1, -1, *[1] * (x.dim() - 2)) so it broadcasts over any trailing axes.",
+    "period_reshape: the padding needed is (-T) % period. F.pad(x, (0, extra), mode='reflect') pads the end only; then x.reshape(B, C, -1, period).",
+    "stft_magnitude: torch.stft(x, n_fft, hop, win, window=torch.hann_window(win, periodic=True, ...), center=True, pad_mode='reflect', return_complex=True), then .abs().clamp(min=1e-7).",
+    "spectral_convergence: torch.linalg.norm on a tensor with no dim argument is the Frobenius norm of all its entries.",
+    "The LSGAN and feature-matching losses are sums over lists: sum(torch.mean(...) for ... in zip(...)). Use mean, not sum, inside each term."
+  ]
+}

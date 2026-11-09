@@ -286,8 +286,8 @@ The VM has little disk and memory to spare, so the image is built to share its
 largest layers with the ml course: the `Dockerfile` is identical to that
 course's up to and including the CPU `torch` install, and the packages this
 course adds, such as `soundfile`, come in a later layer. Keep it that way. The
-container is capped at 1.5 CPUs and 1536 MB, and `LOCAL_WORKERS=2` runs two
-submissions at once. The script prunes build cache older than three days after
+container is capped at 1.5 CPUs and 1 GB, and `LOCAL_WORKERS=1` runs one
+submission at a time. The script prunes build cache older than three days after
 each deploy.
 
 The script also builds the PDF book on your workstation, because printing it

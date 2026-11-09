@@ -1,0 +1,15 @@
+{
+  "id": "047-evaluating-synthetic-speech",
+  "title": "Score synthetic speech",
+  "brief": "Implement mel cepstral distortion with DTW alignment, F0 RMSE and voicing error, cosine speaker similarity, bootstrap intervals for MOS over raters and items, and the WER an ASR model gives synthetic speech.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "scipy"],
+  "hints": [
+    "mel_cepstral_distortion: slice [..., 1:] on both inputs to drop c0, then sum the squared difference over the last axis; the constant is 10 / np.log(10).",
+    "dtw_path: fill an (N + 1, M + 1) table D with D[0, 0] = 0 and infinity elsewhere, then backtrack from (N, M) by always stepping to the cheapest of the three predecessors until you reach (1, 1).",
+    "mcd_dtw: mel_cepstral_distortion(c_ref[:, None, :], c_syn[None, :, :]) is the whole (N, M) cost matrix in one call.",
+    "f0_rmse: both = (f0_ref > 0) & (f0_syn > 0) picks the frames to compare; (f0_ref > 0) != (f0_syn > 0) marks the voicing disagreements.",
+    "bootstrap_mos: np.percentile(replicates, [2.5, 97.5]) for level 0.95. Resampling whole raters and whole items is what keeps a harsh rater's scores together."
+  ]
+}

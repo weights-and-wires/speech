@@ -99,7 +99,7 @@ $$
 g = \sqrt{\frac{P_s}{P_n \, 10^{\mathrm{SNR}/10}}}
 $$
 
-The mixture is the clean clip plus $g$ times the noise. Ten decibels is a tenfold power ratio, because a decibel is ten times a base-10 log of power. At 10 dB with both powers equal to 1, $g = 1/\sqrt{10} \approx 0.3162$. [Speech enhancement](/lessons/059-speech-enhancement) uses this same gain.
+The mixture is the clean clip plus $g$ times the noise. Ten decibels is a tenfold power ratio, because a decibel is ten times a base-10 log of power. At 10 dB with both powers equal to 1, $g = 1/\sqrt{10} \approx 0.3162$. [Speech enhancement](/lessons/060-speech-enhancement) uses this same gain.
 
 > [!WARNING]
 > The 10 in the exponent is the power rule. `10 ** (snr_db / 20)` treats the decibel value as an amplitude and returns the wrong gain.

@@ -43,7 +43,7 @@ The repository is laid out as follows.
 
 ## The curriculum
 
-The course has 60 short chapters in eight parts, and 21 interactive demos. Each
+The course has 61 short chapters in eight parts, and 21 interactive demos. Each
 chapter teaches one idea. Readers of the earlier 42-lesson course keep their
 progress: `content/renames.json` maps each old slug to the chapters that
 replaced it.
@@ -58,7 +58,8 @@ prediction, pitch tracking with YIN, and phonetics, text normalization, and
 voice activity detection.
 
 **Part 3 — Classical recognition.** Dynamic time warping, hidden Markov models
-with Gaussian emissions, and n-gram language models with word error rate.
+with Gaussian emissions, n-gram language models, word error rate, and weighted
+finite-state decoding graphs.
 
 **Part 4 — Neural speech recognition.** Neural acoustic models, connectionist
 temporal classification and its decoders, attention encoder-decoders,

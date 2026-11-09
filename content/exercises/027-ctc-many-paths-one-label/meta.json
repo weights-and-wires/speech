@@ -1,0 +1,15 @@
+{
+  "id": "027-ctc-many-paths-one-label",
+  "title": "Sum over every path that spells the label",
+  "brief": "Collapse frame-by-frame paths into transcripts, list every path that spells a target, and compute the CTC loss by brute force on tiny inputs.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "scipy", "torch"],
+  "hints": [
+    "collapse: walk the path once, keep a symbol when it differs from the previous frame's symbol and is not the blank. Merge first, then drop blanks.",
+    "path_log_prob: log_probs[np.arange(T), path] picks one entry per frame, and a product of probabilities is a sum of log probabilities.",
+    "paths_for: itertools.product(range(C), repeat=T) yields every path; keep the ones whose collapse equals the target.",
+    "ctc_loss_brute_force: np.logaddexp.reduce over the paths' log probabilities, negated. An empty list of paths gives an infinite loss.",
+    "min_frames: one frame per label, plus one extra for every pair of equal neighbors in the target."
+  ]
+}

@@ -143,23 +143,23 @@ export default function LessonReader({ lesson, lessons, onStartExercise }: Props
   return (
     <article
       ref={scroller}
-      className="reader min-h-0 flex-1 overflow-y-auto overscroll-contain bg-canvas"
+      className="reader min-h-0 flex-1 overflow-y-auto overscroll-contain bg-paper"
       data-focus={focus ? "" : undefined}
     >
-      <div className="sticky top-0 z-20 border-b border-rule bg-[color-mix(in_oklab,var(--canvas)_88%,transparent)] backdrop-blur-md">
-        <div className="mx-auto flex h-11 max-w-[44rem] items-center gap-2 px-3 sm:px-5">
+      <div className="sticky top-0 z-20 border-b border-line bg-[color-mix(in_oklab,var(--paper)_90%,transparent)] backdrop-blur-md">
+        <div className="mx-auto flex h-11 max-w-[calc(var(--measure)+4rem)] items-center gap-2 px-3 sm:px-6">
           <div className="relative min-w-0 flex-1">
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
               aria-haspopup="menu"
-              className="flex min-h-9 w-full min-w-0 items-center gap-2 rounded-md px-2 text-left transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_5%,transparent)]"
+              className="flex min-h-9 w-full min-w-0 items-center gap-2 rounded-[5px] px-2 text-left transition-colors hover:bg-sunk"
             >
-              <span className="shrink-0 text-[12.5px] tabular-nums text-ink-4">
+              <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.1em] tabular-nums text-accent-ink">
                 {here ? `§${current + 1}` : "Intro"}
               </span>
-              <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink-2">
+              <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">
                 {here ? here.title : lesson.title}
               </span>
               <Chevron open={menuOpen} />
@@ -167,7 +167,7 @@ export default function LessonReader({ lesson, lessons, onStartExercise }: Props
 
             {menuOpen && (
               <div className="menu fade-in absolute inset-x-0 top-[calc(100%+6px)] max-h-[min(65vh,440px)] overflow-y-auto" role="menu">
-                <p className="px-2.5 pb-1.5 pt-1.5 text-[12px] text-ink-4">
+                <p className="toc-title px-2.5 pb-1 pt-2">
                   On this page · {read.size} of {outline.length} read
                 </p>
                 <ul>
@@ -181,19 +181,19 @@ export default function LessonReader({ lesson, lessons, onStartExercise }: Props
                         className="menu-item"
                       >
                         <span
-                          className={`w-6 shrink-0 text-[12px] tabular-nums ${read.has(index) ? "text-good" : "text-ink-4"}`}
+                          className={`w-6 shrink-0 font-mono text-[10px] tabular-nums ${read.has(index) ? "text-forest" : "text-muted"}`}
                         >
                           {read.has(index) ? <Tick /> : `§${index + 1}`}
                         </span>
                         <span className="min-w-0 flex-1 truncate">{section.title}</span>
                         {section.kind !== "concept" && (
-                          <span className="shrink-0 text-[11.5px] text-ink-4">{KIND_LABEL[section.kind]}</span>
+                          <span className="meta shrink-0 uppercase">{KIND_LABEL[section.kind]}</span>
                         )}
                       </button>
                     </li>
                   ))}
                 </ul>
-                <p className="mt-1 hidden border-t border-rule px-2.5 pb-1 pt-2 text-[11.5px] leading-relaxed text-ink-4 lg:block">
+                <p className="mt-1 hidden border-t border-line px-2.5 pb-1 pt-2 text-[12px] leading-relaxed text-muted lg:block">
                   <span className="kbd">[</span> and <span className="kbd">]</span> move between lessons.{" "}
                   <span className="kbd">F</span> toggles focus.
                 </p>
@@ -220,43 +220,58 @@ export default function LessonReader({ lesson, lessons, onStartExercise }: Props
         </div>
       </div>
 
-      <div className="mx-auto max-w-[44rem] px-5 pb-16 pt-9 sm:px-8 lg:pt-12">
-        <p className="text-[13px] text-ink-3">
-          Lesson {lesson.index} of {lesson.count}
-          <span className="mx-1.5 text-ink-4">·</span>
-          {part.number ? `Part ${part.number}, ${part.name}` : part.name}
-          {lesson.minutes ? (
+      <div className="mx-auto max-w-[calc(var(--measure)+4rem)] px-5 pb-16 pt-8 sm:px-8 lg:pt-11">
+        <nav aria-label="Breadcrumb" className="breadcrumbs mb-5!">
+          <Link to="/">Contents</Link>
+          <span aria-hidden>/</span>
+          <span>{part.number ? `Part ${part.number}` : part.name}</span>
+          {part.number && (
             <>
-              <span className="mx-1.5 text-ink-4">·</span>
-              {lesson.minutes} min
+              <span aria-hidden>/</span>
+              <span>{part.name}</span>
             </>
-          ) : null}
-        </p>
+          )}
+        </nav>
 
-        <h1 className="mt-2 font-serif text-[2.1rem] font-semibold leading-[1.15] tracking-[-0.015em] text-ink text-balance sm:text-[2.45rem]">
+        <span className="kicker">
+          Lesson {String(lesson.index).padStart(2, "0")}
+        </span>
+        <h1 className="mt-3 font-serif text-[clamp(32px,3.4vw,48px)] font-medium leading-[1.1] tracking-[-0.035em] text-ink text-balance">
           {lesson.title}
         </h1>
+        {lesson.summary && (
+          <p className="mt-4 text-[16px] leading-[1.8] text-muted">{lesson.summary}</p>
+        )}
+        <div className="lesson-meta mt-5">
+          <span>
+            Lesson {lesson.index} of {lesson.count}
+          </span>
+          {lesson.minutes ? <span>{lesson.minutes} min</span> : null}
+          {lesson.exercise_detail && <span>Exercise</span>}
+          {lesson.gpu && <span>GPU</span>}
+        </div>
 
         {lesson.objectives.length > 0 && (
-          <section className="mt-7 rounded-lg bg-chrome px-5 py-4 shadow-[inset_0_0_0_1px_var(--rule)]">
-            <h2 className="text-[13px] font-semibold text-ink">By the end of this lesson you can</h2>
-            <ul className="mt-2.5 space-y-1.5">
+          <section className="objectives mt-7 mb-0!">
+            <h2 className="objectives-title">
+              By the end of this lesson you can
+            </h2>
+            <ul className="list-disc space-y-1">
               {lesson.objectives.map((objective, index) => (
-                <li key={index} className="flex gap-2.5 text-[14.5px] leading-snug text-ink-2">
-                  <span className="mt-[0.45em] size-1 shrink-0 rounded-full bg-ink-4" aria-hidden />
-                  <span>{objective}</span>
+                <li key={index} className="text-ink">
+                  {objective}
                 </li>
               ))}
             </ul>
             {lesson.prereqs.length > 0 && (
-              <p className="mt-3.5 border-t border-rule pt-3 text-[13px] text-ink-3">
+              <p className="mt-3.5 border-t border-line pt-3 text-[13.5px] text-muted">
                 Builds on{" "}
                 {lesson.prereqs.map((prereq, index) => (
                   <span key={prereq}>
                     {index > 0 && (index === lesson.prereqs.length - 1 ? " and " : ", ")}
                     <Link
                       to={`/lessons/${prereq}`}
-                      className="text-accent underline decoration-1 underline-offset-[3px]"
+                      className="text-forest underline decoration-1 underline-offset-[3px]"
                     >
                       {titleOf(prereq, lessons)}
                     </Link>
@@ -275,13 +290,13 @@ export default function LessonReader({ lesson, lessons, onStartExercise }: Props
         {terms.length >= 3 && <Flashcards terms={terms} onFind={jump} />}
 
         {onStartExercise && lesson.exercise_detail && (
-          <section className="mt-12 flex flex-col gap-4 rounded-xl border border-rule-strong bg-raise p-5 sm:flex-row sm:items-center sm:gap-6">
+          <section className="mt-12 flex flex-col gap-4 rounded-[7px] border border-strong-line bg-surface p-6 sm:flex-row sm:items-center sm:gap-6">
             <div className="min-w-0 flex-1">
-              <p className="text-[12.5px] font-semibold text-good">Your turn</p>
-              <p className="mt-1 font-serif text-[1.25rem] font-semibold leading-snug text-ink">
+              <span className="kicker">Your turn</span>
+              <p className="mt-1.5 font-serif text-[24px] font-medium leading-tight tracking-[-0.025em] text-ink">
                 {lesson.exercise_detail.title}
               </p>
-              <p className="mt-1 text-[14px] leading-snug text-ink-3">{lesson.exercise_detail.brief}</p>
+              <p className="mt-1.5 text-[14px] leading-relaxed text-muted">{lesson.exercise_detail.brief}</p>
             </div>
             <button type="button" onClick={onStartExercise} className="btn btn-primary self-start sm:self-center">
               Open the exercise
@@ -290,32 +305,18 @@ export default function LessonReader({ lesson, lessons, onStartExercise }: Props
           </section>
         )}
 
-        <nav aria-label="Other lessons" className="mt-12 grid grid-cols-2 gap-3 border-t border-rule pt-6">
-          {lesson.prev ? (
-            <Link
-              to={`/lessons/${lesson.prev}`}
-              className="group rounded-lg px-3 py-2.5 transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]"
-            >
-              <span className="block text-[12px] text-ink-4">← Previous</span>
-              <span className="mt-0.5 block text-[14px] font-medium leading-snug text-ink-2 group-hover:text-accent">
-                {titleOf(lesson.prev, lessons)}
-              </span>
+        <nav aria-label="Other lessons" className="lesson-nav mt-12!">
+          {lesson.prev && (
+            <Link to={`/lessons/${lesson.prev}`} rel="prev">
+              <small>Previous</small>
+              {titleOf(lesson.prev, lessons)}
             </Link>
-          ) : (
-            <span />
           )}
-          {lesson.next ? (
-            <Link
-              to={`/lessons/${lesson.next}`}
-              className="group rounded-lg px-3 py-2.5 text-right transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]"
-            >
-              <span className="block text-[12px] text-ink-4">Next →</span>
-              <span className="mt-0.5 block text-[14px] font-medium leading-snug text-ink-2 group-hover:text-accent">
-                {titleOf(lesson.next, lessons)}
-              </span>
+          {lesson.next && (
+            <Link to={`/lessons/${lesson.next}`} rel="next">
+              <small>Next</small>
+              {titleOf(lesson.next, lessons)}
             </Link>
-          ) : (
-            <span />
           )}
         </nav>
       </div>
@@ -347,16 +348,17 @@ function Flashcards({
   }
 
   return (
-    <section className="mt-14 border-t border-rule pt-8" aria-labelledby="test-yourself">
+    <section className="mt-14 border-t border-line pt-8" aria-labelledby="test-yourself">
+      <span className="kicker mb-1.5">Knowledge check</span>
       <div className="mb-4 flex items-baseline gap-3">
-        <h2 id="test-yourself" className="min-w-0 flex-1 font-serif text-[1.4rem] font-semibold text-ink">
+        <h2 id="test-yourself" className="min-w-0 flex-1 font-serif text-[29px] font-medium tracking-[-0.035em] text-ink">
           Test yourself
         </h2>
-        <span className="text-[12.5px] tabular-nums text-ink-4">
+        <span className="meta tabular-nums">
           {flipped.size} of {terms.length} checked
         </span>
       </div>
-      <p className="-mt-2 mb-4 text-[14px] text-ink-3">
+      <p className="-mt-2 mb-4 text-[14px] text-muted">
         Say what each term means out loud, then turn the card over to check.
       </p>
       <ul className="grid gap-2.5 sm:grid-cols-2">
@@ -376,15 +378,15 @@ function Flashcards({
                   </span>
                 ) : (
                   <span className="flex h-full flex-col justify-between gap-3">
-                    <span className="font-serif text-[1.05rem] font-semibold text-ink">{term.term}</span>
-                    <span className="text-[12px] text-ink-4">Show the definition</span>
+                    <span className="font-serif text-[19px] font-medium tracking-[-0.02em] text-ink">{term.term}</span>
+                    <span className="meta">Show the definition</span>
                   </span>
                 )}
               </button>
               {open && (
                 <button
                   type="button"
-                  className="mx-4 mb-3 self-start text-[12.5px] text-accent underline decoration-1 underline-offset-[3px]"
+                  className="mx-4 mb-3 self-start text-[12.5px] text-forest underline decoration-1 underline-offset-[3px]"
                   onClick={() => onFind(term.id)}
                 >
                   Find it in the lesson
@@ -405,7 +407,7 @@ function Chevron({ open }: { open: boolean }) {
       height="12"
       viewBox="0 0 12 12"
       aria-hidden
-      className={`shrink-0 text-ink-4 transition-transform ${open ? "rotate-180" : ""}`}
+      className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}
     >
       <path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
     </svg>

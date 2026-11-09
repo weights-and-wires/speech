@@ -212,14 +212,14 @@ function EditorRail({ title, onOpen }: { title: string; onOpen: () => void }) {
       onClick={onOpen}
       aria-label={`Show the code editor: ${title}`}
       title={`Show the code editor (${mac ? "⌘" : "Ctrl"} .)`}
-      className="flex w-10 shrink-0 flex-col items-center gap-3 border-l border-rule bg-chrome py-3 text-ink-3 transition-colors hover:bg-sunk hover:text-ink"
+      className="slab flex w-10 shrink-0 flex-col items-center gap-3 border-l border-rule py-3 text-ink-3 transition-colors hover:bg-sunk! hover:text-ink"
     >
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
         <rect x="1.75" y="2.75" width="12.5" height="10.5" rx="2" stroke="currentColor" strokeWidth="1.3" />
         <path d="M9.75 3v10" stroke="currentColor" strokeWidth="1.3" />
         <path d="M7 6L5 8l2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span className="text-[12.5px] font-medium [writing-mode:vertical-rl]">Code editor</span>
+      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] [writing-mode:vertical-rl]">Code editor</span>
     </button>
   );
 }

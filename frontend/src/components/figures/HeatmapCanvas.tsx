@@ -127,7 +127,7 @@ export default function HeatmapCanvas({
     if (!node || !image || width <= 0) return;
     const ctx = prepareCanvas(node, width, cssHeight);
     if (!ctx) return;
-    const colours = themeColours();
+    const colours = themeColours(node);
     const { left, right, top, bottom } = layout;
     const plotW = Math.max(10, width - left - right);
     const plotH = Math.max(10, cssHeight - top - bottom);

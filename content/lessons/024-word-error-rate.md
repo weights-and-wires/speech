@@ -299,7 +299,7 @@ Figure 3. The four transducers that classical recognizers composed. Notice that 
 
 A **triphone** is a phone in the context of its neighbors: `k-ae+t` is "ae" after "k" and before "t". With about 40 phones there are up to 64,000 triphones, most never seen in training. Decision trees that ask questions such as "is the left neighbor a nasal?" cluster their states into a few thousand tied states, called **senones**, each with its own GMM.
 
-Composing the four (Mohri, Pereira, and Riley, 2002) gives one graph, HCLG, that reads HMM states and writes words. Kaldi (Povey et al., 2011) builds it with composition, determinization, and minimization at each stage. Decoding is then a Viterbi beam search through HCLG, with the GMMs supplying a score for every state at every frame.
+Composing the four (Mohri, Pereira, and Riley, 2002) gives one graph, HCLG, that reads HMM states and writes words. Kaldi (Povey et al., 2011) builds it with composition, determinization, and minimization at each stage. Decoding is then a Viterbi beam search through HCLG, with the GMMs supplying a score for every state at every frame. For the composition, the two semirings, and a CTC topology on the same kind of graph, see [Weighted finite-state transducers and decoding graphs](/lessons/025-wfsts-and-decoding-graphs).
 
 > [!RECAP]
 > - WER is $(S + D + I) / N$ from a Levenshtein alignment, summed over the whole corpus before dividing.

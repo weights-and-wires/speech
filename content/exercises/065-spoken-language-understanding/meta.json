@@ -1,0 +1,16 @@
+{
+  "id": "065-spoken-language-understanding",
+  "title": "Score an intent, a translation, and a dialogue state",
+  "brief": "Compute intent accuracy and micro slot F1, pick an intent from an n-best list, score a sentence with BLEU and chrF, and merge a dialogue state across two turns.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy"],
+  "hints": [
+    "intent_accuracy is the number of equal intent strings divided by the length of gold.",
+    "slot_f1 turns each dict into a set of (name, value) pairs. Pool true positives, false positives, and false negatives across utterances before you divide. When every count is zero, return 1.",
+    "nbest_intent adds math.exp(log_p) inside each intent. The first hypothesis is not the answer on the planted list.",
+    "bleu splits on whitespace. For order 2, add 1 to the clipped hits and to the hypothesis count. Multiply by exp(1 - r/c) when the hypothesis is shorter than the reference.",
+    "chrf drops spaces, clips character unigram counts by the reference, and returns 2PR/(P+R).",
+    "update_dialogue_state copies state['slots'] and then updates that copy. Store system_act. Do not replace the slot dict with only this turn."
+  ]
+}

@@ -1,84 +1,12 @@
-"""Audio classification and voice conversion: the worked solution."""
+"""Voice conversion and spoofing: the worked solution."""
 
 import numpy as np
-import torch
-import torch.nn.functional as F
 from scipy.fft import dct
 from scipy.signal import istft as scipy_istft
 from scipy.signal import lfilter
 from scipy.signal import stft as scipy_stft
 
-from speechlab import play, show_image, show_plot, show_spectrogram
-
-
-# Classification ------------------------------------------------------------------
-
-
-def ast_patch_grid(n_mels: int, n_frames: int, patch: int = 16, stride: int = 10) -> tuple[int, int]:
-    """How many patches AST cuts along frequency and along time.
-
-    Patches are patch x patch squares taken every `stride` bins and frames,
-    keeping only patches that fit. Returns (n_freq, n_time), each
-    floor((size - patch) / stride) + 1.
-    """
-    return (n_mels - patch) // stride + 1, (n_frames - patch) // stride + 1
-
-
-def patchify(spec: np.ndarray, patch: int = 16, stride: int = 10) -> np.ndarray:
-    """Cut a (n_mels, n_frames) spectrogram into overlapping square patches.
-
-    Returns (n_freq * n_time, patch * patch). Row i_f * n_time + i_t holds
-    spec[i_f*stride : i_f*stride + patch, i_t*stride : i_t*stride + patch]
-    flattened in row-major order, the order a stride-10 Conv2d produces.
-    """
-    n_f, n_t = ast_patch_grid(*spec.shape, patch, stride)
-    rows = stride * np.arange(n_f)[:, None, None, None] + np.arange(patch)[None, None, :, None]
-    cols = stride * np.arange(n_t)[None, :, None, None] + np.arange(patch)[None, None, None, :]
-    return spec[rows, cols].reshape(n_f * n_t, patch * patch)
-
-
-def clap_loss(audio_emb: torch.Tensor, text_emb: torch.Tensor, tau: torch.Tensor) -> torch.Tensor:
-    """The symmetric contrastive (InfoNCE) loss of CLAP.
-
-    audio_emb, text_emb: (N, d), where row i of each is a matching pair.
-    tau: a positive scalar temperature. L2-normalize both, form
-    S = a @ t.T / tau, and return the mean of the audio-to-text and
-    text-to-audio cross-entropies with the diagonal as the correct class.
-    """
-    a = F.normalize(audio_emb, dim=-1)
-    t = F.normalize(text_emb, dim=-1)
-    logits = a @ t.T / tau
-    labels = torch.arange(len(a), device=a.device)
-    return 0.5 * (F.cross_entropy(logits, labels) + F.cross_entropy(logits.T, labels))
-
-
-def zero_shot_classify(audio_emb: torch.Tensor, class_text_emb: torch.Tensor) -> torch.Tensor:
-    """The index of the class prompt with the highest cosine similarity, shape (N,)."""
-    return (F.normalize(audio_emb, dim=-1) @ F.normalize(class_text_emb, dim=-1).T).argmax(dim=-1)
-
-
-def equal_error_rate(bonafide: np.ndarray, spoof: np.ndarray) -> tuple[float, float]:
-    """The EER of a countermeasure whose higher scores mean "bona fide".
-
-    At a threshold th, the false rejection rate is the fraction of bona fide
-    scores below th, and the false acceptance rate is the fraction of spoof
-    scores at or above th. Sweep th over every score (and one value above
-    the largest), find the first threshold where FRR >= FAR, and interpolate
-    linearly between it and the previous threshold to where the two rates
-    cross. Returns (eer, threshold).
-    """
-    bonafide, spoof = np.asarray(bonafide, float), np.asarray(spoof, float)
-    th = np.unique(np.concatenate([bonafide, spoof]))
-    th = np.append(th, th[-1] + 1.0)
-    frr = np.searchsorted(np.sort(bonafide), th, side="left") / bonafide.size  # fraction below th
-    far = 1.0 - np.searchsorted(np.sort(spoof), th, side="left") / spoof.size  # fraction at or above th
-    i = int(np.argmax(frr >= far))
-    if i == 0 or frr[i] == far[i]:
-        return float((frr[i] + far[i]) / 2), float(th[i])
-    d0, d1 = far[i - 1] - frr[i - 1], far[i] - frr[i]
-    w = d0 / (d0 - d1)
-    eer = frr[i - 1] + w * (frr[i] - frr[i - 1])
-    return float(eer), float(th[i - 1] + w * (th[i] - th[i - 1]))
+from speechlab import play, show_plot, show_spectrogram
 
 
 # Voice conversion ------------------------------------------------------------------
@@ -102,6 +30,44 @@ def knn_vc(source: np.ndarray, matching: np.ndarray, k: int = 4) -> np.ndarray:
     """kNN voice conversion: replace each source frame with the mean of its
     k nearest matching-set frames. source: (T, d). matching: (M, d). Returns (T, d)."""
     return matching[cosine_knn(source, matching, k)].mean(axis=1)
+
+
+# Spoofing countermeasures ------------------------------------------------------------
+
+
+def error_rates(bonafide: np.ndarray, spoof: np.ndarray, thresholds: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """False rejection and false acceptance rates of a countermeasure at each threshold.
+
+    Higher scores mean "bona fide", and a trial is accepted when its score is at
+    or above the threshold. Returns (frr, far), each shaped like `thresholds`:
+    frr is the fraction of bona fide scores below the threshold, and far is the
+    fraction of spoof scores at or above it.
+    """
+    bonafide, spoof, thresholds = (np.asarray(v, float) for v in (bonafide, spoof, thresholds))
+    frr = np.searchsorted(np.sort(bonafide), thresholds, side="left") / bonafide.size
+    far = 1.0 - np.searchsorted(np.sort(spoof), thresholds, side="left") / spoof.size
+    return frr, far
+
+
+def equal_error_rate(bonafide: np.ndarray, spoof: np.ndarray) -> tuple[float, float]:
+    """The EER of a countermeasure whose higher scores mean "bona fide".
+
+    Sweep the threshold over every score (and one value above the largest),
+    find the first threshold where FRR >= FAR, and interpolate linearly
+    between it and the previous threshold to where the two rates cross.
+    Returns (eer, threshold).
+    """
+    bonafide, spoof = np.asarray(bonafide, float), np.asarray(spoof, float)
+    th = np.unique(np.concatenate([bonafide, spoof]))
+    th = np.append(th, th[-1] + 1.0)
+    frr, far = error_rates(bonafide, spoof, th)
+    i = int(np.argmax(frr >= far))
+    if i == 0 or frr[i] == far[i]:
+        return float((frr[i] + far[i]) / 2), float(th[i])
+    d0, d1 = far[i - 1] - frr[i - 1], far[i] - frr[i]
+    w = d0 / (d0 - d1)
+    eer = frr[i - 1] + w * (frr[i] - frr[i - 1])
+    return float(eer), float(th[i - 1] + w * (th[i] - th[i - 1]))
 
 
 # Run helpers -------------------------------------------------------------------------
@@ -206,11 +172,5 @@ def eer_demo(rng):
 
 if __name__ == "__main__":
     rng = np.random.default_rng(0)
-    n_f, n_t = ast_patch_grid(128, 1024)
-    print(f"AST on 128 mel bins x 1024 frames: {n_f} x {n_t} = {n_f * n_t} patches of 16 x 16")
-    spec = np.log(mel_matrix(128) @ np.abs(stft(speak("aiu", 120.0, 1.0, rng)[0])) ** 2 + 1e-8)
-    patches = patchify(spec)
-    print(f"a {spec.shape[1]}-frame log-mel clip gives {patches.shape[0]} patches, each a row of {patches.shape[1]} numbers")
-    show_image(patches[:40].T, label="The first 40 patches, one per column", xlabel="Patch", ylabel="Pixel in the patch")
     vc_demo(rng)
     eer_demo(rng)

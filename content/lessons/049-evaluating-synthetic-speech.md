@@ -255,7 +255,7 @@ Later chapters build zero-shot and voice-conversion systems that imitate a voice
 
 - **Consent.** Clone only voices whose owners agreed to it, for the use at hand. Research datasets such as LJSpeech and LibriTTS come from recordings released for reuse, and your own voice is always available. A voice in a video online is not consent.
 - **Watermarking.** Mark generated audio so it can be recognized later. AudioSeal, from 2024, embeds an imperceptible watermark and ships a detector that finds it even in a short excerpt of a longer clip. Resemble AI's open Chatterbox models embed their own watermark, called Perth, in every output.
-- **Detection and disclosure.** Spoofing countermeasures, which [Audio classification and voice conversion](/lessons/064-classification-and-voice-conversion) scores by equal error rate, try to detect synthetic speech without a watermark. They often miss generators they weren't trained on. Labeling synthetic audio as synthetic doesn't depend on either.
+- **Detection and disclosure.** Spoofing countermeasures, which [Voice conversion and spoofing](/lessons/065-voice-conversion-and-spoofing) scores by equal error rate, try to detect synthetic speech without a watermark. They often miss generators they weren't trained on. Labeling synthetic audio as synthetic doesn't depend on either.
 
 A watermark can be removed by a determined attacker, and a detector can be fooled. Neither replaces consent. They make careless misuse harder and accidental misuse traceable.
 

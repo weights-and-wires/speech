@@ -136,13 +136,14 @@
   "063-source-separation"
  ],
  "40-classification-and-voice-conversion": [
-  "064-classification-and-voice-conversion"
+  "064-audio-classification-and-clap",
+  "065-voice-conversion-and-spoofing"
  ],
  "41-spoken-language-models": [
-  "066-spoken-language-models"
+  "067-spoken-language-models"
  ],
  "42-full-duplex-and-voice-agents": [
-  "067-full-duplex-and-voice-agents"
+  "068-full-duplex-and-voice-agents"
  ],
  "025-neural-acoustic-models": [
   "028-neural-acoustic-models"
@@ -245,13 +246,14 @@
   "063-source-separation"
  ],
  "058-classification-and-voice-conversion": [
-  "064-classification-and-voice-conversion"
+  "064-audio-classification-and-clap",
+  "065-voice-conversion-and-spoofing"
  ],
  "059-spoken-language-models": [
-  "066-spoken-language-models"
+  "067-spoken-language-models"
  ],
  "060-full-duplex-and-voice-agents": [
-  "067-full-duplex-and-voice-agents"
+  "068-full-duplex-and-voice-agents"
  ],
  "023-n-gram-language-models": [
   "025-n-gram-language-models"
@@ -363,13 +365,14 @@
   "063-source-separation"
  ],
  "059-classification-and-voice-conversion": [
-  "064-classification-and-voice-conversion"
+  "064-audio-classification-and-clap",
+  "065-voice-conversion-and-spoofing"
  ],
  "060-spoken-language-models": [
-  "066-spoken-language-models"
+  "067-spoken-language-models"
  ],
  "061-full-duplex-and-voice-agents": [
-  "067-full-duplex-and-voice-agents"
+  "068-full-duplex-and-voice-agents"
  ],
  "040-text-to-speech-and-tacotron": [
   "044-text-to-speech-and-tacotron"
@@ -432,13 +435,14 @@
   "063-source-separation"
  ],
  "060-classification-and-voice-conversion": [
-  "064-classification-and-voice-conversion"
+  "064-audio-classification-and-clap",
+  "065-voice-conversion-and-spoofing"
  ],
  "061-spoken-language-models": [
-  "066-spoken-language-models"
+  "067-spoken-language-models"
  ],
  "062-full-duplex-and-voice-agents": [
-  "067-full-duplex-and-voice-agents"
+  "068-full-duplex-and-voice-agents"
  ],
  "041-text-to-speech-and-tacotron": [
   "044-text-to-speech-and-tacotron"
@@ -501,19 +505,20 @@
   "063-source-separation"
  ],
  "061-classification-and-voice-conversion": [
-  "064-classification-and-voice-conversion"
+  "064-audio-classification-and-clap",
+  "065-voice-conversion-and-spoofing"
  ],
  "062-spoken-language-models": [
-  "066-spoken-language-models"
+  "067-spoken-language-models"
  ],
  "063-full-duplex-and-voice-agents": [
-  "067-full-duplex-and-voice-agents"
+  "068-full-duplex-and-voice-agents"
  ],
  "063-spoken-language-models": [
-  "066-spoken-language-models"
+  "067-spoken-language-models"
  ],
  "064-full-duplex-and-voice-agents": [
-  "067-full-duplex-and-voice-agents"
+  "068-full-duplex-and-voice-agents"
  ],
  "011-hearing-and-the-mel-scale": [
   "012-hearing-and-the-mel-scale"
@@ -670,16 +675,17 @@
   "063-source-separation"
  ],
  "062-classification-and-voice-conversion": [
-  "064-classification-and-voice-conversion"
+  "064-audio-classification-and-clap",
+  "065-voice-conversion-and-spoofing"
  ],
  "063-spoken-language-understanding": [
-  "065-spoken-language-understanding"
+  "066-spoken-language-understanding"
  ],
  "064-spoken-language-models": [
-  "066-spoken-language-models"
+  "067-spoken-language-models"
  ],
  "065-full-duplex-and-voice-agents": [
-  "067-full-duplex-and-voice-agents"
+  "068-full-duplex-and-voice-agents"
  ],
  "041-asr-recipe": [
   "042-asr-recipe"
@@ -748,19 +754,33 @@
   "063-source-separation"
  ],
  "063-classification-and-voice-conversion": [
-  "064-classification-and-voice-conversion"
+  "064-audio-classification-and-clap",
+  "065-voice-conversion-and-spoofing"
  ],
  "064-spoken-language-understanding": [
-  "065-spoken-language-understanding"
+  "066-spoken-language-understanding"
  ],
  "065-spoken-language-models": [
-  "066-spoken-language-models"
+  "067-spoken-language-models"
  ],
  "066-full-duplex-and-voice-agents": [
-  "067-full-duplex-and-voice-agents"
+  "068-full-duplex-and-voice-agents"
  ],
  "040-diarization-and-forced-alignment": [
   "040-diarization",
   "041-forced-alignment-and-word-timestamps"
+ ],
+ "065-spoken-language-understanding": [
+  "066-spoken-language-understanding"
+ ],
+ "066-spoken-language-models": [
+  "067-spoken-language-models"
+ ],
+ "067-full-duplex-and-voice-agents": [
+  "068-full-duplex-and-voice-agents"
+ ],
+ "064-classification-and-voice-conversion": [
+  "064-audio-classification-and-clap",
+  "065-voice-conversion-and-spoofing"
  ]
 }

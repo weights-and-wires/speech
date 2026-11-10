@@ -1,5 +1,5 @@
 {
-  "id": "066-spoken-language-models",
+  "id": "067-spoken-language-models",
   "title": "Units, a unit LM, and a speech adapter for a frozen LLM",
   "brief": "Turn frames into deduplicated k-means units and score them with a bigram unit LM, then stack Whisper frames, project them into a frozen language model, and train the projector with a loss masked to the transcript.",
   "needs_gpu": true,

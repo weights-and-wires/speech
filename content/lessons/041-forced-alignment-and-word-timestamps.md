@@ -197,6 +197,7 @@ The checks confirm every cell of the four-frame table above, that the transcript
 
 ## Further reading
 
+- Shinji Watanabe, Speech Recognition and Understanding (11-751/18-781), Carnegie Mellon University, fall 2022. The 26 September lecture "Alignment" covers the left-to-right HMM, CTC, and transducer alignments, and the 9 November lecture "End-to-end ASR: CTC" covers the CTC lattice (https://www.wavlab.org/activities/2022/11751-2022f/).
 - PyTorch, "CTC forced alignment API tutorial," torchaudio documentation (https://docs.pytorch.org/audio/stable/tutorials/ctc_forced_alignment_api_tutorial.html).
 - Kürzinger et al., "CTC-Segmentation of Large Corpora for German End-to-end Speech Recognition," SPECOM 2020 (https://arxiv.org/abs/2007.09127).
 - McAuliffe et al., "Montreal Forced Aligner: Trainable Text-Speech Alignment Using Kaldi," Interspeech 2017 (https://www.isca-archive.org/interspeech_2017/mcauliffe17_interspeech.html).

@@ -72,7 +72,7 @@ Research: `02-asr-and-ssl.md`.
 
 | Slug | Title | The exercise | Demos |
 |---|---|---|---|
-| `028-neural-acoustic-models` | Neural acoustic models | Frame stacking, exact convolution output lengths, a 4x Conv2d subsampling front end, and a frame classifier trained in torch on noisy synthetic phones. | none |
+| `028-neural-acoustic-models` | Neural acoustic models | Frame stacking, TDNN layers as dilated convolutions with receptive-field arithmetic, LSTMs and the hybrid posterior-to-likelihood link, exact convolution output lengths, a 4x Conv2d front end, and a frame classifier trained in torch. | none |
 | `029-ctc-many-paths-one-label` | CTC: many paths, one label | The collapse function, every path that spells a target, and the CTC loss by brute force on tiny inputs, matched against `torch.nn.functional.ctc_loss`. | `ctc-lattice` |
 | `030-ctc-forward-backward` | Computing CTC efficiently | The blank-extended target, the forward and backward recursions in log space, the gradient with respect to the logits, and a padded batch matching torch. | none |
 | `031-decoding-ctc` | Decoding CTC | Greedy decoding and CTC prefix beam search checked against brute-force enumeration of every path. | `beam-search` |

@@ -227,3 +227,63 @@ def test_training(sub):
     if results[4] < results[0] + 0.03:
         fail(f"context should help at -5 dB: accuracy is {results[0]:.1%} with one frame and "
              f"{results[4]:.1%} with nine, but nine should win by 3 points or more")
+
+
+@check("tdnn_layer matches Conv1d with the same dilation, keeps only frames with every neighbor, and splices like stack_frames")
+def test_tdnn_layer(sub):
+    tdnn_layer, stack_frames = has(sub, "tdnn_layer"), has(sub, "stack_frames")
+    rng = np.random.default_rng(3)
+    x = rng.normal(size=(30, 4))
+    # Evenly spaced offsets are a Conv1d with dilation = the gap. Output frame j
+    # of Conv1d is TDNN frame j - min(offsets). A wrong layer that pads the edges
+    # or drops one frame too many fails the length and the values.
+    for offsets in ([-2, 2], [-3, 0, 3], [-1, 2], [-2, -1, 0, 1, 2]):
+        gap = offsets[1] - offsets[0]
+        k = len(offsets)
+        w = rng.normal(size=(5, k * 4))
+        got = tdnn_layer(x, w, offsets)
+        conv = nn.Conv1d(4, 5, k, dilation=gap, bias=False)
+        with torch.no_grad():
+            conv.weight.copy_(torch.as_tensor(w.reshape(5, k, 4).transpose(0, 2, 1)))
+            want = conv(torch.as_tensor(x.T[None], dtype=torch.float32))[0].T.numpy()
+        shape(got, want.shape, label=f"tdnn_layer output for offsets {offsets} (30 frames in)")
+        close(got, want, atol=1e-5, label=f"tdnn_layer against Conv1d with dilation {gap}, offsets {offsets}")
+    # Contiguous offsets are stack_frames, away from the repeated edge rows.
+    w = rng.normal(size=(3, 5 * 4))
+    got = tdnn_layer(x, w, [-2, -1, 0, 1, 2])
+    want = (stack_frames(x, 2, 2) @ w.T)[2:-2]
+    close(got, want, atol=1e-9, label="tdnn_layer with offsets -2..2 against stack_frames on the inner frames")
+    # One output row, worked by hand from the offsets: frame 7 reads frames 5 and 9.
+    w = rng.normal(size=(2, 8))
+    row = tdnn_layer(x, w, [-2, 2])[7 - 2]
+    close(row, w @ np.concatenate([x[5], x[9]]), atol=1e-12, label="output frame 7 for offsets [-2, 2]")
+
+
+@check("tdnn_receptive_field sums each layer's extent, and matches the frames a layer stack reads")
+def test_receptive_field(sub):
+    tdnn_receptive_field, tdnn_layer = has(sub, "tdnn_receptive_field"), has(sub, "tdnn_layer")
+    # Wrong implementation this catches: taking the max over layers instead of
+    # the sum. For the first stack below, the max gives (3, 3) instead of (6, 7).
+    cases = [
+        ([[-2, -1, 0, 1, 2], [-1, 2], [-3, 3], [0]], (6, 7)),
+        ([[-2, -1, 0, 1, 2], [-1, 2], [-3, 3], [-7, 2], [0]], (13, 9)),
+        ([[0]], (0, 0)),
+        ([[1, 2], [-3, 0]], (3, 2)),
+    ]
+    for contexts, want in cases:
+        got = tuple(int(v) for v in tdnn_receptive_field(contexts))
+        if got != want:
+            fail(f"tdnn_receptive_field({contexts}) should be {want} (sum each layer's left and right extent), got {got}")
+    # Behavioral cross-check: run real layers over exactly left + right + 1
+    # frames and one output frame must survive; with one frame fewer, none does.
+    contexts = [[-2, -1, 0, 1, 2], [-1, 2], [-3, 3], [-7, 2]]
+    left, right = (int(v) for v in tdnn_receptive_field(contexts))
+    rng = np.random.default_rng(4)
+    for total in (left + right + 1, left + right):
+        h = rng.normal(size=(total, 2))
+        for offsets in contexts:
+            h = tdnn_layer(h, rng.normal(size=(3, h.shape[1] * len(offsets))), offsets)
+        want = 1 if total == left + right + 1 else 0
+        if len(h) != want:
+            fail(f"a stack with receptive field ({left}, {right}) on {total} input frames should leave "
+                 f"{want} output frames, got {len(h)}")

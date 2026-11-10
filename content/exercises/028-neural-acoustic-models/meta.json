@@ -1,7 +1,7 @@
 {
   "id": "028-neural-acoustic-models",
-  "title": "Classify frames and subsample them",
-  "brief": "Stack frames into context windows, compute exact convolution output lengths, build a 4x Conv2d front end, and train a frame classifier on noisy synthetic phones.",
+  "title": "Classify frames, subsample them, and run a TDNN layer",
+  "brief": "Stack frames into context windows, compute exact convolution output lengths, build a 4x Conv2d front end, train a frame classifier on noisy synthetic phones, and run a time-delay layer with its receptive field.",
   "needs_gpu": false,
   "timeout": 30,
   "packages": [
@@ -14,6 +14,8 @@
     "Write the length formula with // so it works unchanged on ints, numpy arrays, and integer tensors.",
     "In Conv2dSubsampling.forward, x.unsqueeze(1) makes (N, 1, T, F). After both convolutions the shape is (N, C, T', F'); transpose(1, 2) then reshape(n, t, c * f).",
     "The linear layer's input size is channels * subsampled_length(n_mels): frequency shrinks the same way time does.",
-    "Pass raw logits to F.cross_entropy; it applies log-softmax itself."
+    "Pass raw logits to F.cross_entropy; it applies log-softmax itself.",
+    "tdnn_layer keeps only frames t where t + min(offsets) >= 0 and t + max(offsets) <= T - 1. Index x with frames[:, None] + offsets[None, :], reshape to (n_frames, len(offsets) * D), and multiply by weights.T.",
+    "A layer with offsets {-3, +3} extends the window 3 frames left and 3 right. Add left extents over layers and right extents over layers; a layer whose offsets are all positive extends the left by 0."
   ]
 }

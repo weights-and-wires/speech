@@ -2,12 +2,14 @@
 title: Speaker embeddings and verification
 slug: 039-speaker-verification
 part: "Part 4 — Neural speech recognition"
-summary: Train speaker embeddings with an angular margin, score trials by cosine, and report the equal error rate and minimum detection cost.
-minutes: 50
+summary: Pool frames into embeddings, train them with an angular margin, score trials with AS-norm and multi-clip enrollment, and report EER and minDCF.
+minutes: 60
 gpu: false
 objectives:
   - Implement the additive angular margin softmax, including its fallback past pi minus the margin, and explain why the margin tightens clusters.
+  - Pool frame features with statistics pooling and attentive statistics pooling, and say what ECAPA-TDNN adds to an x-vector.
   - Score a pair of clips by the cosine of their embeddings, and split trial scores into targets and non-targets.
+  - Enroll a speaker from several clips, and normalize a trial score with AS-norm over the top-K cohort scores.
   - Compute the equal error rate from trial scores, and explain what it trades.
   - Compute the normalized minimum detection cost, and explain why it depends on the prior of a target trial.
 prereqs:
@@ -18,15 +20,15 @@ exercise: 039-speaker-verification
 
 # Speaker embeddings and verification
 
-A bank's phone line asks a different question from a recognizer. A recognizer asks "what was said?" The bank asks "is this the account holder?", and it must answer from a few seconds of speech.
+A recognizer asks "what was said?" A bank's phone line asks "is this the account holder?", from a few seconds of speech.
 
-The obvious design trains a classifier with one output per customer. It fails on the first day a new customer signs up, because the classifier has no output for them, and retraining for every signup is not practical. The standard answer maps any stretch of speech to a fixed-size vector, a **speaker embedding**, so that two clips of the same person land close together and clips of different people land far apart. Verification then compares two embeddings, and a new customer needs only one enrollment clip.
+A classifier with one output per customer fails the day a new customer signs up. The standard answer maps any stretch of speech to a fixed-size vector, a **speaker embedding**, so that clips of one person land close together and clips of different people land far apart. A new customer needs only one enrollment clip.
 
-That design hides a puzzle. You train the embedding as a classifier over known speakers, but you use it on speakers it has never seen. This chapter builds the loss that solves the puzzle, the additive angular margin, and the two numbers that report how well it worked, the equal error rate and the minimum detection cost.
+That hides a puzzle: you train the embedding as a classifier over known speakers, but you use it on speakers it has never seen. This chapter builds the pooling, the loss that solves the puzzle, and the back end and two numbers that score the result.
 
 ## What you already know
 
-- Cross-entropy over a softmax trains a classifier (see [Self-supervised speech](/lessons/037-self-supervised-speech)).
+- Cross-entropy over a softmax trains a classifier.
 - Cosine similarity compares directions: the cosine of the angle between two vectors, from the same chapter.
 - A log-mel spectrogram turns a clip into frames of features (see [Log-mel spectrograms](/lessons/013-log-mel-spectrograms)).
 - A threshold turns a score into a yes or no, and a wrong answer can be wrong in two ways.
@@ -34,33 +36,42 @@ That design hides a puzzle. You train the embedding as a classifier over known s
 
 ## From a voice to a vector
 
-A speaker embedding network reads frames of log-mel features and pools them over time into one vector. The x-vector design runs dilated 1-D convolutions over the frames, then a **statistics pooling** layer concatenates the mean and the standard deviation of every channel over time, and a few dense layers give the embedding. ECAPA-TDNN adds attention to the pooling, so the network can weight the frames that say most about the voice. `speechbrain/spkrec-ecapa-voxceleb` reports a 0.80% equal error rate on the cleaned VoxCeleb1 test set.
+A clip has a different number of frames every time, so the network needs a step that turns $T$ frames into one fixed-size vector. That step is **pooling**.
 
-Training treats every training speaker as a class. At test time only the embedding is kept. So the loss must do more than separate the training speakers: it must pack each one tightly, leaving room between them for speakers it has not met.
+The **x-vector** (Snyder et al., 2018) has three parts. Frame-level layers, dilated 1-D convolutions called a TDNN, read each frame with a few frames of context. A **statistics pooling** layer takes, for every channel, the mean and standard deviation over all $T$ frames and concatenates them, so $C$ channels give $2C$ numbers. Segment-level dense layers follow, and the activation of one of them is the embedding.
+
+Statistics pooling weights every frame equally, silence included. **ECAPA-TDNN** (Desplanques et al., 2020) adds squeeze-and-excitation blocks, which rescale each channel using a summary of the whole clip, and **attentive statistics pooling**: a softmax over the $T$ frames turns per-frame scores into weights $\alpha_t$ that sum to 1. The pooled statistics are
+
+$$
+\tilde\mu = \sum_t \alpha_t h_t, \qquad \tilde\sigma = \sqrt{\max\left(\sum_t \alpha_t h_t^2 - \tilde\mu^2,\ \epsilon\right)}
+$$
+
+Read it aloud: $h_t$ is one channel's activation at frame $t$, $\tilde\mu$ is the weighted mean, and $\tilde\sigma$ is the weighted standard deviation. The floor $\epsilon$, about $10^{-9}$, keeps the square root finite when every frame is alike.
+
+### Work the pooling by hand
+
+Take one channel with frames $h = (1, 2, 6)$.
+
+- Statistics pooling gives mean $3$. The mean of squares is $41/3 = 13.667$, so the variance is $4.667$ and the standard deviation is 2.160.
+- Attentive pooling with scores $(0, 0, \ln 2)$ gives weights $(0.25, 0.25, 0.5)$. The weighted mean is $0.25 + 0.5 + 3 = 3.75$. The weighted mean of squares is $0.25 + 1 + 18 = 19.25$, so the variance is $19.25 - 3.75^2 = 5.1875$ and the standard deviation is 2.278.
+
+Subtracting the plain mean 3 instead gives variance $19.25 - 9 = 10.25$ and a standard deviation of 3.202, which is wrong: the variance must use the same weights as the mean.
 
 ## Why plain softmax is not enough
 
-Normalize each embedding $x$ and each class center $W_j$ to unit length. The score of class $j$ is then $\cos\theta_j$, the cosine of the angle between the embedding and that center. A softmax over these scores is satisfied as soon as the true class scores highest. Nothing asks for a wide gap, so training can stop with each speaker's embeddings spread over a wide cone. A new speaker's embeddings fall into the gaps, and the clusters overlap.
-
-The fix is to ask for more than a win. Make the true class win by a fixed angle. If an embedding must beat every other center by 0.2 radians, the training cones shrink, and the gaps between them grow.
+Normalize each embedding $x$ and each class center $W_j$ to unit length, so the score of class $j$ is $\cos\theta_j$, the cosine of the angle between them. A softmax over these scores is satisfied as soon as the true class scores highest, so each speaker's embeddings can stay spread over a wide cone, and a new speaker's embeddings fall into the gaps. The fix is to make the true class win by a fixed angle, which shrinks the cones and widens the gaps.
 
 ## The additive angular margin
 
-The **additive angular margin** softmax, also called ArcFace, adds a margin $m$ to the true class's angle before the softmax:
+The **additive angular margin** softmax (ArcFace) adds a margin $m$ to the true class's angle before the softmax:
 
 $$
 \mathcal{L} = -\log \frac{e^{s\cos(\theta_y + m)}}{e^{s\cos(\theta_y + m)} + \sum_{j \ne y} e^{s\cos\theta_j}}
 $$
 
-Read it aloud: $\theta_y$ is the angle to the true speaker's center, $m$ is an extra angle in radians, and $s$ is a scale that stretches cosines, which lie in $[-1, 1]$, into logits large enough for a sharp softmax. The loss is ordinary cross-entropy, except that the true class is scored as if the embedding were $m$ radians farther away than it is.
+Read it aloud: $\theta_y$ is the angle to the true speaker's center, $m$ is an extra angle in radians, and $s$ is a scale that stretches cosines into logits large enough for a sharp softmax. The true class is scored as if the embedding were $m$ radians farther away than it is.
 
-Compute the shifted cosine from $\cos(\theta + m) = \cos\theta\cos m - \sin\theta\sin m$ with $\sin\theta = \sqrt{1 - \cos^2\theta}$, so you never call `arccos`. In torch:
-
-```python
-cos = normalize(x, dim=1) @ normalize(W, dim=1).T
-cos_t = cos[rows, y]
-shifted = cos_t * math.cos(m) - torch.sqrt(torch.clamp(1 - cos_t**2, min=0)) * math.sin(m)
-```
+Compute the shifted cosine as $\cos\theta\cos m - \sin\theta\sin m$ with $\sin\theta = \sqrt{1 - \cos^2\theta}$, so you never call `arccos`.
 
 ```figure
 <svg viewBox="0 0 600 310" role="img" aria-label="Cosine of the true-class angle against the angle, with and without a 0.2 rad margin, including the fallback past pi minus the margin">
@@ -107,30 +118,26 @@ Figure 1 shows a trap. Once $\theta_y + m$ passes $\pi$, $\cos(\theta_y + m)$ st
 
 ### Work the margin by hand
 
-Take two speakers, $s = 30$, and an embedding with cosine 0.5 to its own center ($\theta = 1.0472$ rad) and 0.4 to the other.
+Take two speakers, $s = 30$, and an embedding with cosine 0.5 to its own center and 0.4 to the other.
 
 - Without a margin, the logits are 15 and 12. The softmax gives the true class 0.9526, and the loss is 0.0486 nats.
 - With $m = 0.2$, the true cosine becomes $0.5 \times 0.9801 - 0.8660 \times 0.1987 = 0.3180$, and its logit is 9.54. The softmax gives it 0.0787, and the loss is 2.54 nats.
 
-An embedding that plain softmax calls finished still pays 2.54 nats under the margin. Its loss falls toward zero only when its angle to its own center is at least 0.2 rad smaller than its angle to any other.
+An embedding that plain softmax calls finished still pays 2.54 nats. Its loss falls toward zero only when its angle to its own center is at least 0.2 rad smaller than to any other.
 
 > [!KEY]
 > The angular margin makes the true class win by an angle $m$, not merely win. That packs each training speaker's embeddings tightly, which is what lets unseen speakers separate at test time.
 
 ## Score a trial
 
-A **trial** is a pair of clips and a question: same speaker or not? The score is the cosine between their embeddings. A **target** trial is a same-speaker pair, and a **non-target** trial is a different-speaker pair. In numpy, for rows of two embedding matrices:
-
-```python
-scores = np.sum(a * b, axis=1) / (np.linalg.norm(a, axis=1) * np.linalg.norm(b, axis=1))
-```
+A **trial** is a pair of clips and a question: same speaker or not? The score is the cosine between their embeddings. A **target** trial is a same-speaker pair, and a **non-target** trial is a different-speaker pair.
 
 Accept a trial when its score is at least a threshold $\tau$. Two errors trade against each other as $\tau$ moves:
 
 - A **miss**: a target trial scored below $\tau$. $P_{\text{miss}}(\tau)$ is the fraction of target scores below it.
 - A **false alarm**: a non-target trial scored at or above $\tau$. $P_{\text{fa}}(\tau)$ is the fraction of non-target scores at or above it.
 
-Raise $\tau$ and you reject more impostors, but you also reject more customers. Lower it and the reverse happens. No threshold removes both errors, so a report has to say where on that trade it sits.
+Raising $\tau$ rejects more impostors and more customers. No threshold removes both errors, so a report has to say where on that trade it sits.
 
 ## One number: the equal error rate
 
@@ -174,27 +181,19 @@ Take target scores 0.9, 0.8, 0.7, and 0.4, and non-target scores 0.6, 0.3, 0.2, 
 Figure 2. For the four target and four non-target scores in the text, every threshold trades misses for false alarms. The two rates are both 25% at a threshold of 0.6, which is the equal error rate.
 ```
 
-The EER treats a miss and a false alarm as equally bad, and a bank does not. A false alarm lets an impostor in, and a miss annoys a customer. The **detection cost** weights the two errors by how costly and how common they are:
+The EER treats a miss and a false alarm as equally bad, and a bank does not: a false alarm lets an impostor in. The **detection cost** weights the errors by cost and frequency:
 
 $$
 C(\tau) = \frac{C_{\text{miss}}\,P_{\text{miss}}(\tau)\,P_{\text{tar}} + C_{\text{fa}}\,P_{\text{fa}}(\tau)\,(1 - P_{\text{tar}})}{\min\left(C_{\text{miss}} P_{\text{tar}},\ C_{\text{fa}} (1 - P_{\text{tar}})\right)}
 $$
 
-Read it aloud: $P_{\text{tar}}$ is the prior probability that a trial is a target, and $C_{\text{miss}}$ and $C_{\text{fa}}$ are the costs of each error. The denominator is the cost of the better of two trivial systems, accept everything or reject everything, so a cost of 1.0 means no better than guessing. **minDCF** is the minimum over thresholds. VoxSRC uses $P_{\text{tar}} = 0.05$ with both costs 1, so the formula becomes $P_{\text{miss}} + 19\,P_{\text{fa}}$. In numpy, over a vector of thresholds:
+Read it aloud: $P_{\text{tar}}$ is the prior probability that a trial is a target, and $C_{\text{miss}}$ and $C_{\text{fa}}$ are the costs of each error. The denominator is the cost of the better of two trivial systems, accept everything or reject everything, so a cost of 1.0 means no better than guessing. **minDCF** is the minimum over thresholds. VoxSRC uses $P_{\text{tar}} = 0.05$ with both costs 1, so the formula becomes $P_{\text{miss}} + 19\,P_{\text{fa}}$.
 
-```python
-p_miss = np.mean(target[None, :] < thresholds[:, None], axis=1)
-p_fa = np.mean(nontarget[None, :] >= thresholds[:, None], axis=1)
-```
-
-For the same eight scores, at $\tau = 0.7$ the miss rate is 25% and the false-alarm rate is 0, so the cost is $0.25 + 19 \times 0 = 0.25$. No threshold does better, so minDCF is 0.25.
-
-> [!TIP]
-> Report minDCF with its $P_{\text{tar}}$. A system tuned for 0.05 can look poor at the 0.01 some NIST evaluations use, because a false alarm then costs 99 times as much as a miss.
+For the same eight scores, $\tau = 0.7$ gives miss rate 25% and false-alarm rate 0, so the cost is 0.25, and no threshold does better.
 
 ## What the margin buys
 
-The Run makes 70 synthetic voices, each a buzz at its own pitch through formant filters scaled to its own vocal tract, and trains a linear embedding on 60 of them. It scores trials on the 10 voices the embedding never saw.
+The Run makes 70 synthetic voices, each a buzz at its own pitch through formant filters scaled to its own vocal tract, trains a linear embedding on 60, and scores trials on the other 10.
 
 ```figure
 <svg viewBox="0 0 600 250" role="img" aria-label="Equal error rate on 10 unseen synthetic voices: 11.4% for raw features, 2.2% with a plain softmax, and 0.7% with a 0.2 rad margin">
@@ -218,17 +217,49 @@ The Run makes 70 synthetic voices, each a buzz at its own pitch through formant 
 Figure 3. On voices the embedding never saw in training, the angular margin cuts the equal error rate from 2.2% to 0.7%, and cuts minDCF at P_target = 0.05 from 0.209 to 0.071.
 ```
 
-The raw spectra give an 11.4% equal error rate. Training with $m = 0$ gives 2.2%, and training with $m = 0.2$ gives 0.7%. The embedding with the margin separates voices it never trained on, which is the puzzle from the start of the chapter.
+The margin embedding separates voices it never trained on, which answers the puzzle.
 
 > [!KEY]
 > A verification system is an embedding plus a threshold. The margin loss shapes the embedding, and EER and minDCF report the two ways the threshold can be wrong.
 
+## Enroll with several clips
+
+To combine $N$ enrollment clips, normalize each embedding to unit length, average the unit vectors, and normalize the average. Normalizing first stops a clip with a large norm from dominating. For two clips at right angles with lengths 1 and 10, averaging first gives $(0.0995, 0.9950)$, nearly all the long clip. Normalizing first gives $(0.7071, 0.7071)$.
+
+The alternative is to average the cosines of the test clip with each enrollment clip. For unit vectors, that average equals $t \cdot \bar e$, where $t$ is the test embedding and $\bar e$ is the mean of the enrollment embeddings, which is $\lVert\bar e\rVert$ times the cosine to the normalized average. Both rank test clips alike for one speaker, but score averaging shrinks every score by $\lVert\bar e\rVert$, which is 1 only when the clips agree exactly. A speaker with scattered clips gets lower scores, and one global threshold treats them unfairly.
+
+## Normalize the scores
+
+A cosine of 0.45 means different things for different people, because some voices resemble many others. **Score normalization** judges a score against what impostors score.
+
+**Adaptive symmetric normalization** (AS-norm; Matějka et al., 2017) uses a **cohort**, embeddings from speakers outside the trial. For enrollment $e$, test $t$, and raw score $s$:
+
+1. Score $e$ against every cohort embedding, keep the $K$ highest, and call their mean and standard deviation $\mu_e$ and $\sigma_e$.
+2. Do the same for $t$ to get $\mu_t$ and $\sigma_t$.
+3. Return $0.5\left(\frac{s - \mu_e}{\sigma_e} + \frac{s - \mu_t}{\sigma_t}\right)$.
+
+Each term is a z-score against the closest impostors.
+
+Take $s = 0.45$ and $K = 3$. The enrollment cohort scores are $(0.30, 0.20, 0.10, 0.05, 0.0, -0.10)$, and the test cohort scores are $(0.20, 0.15, 0.10, 0.0, -0.05, -0.10)$. The top three on each side are $(0.30, 0.20, 0.10)$ with mean 0.200 and standard deviation 0.0816, and $(0.20, 0.15, 0.10)$ with mean 0.150 and standard deviation 0.0408. The result is $0.5\,(3.06 + 7.35) = 5.205$, against 3.225 for the whole cohort.
+
+Many x-vector systems used **PLDA**, a generative back end that models between-speaker and within-speaker covariance and scores a pair by the likelihood ratio of same against different speaker. An angular-margin embedding already clusters by angle, so cosine on normalized embeddings, with AS-norm on top, is the common modern back end.
+
+## VoxCeleb and mismatch
+
+**VoxCeleb1** holds 1,251 speakers and 153,516 utterances from interview videos. Three trial lists set the protocols: O is the original list, with 40 test speakers. E draws trials from all of VoxCeleb1. H draws pairs only from speakers of the same gender and nationality, which removes easy cues. ECAPA-TDNN with 1024 channels reports 0.87%, 1.12%, and 2.12% EER on O, E, and H, in that order.
+
+Two mismatches hurt in practice:
+
+- **Duration.** Xie et al. (2019) cut VoxCeleb1 clips to fixed lengths, and their EER fell from 7.97% at 2 s to 3.39% at 6 s. A short clip may hold mostly silence or noise.
+- **Domain.** Embeddings trained on interviews meet telephone audio, other languages, and other microphones. Scores shift, so a threshold from VoxCeleb misfires. Build the AS-norm cohort and the threshold from audio like your deployment audio.
+
+The Run applies both steps to the margin-0.2 embedding. Enrolling from three clips instead of one lowers the EER from 0.3% to 0.0%. AS-norm over 360 training clips raises it from 0.7% to 3.2%: the embedding is already nearly perfect on clean voices, and a small cohort adds noise. AS-norm pays off under mismatch.
+
 > [!RECAP]
+> - Statistics pooling concatenates each channel's mean and standard deviation over frames. Attentive pooling weights frames with a softmax and uses the weighted mean inside the weighted variance.
 > - AAM softmax replaces the true cosine with $\cos\theta\cos m - \sin\theta\sin m$, or $\cos\theta - m\sin m$ past $\pi - m$, then applies cross-entropy to $s$ times the cosines.
-> - A trial's score is the cosine of two embeddings, and the trials split into targets and non-targets.
-> - A miss is a target below the threshold, and a false alarm is a non-target at or above it.
-> - EER is where the two rates meet.
-> - minDCF is the minimum weighted cost, divided by the cost of the better trivial system.
+> - A trial's score is the cosine of two embeddings. A miss is a target below the threshold, and a false alarm is a non-target at or above it. EER is where the two rates meet, and minDCF is the minimum weighted cost over the cost of the better trivial system.
+> - Enroll by averaging unit-length embeddings and renormalizing. AS-norm z-scores a trial against the top-$K$ cohort scores on each side.
 
 ## Build it step by step
 
@@ -238,17 +269,26 @@ The checks test the functions in this order.
 2. **`aam_softmax_loss(embeddings, weights, labels, scale, margin)`.** Takes torch tensors and returns a scalar tensor. Clone the cosine matrix and write the shifted value into `logits[rows, labels]`. Common mistake: applying the margin to every class, not only the true one.
 3. **`equal_error_rate(target_scores, nontarget_scores)`.** Returns a float. Use the distinct scores plus `np.inf` as thresholds. Common mistake: counting a score equal to the threshold as a miss.
 4. **`min_dcf(target_scores, nontarget_scores, p_target, c_miss, c_fa)`.** Returns a float. Common mistake: forgetting the normalization.
+5. **`stats_pooling(frames)`.** Takes `(T, C)` and returns `(2 * C,)`: means, then standard deviations, over axis 0.
+6. **`attentive_stats_pooling(frames, attn_logits, floor)`.** Softmax over axis 0, then the weighted mean and the floored square root of the weighted second moment minus the squared weighted mean. Common mistake: subtracting the unweighted mean.
+7. **`enroll(embeddings)`.** Returns a unit `(D,)` vector. Common mistake: averaging before normalizing each embedding.
+8. **`as_norm(score, enroll_cohort_scores, test_cohort_scores, top_k)`.** Keep the last `top_k` of each sorted cohort. Common mistake: using the whole cohort.
 
 ## Where this breaks
 
-**Short clips.** An embedding from 0.5 s is noisy. Scores from short trials spread out, and a threshold tuned on long clips misfires.
+**Short clips and a shifted domain.** A threshold tuned on long clips from one microphone can fail on short clips from another. Re-estimate it, and draw the AS-norm cohort, from audio like your deployment audio.
 
-**A shifted domain.** A threshold tuned on one microphone and one language can fail on another. Re-estimate it on data that looks like your deployment.
-
-**A margin from step 0.** A large margin at the start of training can stop the loss from falling. The Run warms the margin up from 0 to its final value over 100 steps.
+**A margin from step 0.** A large margin at the start can stall the loss. The Run warms it up over 100 steps.
 
 ## The exercise
 
-You build `cosine_scores`, `aam_softmax_loss`, `equal_error_rate`, and `min_dcf`. The checks confirm the worked margin example and the fallback past $\pi - m$, compare the EER with the Gaussian closed form $\Phi(-d/2)$, and compare minDCF with a brute-force sweep over thresholds.
+You build `cosine_scores`, `aam_softmax_loss`, `equal_error_rate`, and `min_dcf`, then `stats_pooling`, `attentive_stats_pooling`, `enroll`, and `as_norm`. The checks confirm the worked margin example, the fallback past $\pi - m$, the Gaussian EER $\Phi(-d/2)$, a brute-force minDCF, and the pooling and AS-norm examples. Separate checks catch attentive pooling that subtracts the unweighted mean, enrollment that averages before normalizing, and AS-norm over the whole cohort.
 
-The **Run** plays two synthetic voices, then trains embeddings on 60 voices and prints the EER and minDCF on the 10 unseen ones, with the raw spectra, with $m = 0$, and with $m = 0.2$.
+The **Run** plays two synthetic voices, prints EER and minDCF on 10 unseen voices for raw spectra, $m = 0$, and $m = 0.2$, then tries one and three enrollment clips and AS-norm.
+
+## Further reading
+
+- Snyder et al., "X-vectors: Robust DNN Embeddings for Speaker Recognition," ICASSP 2018 (https://www.danielpovey.com/files/2018_icassp_xvectors.pdf).
+- Desplanques, Thienpondt, and Demuynck, "ECAPA-TDNN: Emphasized Channel Attention, Propagation and Aggregation in TDNN Based Speaker Verification," Interspeech 2020 (https://arxiv.org/abs/2005.07143).
+- Matějka et al., "Analysis of Score Normalization in Multilingual Speaker Recognition," Interspeech 2017 (https://www.isca-archive.org/interspeech_2017/matejka17_interspeech.html).
+- Xie, Nagrani, Chung, and Zisserman, "Utterance-Level Aggregation for Speaker Recognition in the Wild," ICASSP 2019 (https://arxiv.org/abs/1902.10107).

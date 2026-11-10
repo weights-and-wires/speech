@@ -1,7 +1,7 @@
 {
   "id": "039-speaker-verification",
-  "title": "Train and score speaker embeddings",
-  "brief": "Build the additive angular margin softmax, cosine trial scores, the equal error rate, and the normalized minimum detection cost, then train embeddings for unseen synthetic voices.",
+  "title": "Train, pool, and score speaker embeddings",
+  "brief": "Build the additive angular margin softmax, cosine trial scores, the equal error rate, and the normalized minimum detection cost. Then add statistics and attentive pooling, enrollment from several clips, and AS-norm, and train embeddings for unseen synthetic voices.",
   "needs_gpu": false,
   "timeout": 30,
   "packages": [
@@ -14,6 +14,10 @@
     "In aam_softmax_loss, compute cos(theta + m) from the identity cos(theta) cos(m) - sin(theta) sin(m), with sin(theta) = sqrt(clamp(1 - cos^2, 0)), then torch.where picks the fallback where cos(theta) <= cos(pi - m).",
     "Replace only the true class's logit: clone the cosine matrix and write into logits[rows, labels], then call torch.nn.functional.cross_entropy on scale * logits.",
     "For equal_error_rate, broadcasting target[None, :] < thresholds[:, None] gives the miss indicator for every threshold at once; take the mean over axis 1.",
-    "min_dcf reuses the same two rates: compute the weighted cost at every threshold, take the minimum, and divide by the cost of the better trivial system."
+    "min_dcf reuses the same two rates: compute the weighted cost at every threshold, take the minimum, and divide by the cost of the better trivial system.",
+    "stats_pooling: np.concatenate([frames.mean(axis=0), frames.std(axis=0)]). The mean and std run over the frame axis, axis 0.",
+    "attentive_stats_pooling: subtract the per-channel max from the logits, exponentiate, and divide by the sum over axis 0 to get weights. The std is sqrt(max(sum(alpha * h**2) - mean**2, floor)), with the weighted mean, not the plain one.",
+    "enroll: divide each row by its norm first, take the mean over rows, then divide that mean by its own norm.",
+    "as_norm: np.sort(scores)[-top_k:] gives the top-K scores for each side. Use each side's own mean and np.std, then average the two z-scores."
   ]
 }

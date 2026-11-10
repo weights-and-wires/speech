@@ -71,8 +71,8 @@ def depth_fn(z, prefix):
     return logits
 
 
-@check("frame_log_prob defines a distribution: summed over all V^K frames it gives probability 1")
-def test_frame(sub):
+@check("frame_log_prob sums to probability 1 over all V^K frames, and sequence_log_prob sums the frames with a causal context")
+def test_frame_and_sequence(sub):
     frame_lp = has(sub, "frame_log_prob")
     z = np.array([0.3, -1.0, 0.5, 2.0])
     total = sum(np.exp(frame_lp(z, np.array(f), depth_fn)) for f in itertools.product(range(V), repeat=K))
@@ -82,10 +82,8 @@ def test_frame(sub):
     want = (logits0[2] - np.log(np.exp(logits0).sum())) + (logits1[1] - np.log(np.exp(logits1).sum()))
     almost(frame_lp(z, np.array([2, 1]), depth_fn), want, 1e-9, label="frame_log_prob(z, [2, 1])")
 
-
-@check("sequence_log_prob sums the frames with a causal context, and the joint over all sequences sums to 1")
-def test_sequence(sub):
-    seq_lp, frame_lp = has(sub, "sequence_log_prob"), has(sub, "frame_log_prob")
+    # The joint over all two-frame sequences also sums to 1.
+    seq_lp = has(sub, "sequence_log_prob")
     frames = list(itertools.product(range(V), repeat=K))
     total = 0.0
     for a, b in itertools.product(frames, repeat=2):
@@ -116,9 +114,9 @@ def test_sample(sub):
         fail(f"the sampled frames are {tv:.3f} away in total variation from the model's distribution, expected under 0.03")
 
 
-@check("causal_conv1d matches torch's conv1d with left padding, and ignores the future")
-def test_causal(sub):
-    conv = has(sub, "causal_conv1d")
+@check("causal_conv1d matches torch's conv1d and ignores the future, and StreamingConv1d in uneven chunks gives the offline output")
+def test_causal_and_streaming(sub):
+    conv, Streaming = has(sub, "causal_conv1d"), has(sub, "StreamingConv1d")
     rng = np.random.default_rng(3)
     x, w, b = rng.normal(size=(2, 50)), rng.normal(size=(3, 2, 4)), rng.normal(size=3)
     got = np.asarray(conv(x, w, b, dilation=2))
@@ -131,10 +129,7 @@ def test_causal(sub):
     close(np.asarray(conv(x2, w, b, dilation=2))[:, :30], got[:, :30], rtol=0, atol=1e-12,
           label="outputs before frame 30 after changing the input from frame 30 on")
 
-
-@check("StreamingConv1d fed in uneven chunks gives exactly the offline output")
-def test_streaming(sub):
-    conv, Streaming = has(sub, "causal_conv1d"), has(sub, "StreamingConv1d")
+    # Streaming: feed the input in uneven chunks.
     rng = np.random.default_rng(4)
     x, w, b = rng.normal(size=(2, 200)), rng.normal(size=(3, 2, 5)), rng.normal(size=3)
     offline = np.asarray(conv(x, w, b, dilation=3))

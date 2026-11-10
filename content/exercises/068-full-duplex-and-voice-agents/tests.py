@@ -174,3 +174,48 @@ def test_turn_taking(sub):
     equal([states[t] for t in (5, 30, 61, 70, 100, 152, 209, 280)],
           ["LISTENING", "USER_SPEAKING", "ENDPOINT_PENDING", "ENDPOINT_PENDING", "RESPONDING",
            "AGENT_SPEAKING", "USER_SPEAKING", "ENDPOINT_PENDING"], label="states at frames 5, 30, 61, 70, 100, 152, 209, 280")
+
+
+@check("turn_taking_stats drops backchannels, measures gaps from end to start, and counts turn changes")
+def test_turn_stats(sub):
+    stats = has(sub, "turn_taking_stats")
+    user = [(0.0, 2.0), (2.9, 3.4), (5.8, 7.0)]
+    agent = [(2.3, 3.0), (3.3, 5.0), (6.8, 8.0)]
+    # The user's (2.9, 3.4) is a 0.5 s "mm-hm" that starts inside the agent's speech, so it is dropped and the
+    # agent's two segments form one turn: U[0, 2], A[2.3, 5.0], U[5.8, 7.0], A[6.8, 8.0].
+    # Wrong implementation 1: keep the backchannel as a turn. It adds two turn changes (5 instead of 3, 37.5 per
+    # minute instead of 22.5) and turns the 0.3 s and 0.8 s gaps into overlaps of 0.1, 0.1, and 1.6 s.
+    # Wrong implementation 2: measure a gap from the previous start to the next start (2.3 instead of 0.3 s).
+    got = stats(user, agent)
+    close(np.asarray(got["gaps"]), np.array([0.3, 0.8]), rtol=0, atol=1e-9, label="gaps (s)")
+    close(np.asarray(got["overlaps"]), np.array([0.2]), rtol=0, atol=1e-9, label="overlaps (s)")
+    equal(got["turn_changes"], 3, label="turn_changes")
+    almost(got["turn_rate_per_min"], 22.5, 1e-9, label="turn_rate_per_min (3 changes in 8 s)")
+    # Swapping the channels gives the same intervals, because only the order of the turns matters.
+    swapped = stats(agent, user)
+    close(np.asarray(swapped["gaps"]), np.array([0.3, 0.8]), rtol=0, atol=1e-9, label="gaps with the channels swapped")
+    # A segment that starts while nobody else talks stays a turn, even when it is short.
+    got = stats([(0.0, 0.4)], [(1.0, 1.4)])
+    close(np.asarray(got["gaps"]), np.array([0.6]), rtol=0, atol=1e-9, label="gap between two short segments")
+    equal(got["turn_changes"], 1, label="turn_changes of two short segments")
+    equal(stats([], [])["turn_changes"], 0, label="turn_changes of an empty timeline")
+
+
+@check("classify_overlap separates a backchannel from a barge-in, and takeover_rate follows Full-Duplex-Bench")
+def test_overlap_takeover(sub):
+    classify, take = has(sub, "classify_overlap"), has(sub, "takeover_rate")
+
+    def label_is(got, want, label):
+        if got != want:
+            fail(f"{label}: expected {want!r}, got {got!r}")
+
+    # Wrong implementation: a duration-only rule calls a short, loud "stop" a backchannel; an energy-only rule
+    # calls a loud "mm-hm" a barge-in.
+    label_is(classify(0.4, False, -30.0), "backchannel", label='classify_overlap(0.4 s, no words, -30 dBFS), an "mm-hm"')
+    label_is(classify(0.4, True, -25.0), "barge_in", label='classify_overlap(0.4 s, words, -25 dBFS), a "stop"')
+    label_is(classify(0.4, True, -45.0), "backchannel", label='classify_overlap(0.4 s, words, -45 dBFS), a quiet "yeah"')
+    label_is(classify(1.5, False, -50.0), "barge_in", label="classify_overlap(1.5 s, no words, -50 dBFS)")
+    label_is(classify(0.9, False, -20.0, max_backchannel_s=0.5), "barge_in", label="classify_overlap with max_backchannel_s=0.5")
+    samples = [[], [(0.4, 1)], [(0.3, 0)], [(2.0, 6)], [(0.4, 3)], [(1.0, 1)], [(0.3, 1), (0.5, 0)]]
+    almost(take(samples), 3 / 7, 1e-9, label="takeover_rate (3 of 7 samples take over)")
+    almost(take([]), 0.0, 1e-12, label="takeover_rate of no samples")

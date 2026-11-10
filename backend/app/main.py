@@ -25,6 +25,27 @@ from .runner import runpod as runpod_backend
 app = FastAPI(title="Weights and Wires — Speech and audio", docs_url=None, redoc_url=None)
 
 
+# The hub at this origin reads the progress summary from the browser.
+HUB_ORIGIN = "https://courses.ifkash.dev"
+SUMMARY_PATH = "/api/progress/summary"
+
+
+@app.middleware("http")
+async def hub_cors(request: Request, call_next: Any) -> Any:
+    """Allow the hub origin to read the progress summary, and nothing else.
+
+    This is a middleware rather than `CORSMiddleware` so that it applies to one
+    path only, and so that the 401 from `current_user` carries the headers too.
+    """
+    response = await call_next(request)
+    if request.url.path == SUMMARY_PATH:
+        response.headers.append("Vary", "Origin")
+        if request.headers.get("origin") == HUB_ORIGIN:
+            response.headers["Access-Control-Allow-Origin"] = HUB_ORIGIN
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
+
+
 @app.on_event("startup")
 def startup() -> None:
     db.init()
@@ -166,6 +187,21 @@ def put_draft(
 def drop_draft(exercise_id: str, user: str = Depends(current_user)) -> dict[str, Any]:
     db.delete_draft(user, exercise_id)
     return {"saved": False}
+
+
+@app.get("/api/progress/summary")
+def progress_summary(user: str = Depends(current_user)) -> dict[str, Any]:
+    """Counts for the hub: lessons done, lessons served, and the latest one touched."""
+    titles = {lesson["slug"]: lesson["title"] for lesson in curriculum.lesson_list()}
+    rows = {
+        slug: row for slug, row in db.get_progress(user).items() if slug in titles
+    }
+    done = sum(1 for row in rows.values() if row["status"] == "solved")
+    last = None
+    if rows:
+        slug = max(rows, key=lambda key: rows[key]["updated_at"])
+        last = {"slug": slug, "title": titles[slug]}
+    return {"done": done, "total": len(titles), "last": last}
 
 
 @app.put("/api/progress/{slug}")

@@ -6,8 +6,9 @@ row is already a log-softmax. Column 0 is the blank. A prefix is a tuple of
 label indices, never containing the blank.
 
 `greedy_decode` and `prefix_beam_search` are given in full, from the
-previous chapter. Fill in the three functions below, then press Run to decode
-a synthetic sentence four ways, and Check to test your code.
+previous chapter. Fill in the three functions below, then the three fusion functions
+that follow them. Press Run to decode a synthetic sentence four ways, and
+Check to test your code.
 """
 
 import math
@@ -126,6 +127,50 @@ def hotword_score(
     continue stops counting, so its bonus disappears.
     """
     raise NotImplementedError("hotword_score")
+
+
+def log_softmax(x: np.ndarray) -> np.ndarray:
+    """Log-softmax over the last axis, given in full."""
+    x = np.asarray(x, dtype=float)
+    x = x - x.max(axis=-1, keepdims=True)
+    return x - np.log(np.exp(x).sum(axis=-1, keepdims=True))
+
+
+def joint(enc: np.ndarray, pred: np.ndarray) -> np.ndarray:
+    """The toy transducer's joint network, given in full: log_softmax(enc + pred), blank at index 0."""
+    return log_softmax(np.asarray(enc, dtype=float) + np.asarray(pred, dtype=float))
+
+
+def ilme_subtract(log_p_e2e, log_p_ilm, log_p_ext, mu: float, lam: float):
+    """Internal LM estimation score, elementwise on arrays or scalars.
+
+    Returns log_p_e2e - mu * log_p_ilm + lam * log_p_ext. The internal LM is
+    subtracted, and the external LM is added.
+    """
+    raise NotImplementedError("ilme_subtract")
+
+
+def internal_lm_logprobs(pred_vectors: np.ndarray) -> np.ndarray:
+    """The internal LM of the toy transducer.
+
+    `pred_vectors` has shape (U, C): row u is the prediction network's output
+    before step u, and the joint network is log_softmax(enc + pred), with the
+    blank at index 0. Zero the encoder term, so the logits are the row itself.
+    Then remove the blank logit (index 0) and take the log-softmax over the
+    remaining C - 1 tokens, as Meng et al. (2021) do. Returns shape (U, C - 1);
+    column j is token j + 1.
+    """
+    raise NotImplementedError("internal_lm_logprobs")
+
+
+def rescore_nbest(hyps, am_scores, lm_scores, lam: float, length_bonus: float):
+    """Rerank an n-best list.
+
+    Each hypothesis scores am_score + lam * lm_score + length_bonus * len(hyp).
+    Returns a list of (hyp, score) pairs, best first, with hyp as a tuple.
+    Equal scores keep their input order.
+    """
+    raise NotImplementedError("rescore_nbest")
 
 
 # The rest of the file sets up the Run experiment -------------------------------
@@ -250,6 +295,13 @@ if __name__ == "__main__":
     )
     print(f"+ hotword 'zoe' : {decode(boosted[0][0])!r}")
     print(f"truth           : {truth!r}")
+
+    # Internal LM subtraction on the chapter's two-name example (log probabilities).
+    names = ["joe", "zoe"]
+    e2e, ilm, ext = [-2.0, -2.6], [-1.0, -3.0], [-3.0, -2.0]
+    for label, mu, lam in [("shallow", 0.0, 0.5), ("ILME", 0.5, 0.5)]:
+        scores = ilme_subtract(np.array(e2e), np.array(ilm), np.array(ext), mu, lam)
+        print(f"{label:8s}: joe {scores[0]:.2f}, zoe {scores[1]:.2f} -> {names[int(np.argmax(scores))]}")
 
     path = np.argmax(log_probs, axis=1)
     play(sonify(path), 16000, label="The greedy path: one beep per non-blank frame, silence for blank")

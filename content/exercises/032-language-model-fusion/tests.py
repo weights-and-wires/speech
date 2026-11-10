@@ -158,3 +158,61 @@ def test_whole(sub):
         beam(log_probs, 6, prefix_score=lambda p: score(p, lm, 0.8, 1.0) + hot(p, [enc("zoe")], 2.0))[0][0]
     )
     equal(boosted, "a cat to zoe", label="the result with the LM and the hotword 'zoe' (bonus 2.0)")
+
+
+# Wrong implementation these checks catch: adding the internal LM instead of
+# subtracting it ("log p_e2e + mu log p_ilm + lam log p_ext") gives -4.0 for joe
+# and -5.1 for zoe where the right scores are -3.0 and -2.1, so joe wins and
+# the target-domain name is lost. A second wrong version computes the internal
+# LM with the blank still in the softmax, and a third keeps the encoder term.
+@check("ILME subtracts the internal LM: score = log p_e2e - mu log p_ilm + lam log p_ext, and it flips joe to zoe")
+def test_ilme_subtract(sub):
+    ilme = has(sub, "ilme_subtract")
+    e2e, ilm, ext = np.array([-2.0, -2.6]), np.array([-1.0, -3.0]), np.array([-3.0, -2.0])
+    shallow = np.asarray(ilme(e2e, ilm, ext, 0.0, 0.5), dtype=float)
+    close(shallow, np.array([-3.5, -3.6]), atol=1e-9, label="shallow fusion scores for [joe, zoe] (mu 0, lam 0.5)")
+    got = np.asarray(ilme(e2e, ilm, ext, 0.5, 0.5), dtype=float)
+    close(got, np.array([-3.0, -2.1]), atol=1e-9, label="ILME scores for [joe, zoe] (mu 0.5, lam 0.5)")
+    equal(int(np.argmax(shallow)), 0, label="the shallow-fusion winner (0 is joe)")
+    equal(int(np.argmax(got)), 1, label="the ILME winner (1 is zoe)")
+    almost(float(ilme(-1.0, -2.0, -3.0, 1.0, 2.0)), -1.0 + 2.0 - 6.0, 1e-12, label="ilme_subtract on scalars")
+
+
+@check("internal_lm_logprobs zeroes the encoder term, drops the blank, and renormalizes over the other tokens")
+def test_internal_lm(sub):
+    ilm_fn = has(sub, "internal_lm_logprobs")
+    pred = np.array([[0.3, 1.0, 2.0, 0.0], [1.0, -1.0, 0.0, 1.0]])
+    got = np.asarray(ilm_fn(pred), dtype=float)
+    equal(got.shape, (2, 3), label="the internal LM's shape (U, C - 1)")
+    want = np.stack([log_softmax(pred[:, 1:])[0], log_softmax(pred[:, 1:])[1]])
+    close(got, want, atol=1e-9, label="log P_ILM(token | history) for tokens 1 to 3")
+    close(np.exp(got).sum(axis=1), np.ones(2), atol=1e-9, label="each row's total probability over non-blank tokens")
+    # The blank logit must not matter: it is removed before the softmax.
+    loud = pred.copy()
+    loud[:, 0] = 40.0
+    close(np.asarray(ilm_fn(loud), dtype=float), want, atol=1e-9, label="the internal LM with the blank logit set to 40")
+    # With the encoder term present, the joint's non-blank scores are different.
+    enc = np.array([[0.0, 0.0, 1.5, -1.0]] * 2)
+    full = log_softmax(enc + pred)[:, 1:]
+    if np.allclose(got, full, atol=1e-3):
+        fail("the internal LM equals the joint network's output with the encoder present; zero the encoder term")
+
+
+@check("rescore_nbest reranks by am + lam * lm + length_bonus * len, best first")
+def test_rescore(sub):
+    rescore = has(sub, "rescore_nbest")
+    hyps = [(1, 2), (1, 2, 3), (1, 3), (1, 2, 3, 3)]
+    am = [-5.0, -4.0, -6.0, -3.5]
+    lm = [-1.0, -1.0, -2.0, -8.0]
+    out = rescore(hyps, am, lm, 0.5, 0.5)
+    if not isinstance(out, list) or len(out) != 4:
+        fail(f"rescore_nbest should return a list of 4 (hyp, score) pairs, got {out!r}")
+    order = [tuple(int(s) for s in h) for h, _ in out]
+    want_order = [(1, 2, 3), (1, 2), (1, 2, 3, 3), (1, 3)]
+    if order != want_order:
+        fail(f"the reranked order is wrong: expected {want_order}, got {order}")
+    close(np.array([s for _, s in out]), np.array([-3.0, -4.5, -5.5, -6.0]), atol=1e-9, label="the reranked scores")
+    acoustic = rescore(hyps, am, lm, 0.0, 0.0)
+    equal(tuple(h for h, _ in acoustic)[0], (1, 2, 3, 3), label="the best hypothesis with lam 0 and no bonus (acoustic only)")
+    no_bonus = rescore(hyps, am, lm, 0.5, 0.0)
+    equal(tuple(h for h, _ in no_bonus)[-1], (1, 2, 3, 3), label="the worst hypothesis with lam 0.5 and no length bonus")

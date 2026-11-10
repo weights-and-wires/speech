@@ -125,6 +125,53 @@ def hotword_score(
     return float(bonus * (complete + partial))
 
 
+def log_softmax(x: np.ndarray) -> np.ndarray:
+    """Log-softmax over the last axis."""
+    x = np.asarray(x, dtype=float)
+    x = x - x.max(axis=-1, keepdims=True)
+    return x - np.log(np.exp(x).sum(axis=-1, keepdims=True))
+
+
+def joint(enc: np.ndarray, pred: np.ndarray) -> np.ndarray:
+    """The toy transducer's joint network: log_softmax(enc + pred), blank at index 0."""
+    return log_softmax(np.asarray(enc, dtype=float) + np.asarray(pred, dtype=float))
+
+
+def ilme_subtract(log_p_e2e, log_p_ilm, log_p_ext, mu: float, lam: float):
+    """Internal LM estimation score: log p_e2e - mu log p_ilm + lam log p_ext."""
+    return (
+        np.asarray(log_p_e2e, dtype=float)
+        - mu * np.asarray(log_p_ilm, dtype=float)
+        + lam * np.asarray(log_p_ext, dtype=float)
+    )
+
+
+def internal_lm_logprobs(pred_vectors: np.ndarray) -> np.ndarray:
+    """Internal LM of the toy transducer: zero the encoder term, drop the blank, renormalize.
+
+    `pred_vectors` has shape (U, C). Row u is the prediction network's output
+    before step u, and the joint network is log_softmax(enc + pred). With enc
+    set to zero the logits are the row itself. Following Meng et al. (2021),
+    remove the blank logit (index 0) and take the softmax over the remaining
+    C - 1 tokens. Returns shape (U, C - 1); column j is token j + 1.
+    """
+    logits = np.asarray(pred_vectors, dtype=float)[:, 1:]
+    return log_softmax(logits)
+
+
+def rescore_nbest(hyps, am_scores, lm_scores, lam: float, length_bonus: float):
+    """Rerank an n-best list by am + lam * lm + length_bonus * len(hyp).
+
+    Returns a list of (hyp, score) pairs, best first. Equal scores keep their
+    input order.
+    """
+    scored = [
+        (tuple(h), float(a + lam * l + length_bonus * len(h)))
+        for h, a, l in zip(hyps, am_scores, lm_scores)
+    ]
+    return sorted(scored, key=lambda item: -item[1])
+
+
 # The rest of the file sets up the Run experiment -------------------------------
 
 VOCAB = "_ abcdefghijklmnopqrstuvwxyz"  # index 0 is the blank
@@ -247,6 +294,13 @@ if __name__ == "__main__":
     )
     print(f"+ hotword 'zoe' : {decode(boosted[0][0])!r}")
     print(f"truth           : {truth!r}")
+
+    # Internal LM subtraction on the chapter's two-name example (log probabilities).
+    names = ["joe", "zoe"]
+    e2e, ilm, ext = [-2.0, -2.6], [-1.0, -3.0], [-3.0, -2.0]
+    for label, mu, lam in [("shallow", 0.0, 0.5), ("ILME", 0.5, 0.5)]:
+        scores = ilme_subtract(np.array(e2e), np.array(ilm), np.array(ext), mu, lam)
+        print(f"{label:8s}: joe {scores[0]:.2f}, zoe {scores[1]:.2f} -> {names[int(np.argmax(scores))]}")
 
     path = np.argmax(log_probs, axis=1)
     play(sonify(path), 16000, label="The greedy path: one beep per non-blank frame, silence for blank")

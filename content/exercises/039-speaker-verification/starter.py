@@ -71,6 +71,66 @@ def min_dcf(
     raise NotImplementedError("min_dcf")
 
 
+def stats_pooling(frames: np.ndarray) -> np.ndarray:
+    """Statistics pooling: the mean and standard deviation of every channel over time.
+
+    Args:
+        frames: Frame-level activations, shape (T, C): T frames, C channels.
+
+    Returns:
+        Shape (2 * C,): the C channel means followed by the C channel standard
+        deviations. Use the population standard deviation (divide by T).
+    """
+    raise NotImplementedError("stats_pooling")
+
+
+def attentive_stats_pooling(frames: np.ndarray, attn_logits: np.ndarray, floor: float = 1e-9) -> np.ndarray:
+    """Attentive statistics pooling, as in ECAPA-TDNN.
+
+    Args:
+        frames: Frame-level activations h, shape (T, C).
+        attn_logits: Attention scores before the softmax, shape (T, C), or (T,)
+            to share one score per frame across channels.
+        floor: A small lower bound on the weighted variance, so the square
+            root stays finite and its gradient is defined.
+
+    Softmax each channel's scores over the T frames to get weights alpha, then
+    mean = sum_t alpha_t h_t and std = sqrt(max(sum_t alpha_t h_t^2 - mean^2, floor)).
+    Returns shape (2 * C,): the weighted means followed by the weighted standard deviations.
+    """
+    raise NotImplementedError("attentive_stats_pooling")
+
+
+def enroll(embeddings: np.ndarray) -> np.ndarray:
+    """Combine several enrollment embeddings of one speaker into one.
+
+    L2-normalize each row, average the rows, then L2-normalize the average.
+
+    Args:
+        embeddings: One enrollment utterance per row, shape (N, D).
+
+    Returns:
+        Shape (D,), unit length.
+    """
+    raise NotImplementedError("enroll")
+
+
+def as_norm(score: float, enroll_cohort_scores: np.ndarray, test_cohort_scores: np.ndarray, top_k: int) -> float:
+    """Adaptive symmetric score normalization (AS-norm) of one trial score.
+
+    Args:
+        score: The raw cosine score s of the trial (enrollment e, test t).
+        enroll_cohort_scores: Cosine scores of e against every imposter in the cohort.
+        test_cohort_scores: Cosine scores of t against the same cohort.
+        top_k: How many of the highest cohort scores to keep for each side.
+
+    Keep the top_k largest scores on each side, take their mean mu and
+    population standard deviation sigma, and return
+    0.5 * ((s - mu_e) / sigma_e + (s - mu_t) / sigma_t).
+    """
+    raise NotImplementedError("as_norm")
+
+
 # The Run experiment -----------------------------------------------------------
 
 RATE = 16000
@@ -160,4 +220,23 @@ if __name__ == "__main__":
         tgt, non = trials(embed[test], who[test])
         print(f"Trained with margin {final_margin}: EER {equal_error_rate(tgt, non):.1%}, "
               f"minDCF {min_dcf(tgt, non):.3f}")
+    # The same margin-0.2 embedding, now with the chapter's back-end steps. embed holds the last model.
+    embed = embed / np.linalg.norm(embed, axis=1, keepdims=True)
+    held, held_who = embed[test], who[test]
+    first, second = np.triu_indices(len(held_who), 1)
+    raw = np.sum(held[first] * held[second], axis=1)
+    cohort_scores = held @ embed[train].T  # every unseen clip against the 360 training clips' embeddings
+    normed = np.array([as_norm(raw[n], cohort_scores[first[n]], cohort_scores[second[n]], 30) for n in range(len(raw))])
+    same = held_who[first] == held_who[second]
+    print(f"AS-norm, top 30 of 360 cohort clips: EER {equal_error_rate(normed[same], normed[~same]):.1%}, "
+          f"minDCF {min_dcf(normed[same], normed[~same]):.3f}")
+    speakers = np.unique(held_who)
+    for n_enroll in (1, 3):  # enroll from the first n clips, test on the last 5 clips of every voice
+        tar, imp = [], []
+        for a in speakers:
+            enrolled = enroll(held[held_who == a][:n_enroll])
+            for b in speakers:
+                (tar if a == b else imp).extend(held[held_who == b][3:] @ enrolled)
+        print(f"Enrolled with {n_enroll} clip{'s' if n_enroll > 1 else ''}: "
+              f"EER {equal_error_rate(np.array(tar), np.array(imp)):.1%}, minDCF {min_dcf(np.array(tar), np.array(imp)):.3f}")
     show_plot(np.array(history), label="AAM-softmax training loss, margin 0.2", xlabel="Step", ylabel="Loss (nats)")

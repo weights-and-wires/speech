@@ -233,6 +233,87 @@ def turn_taking(user_speech: np.ndarray, frame_ms: float, min_speech_ms: float, 
     return states, events
 
 
+def classify_overlap(duration_s: float, has_words: bool, level_db: float, max_backchannel_s: float = 1.0,
+                     loud_db: float = -35.0) -> str:
+    """Decide whether the user's speech over the agent is a backchannel or a barge-in.
+
+    duration_s is how long the overlapping speech lasts, has_words says
+    whether a recognizer found words in it, and level_db is its level in dBFS.
+    Speech that lasts max_backchannel_s or longer is a "barge_in". Shorter
+    speech is a "barge_in" only when it has words and its level is at least
+    loud_db; every other short sound ("mm-hm", a quiet "yeah") is a
+    "backchannel". Returns "backchannel" or "barge_in".
+    """
+    if duration_s >= max_backchannel_s:
+        return "barge_in"
+    if has_words and level_db >= loud_db:
+        return "barge_in"
+    return "backchannel"
+
+
+def _is_backchannel(segment: tuple, other: list, max_backchannel_s: float) -> bool:
+    start, end = segment
+    return end - start < max_backchannel_s and any(s <= start < e for s, e in other)
+
+
+def turn_taking_stats(user_segments: list, agent_segments: list, max_backchannel_s: float = 1.0) -> dict:
+    """Gaps, overlaps, and the turn-change rate of a two-channel timeline.
+
+    Each segment is a (start_s, end_s) pair of speech on one channel, in
+    seconds. A segment shorter than max_backchannel_s that starts while the
+    other speaker is talking is a backchannel, and it is dropped. The
+    remaining segments sort by start time, and consecutive segments of one
+    speaker form one turn (start of the first, end of the last). For each pair
+    of consecutive turns by different speakers, next.start - previous.end is a
+    gap when positive and an overlap of the negated value when negative; zero
+    counts as neither.
+
+    Returns {"gaps": [...], "overlaps": [...], "turn_changes": int,
+    "turn_rate_per_min": float}, with the lists in time order, in seconds.
+    The rate is turn_changes per minute of the span from the first start to
+    the last end, or 0.0 when the span is 0.
+    """
+    user = [tuple(s) for s in user_segments]
+    agent = [tuple(s) for s in agent_segments]
+    kept = [(s, e, 0) for s, e in user if not _is_backchannel((s, e), agent, max_backchannel_s)]
+    kept += [(s, e, 1) for s, e in agent if not _is_backchannel((s, e), user, max_backchannel_s)]
+    kept.sort()
+    turns = []
+    for s, e, who in kept:
+        if turns and turns[-1][0] == who:
+            turns[-1][2] = max(turns[-1][2], e)
+        else:
+            turns.append([who, s, e])
+    gaps, overlaps = [], []
+    for prev, nxt in zip(turns, turns[1:]):
+        d = nxt[1] - prev[2]
+        if d > 0:
+            gaps.append(d)
+        elif d < 0:
+            overlaps.append(-d)
+    span = max((e for _, e, _ in kept), default=0.0) - min((s for s, _, _ in kept), default=0.0)
+    changes = max(len(turns) - 1, 0)
+    return {"gaps": gaps, "overlaps": overlaps, "turn_changes": changes,
+            "turn_rate_per_min": changes / span * 60.0 if span > 0 else 0.0}
+
+
+def takeover_rate(samples: list, max_backchannel_s: float = 1.0, max_backchannel_words: int = 1) -> float:
+    """Full-Duplex-Bench's takeover rate: the share of samples where the model takes the turn.
+
+    Each sample is a list of (duration_s, n_words) pairs, one per stretch of
+    speech the model produced. A stretch is a backchannel when it lasts less
+    than max_backchannel_s and holds at most max_backchannel_words words. A
+    sample's takeover is 1 when it holds any stretch that is not a
+    backchannel, and 0 when it is silent or holds only backchannels. Returns
+    the mean over samples, or 0.0 for no samples.
+    """
+    if not samples:
+        return 0.0
+    def taken(sample):
+        return any(not (d < max_backchannel_s and w <= max_backchannel_words) for d, w in sample)
+    return sum(taken(s) for s in samples) / len(samples)
+
+
 # Run helpers -----------------------------------------------------------------------
 
 RATE = 16000
@@ -249,6 +330,12 @@ def voice(seconds, f0, formants, rng):
         y = lfilter([1 - r], [1, -2 * r * np.cos(2 * np.pi * f / RATE), r * r], y)
     syllables = 0.7 + 0.3 * np.sin(2 * np.pi * 4 * np.arange(n) / RATE)
     return 0.5 * y / np.abs(y).max() * syllables * np.hanning(n) ** 0.1
+
+
+def speech_segments(flags, frame_ms):
+    """(start_s, end_s) pairs for each run of True in a per-frame bool array."""
+    d = np.diff(np.concatenate([[0], np.asarray(flags, dtype=int), [0]]))
+    return [(a * frame_ms / 1000, b * frame_ms / 1000) for a, b in zip(np.flatnonzero(d == 1), np.flatnonzero(d == -1))]
 
 
 def conversation_demo(rng):
@@ -276,6 +363,9 @@ def conversation_demo(rng):
     print(f"The user stopped at about {silence_end * FRAME_MS / 1000:.2f} s; the agent spoke "
           f"{start / RATE - silence_end * FRAME_MS / 1000:.2f} s later (budget {response_latency_ms(**budget):.0f} ms).")
     print("The 0.12 s 'mm-hm' at 3.0 s was shorter than 200 ms, so it did not interrupt the agent.")
+    stats = turn_taking_stats(speech_segments(speech, FRAME_MS), [(start / RATE, stop / RATE)])
+    print(f"Turn changes: {stats['turn_changes']}; gaps {[round(float(g), 2) for g in stats['gaps']]} s; "
+          f"overlaps {[round(float(o), 2) for o in stats['overlaps']]} s; {stats['turn_rate_per_min']:.1f} turn changes per minute.")
     play(np.stack([user, agent]), RATE, label="Left: the user. Right: the agent, cut off by a barge-in")
     names = ["LISTENING", "USER_SPEAKING", "ENDPOINT_PENDING", "RESPONDING", "AGENT_SPEAKING"]
     t_axis = np.arange(len(states)) * FRAME_MS / 1000

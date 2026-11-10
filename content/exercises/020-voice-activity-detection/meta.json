@@ -1,7 +1,7 @@
 {
   "id": "020-voice-activity-detection",
-  "title": "Find the speech with an energy VAD",
-  "brief": "Compute frame log energy, switch speech on and off with two thresholds and a hangover, and score the decisions by frame F1.",
+  "title": "Find the speech with adaptive and likelihood-ratio VADs",
+  "brief": "Compute frame log energy, switch speech on and off with two thresholds and a hangover, and score by frame F1. Then track a moving noise floor, compute a Gaussian log-likelihood ratio, and find where an utterance ends.",
   "needs_gpu": false,
   "timeout": 30,
   "packages": [
@@ -12,6 +12,10 @@
     "Keep the hysteresis state in two variables, speech and a count of quiet frames, and update them in one loop over the frames.",
     "Frame the signal with broadcasting: np.arange(frame_length)[None, :] + hop * np.arange(n_frames)[:, None] indexes a reflect-padded copy, one row per frame.",
     "The noise floor is np.percentile(energy, 10); set both thresholds relative to it, so the decisions do not depend on the microphone gain.",
-    "Count true positives, false positives, and false negatives with boolean masks, then F1 = 2 TP / (2 TP + FP + FN)."
+    "Count true positives, false positives, and false negatives with boolean masks, then F1 = 2 TP / (2 TP + FP + FN).",
+    "track_noise_floor is one loop with three cases: copy the previous floor on a speech frame, move down by down_alpha * (e - prev) when e < prev, and otherwise move up by min(e - prev, up_db_per_frame).",
+    "adaptive_vad: the running minimum over the last window_frames frames is min(energy[max(0, t - window_frames + 1) : t + 1]); mask frames above it by margin_db, track the floor with that mask, then call hysteresis on energy_db - floor with thresholds margin_db and margin_db - gap_db.",
+    "gaussian_llr: for each Gaussian, sum over the feature axis of -0.5 * log(2 * pi * var) - 0.5 * (x - mean) ** 2 / var, then subtract the noise sum from the speech sum. Do not drop the log term.",
+    "endpoint: keep a started flag and a quiet count. A speech frame sets started and resets the count; a non-speech frame after that adds one, and the first frame where the count exceeds hangover_frames is the answer. Return -1 if it never does."
   ]
 }

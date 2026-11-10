@@ -133,6 +133,34 @@ def train_frame_classifier(inputs, labels, n_classes, hidden=128, steps=500, bat
     raise NotImplementedError("train_frame_classifier")
 
 
+def tdnn_receptive_field(contexts):
+    """Total frames of context a stack of time-delay layers reads around one output frame.
+
+    `contexts` lists the offsets each layer splices, bottom layer first. A layer
+    that splices offsets {-1, 2} reads 1 frame to the left and 2 to the right of
+    the frame it computes. Returns (left, right), the frames before and after
+    the output frame that the whole stack depends on.
+    """
+    raise NotImplementedError("tdnn_receptive_field")
+
+
+def tdnn_layer(x, weights, offsets):
+    """One time-delay layer: W applied to the frames at the given offsets.
+
+    Args:
+        x: Shape (T, D), one row per frame.
+        weights: Shape (H, len(offsets) * D). Output frame t is
+            weights @ concatenate([x[t + o] for o in offsets]).
+        offsets: Integer frame offsets, for example [-2, 2].
+
+    Returns:
+        Shape (T - left - right, H), where left = max(0, -min(offsets)) and
+        right = max(0, max(offsets)). Only frames whose every spliced neighbor
+        exists are kept, so the layer repeats no edge frames and invents none.
+    """
+    raise NotImplementedError("tdnn_layer")
+
+
 # ---------------------------------------------------------------------------
 # Provided: synthetic spoken "words" and their features. You don't need to
 # change anything in this block.

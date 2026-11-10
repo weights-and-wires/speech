@@ -1,0 +1,21 @@
+{
+  "id": "035-sequence-level-training",
+  "title": "Train on whole sequences: MMI, MWER, and word posteriors",
+  "brief": "Score a path against every competing path to get the MMI loss and its gradient, compute expected word errors and their closed-form gradient on an n-best list, and turn an aligned n-best list into word posteriors and a consensus transcript.",
+  "needs_gpu": false,
+  "timeout": 20,
+  "packages": [
+    "numpy"
+  ],
+  "hints": [
+    "path_logscore: start with log_start[path[0]] + loglik[0, path[0]], then for each later frame add log_trans[previous, current] + loglik[t, current]. For the path (0, 1) in the lesson that is log(0.6 * 0.5) + log(0.8 * 0.7) = log 0.168.",
+    "mmi_denominator: keep alpha, a vector of S log scores. Start with log_start + loglik[0]. For each later frame, alpha = logsumexp(alpha[:, None] + log_trans, axis=0) + loglik[t]. The answer is logsumexp(alpha). It must equal the log of the sum of all four path scores, log 0.278, in the lesson's example.",
+    "mmi_loss: the denominator minus the numerator, both in log space. The lesson's example gives log 0.278 - log 0.168 = 0.5037.",
+    "state_posteriors: run the forward recursion, then a backward one, beta[t] = logsumexp(log_trans + (loglik[t + 1] + beta[t + 1])[None, :], axis=1) with beta[T - 1] = 0. Then gamma = softmax over states of alpha + beta, frame by frame.",
+    "mmi_grad: the gradient with respect to loglik[t, s] is gamma[t, s] minus 1 when the reference path is in state s at frame t, and gamma[t, s] otherwise. Build a one-hot (T, S) array for the reference and subtract it.",
+    "mwer_loss: p = softmax(nbest_logps) over the list, then sum(p * errors). With raw probabilities 0.30, 0.18, 0.12 and errors 2, 0, 3, p is 0.5, 0.3, 0.2 and the loss is 1.6.",
+    "mwer_grad: with p as above and mean error m = sum(p * errors), the gradient is p * (errors - m). Here m = 1.6 and the gradient is [0.2, -0.48, 0.28]. It sums to zero.",
+    "word_posteriors: turn the scores into probabilities with a softmax over the list, then for each slot add each hypothesis's probability to the entry for the word it has in that slot. Keep \"<eps>\" as a word.",
+    "consensus_decode: for each slot take the key with the largest value, skip it when it is \"<eps>\", and collect the words and their posteriors in order."
+  ]
+}

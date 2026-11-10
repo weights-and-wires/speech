@@ -1,0 +1,14 @@
+{
+  "id": "059-classifier-free-guidance",
+  "title": "Steer a sampler with classifier-free guidance",
+  "brief": "Drop the condition during training, combine a conditional and an unconditional prediction in both guidance conventions, and watch guidance move and narrow a distribution of notes.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy"],
+  "hints": [
+    "drop_condition: build a boolean mask with rng.random(len(cond)) < p, then use np.where(mask[:, None], null, cond).",
+    "cfg_combine is one line: (1 + w) * cond - w * uncond.",
+    "cfg_combine_s starts from the unconditional prediction and walks s times the gap toward the conditional one.",
+    "guided_denoiser returns a function of (x, sigma) that calls both denoisers and combines them."
+  ]
+}

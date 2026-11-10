@@ -1,7 +1,7 @@
 {
   "id": "038-self-supervised-speech",
-  "title": "The losses, targets, and benchmark of self-supervised speech",
-  "brief": "Build wav2vec 2.0's frame arithmetic, span masking, contrastive and diversity losses, HuBERT's masked prediction, BEST-RQ targets, k-means units, and a linear probe, then WavLM's denoising mix, bucketed and gated relative position bias, and the SUPERB layer-weighted sum, and probe every layer of two pretrained models.",
+  "title": "The losses, targets, and layer probes of self-supervised speech",
+  "brief": "Build wav2vec 2.0's frame arithmetic, span masking, contrastive and diversity losses, HuBERT's masked prediction, BEST-RQ targets, k-means units, and a linear probe, then probe every layer of two pretrained models.",
   "needs_gpu": true,
   "timeout": 600,
   "packages": [
@@ -17,10 +17,6 @@
     "sample_distractors can draw integers in [0, M - 2] and add 1 to every draw at or after the row's own index, which skips the positive without rejection sampling.",
     "For contrastive_loss, gather the candidates into an (M, K + 1, D) array with the positive first, scale everything to unit length, and take a log-softmax over axis 1.",
     "diversity_loss averages the softmax probabilities over frames first, then takes p log p; averaging log-probabilities instead gives a different number.",
-    "fit_linear_probe appends a column of ones and solves (X^T X + l2 * P) W = X^T Y, where P is the identity with its last diagonal entry set to 0 so the bias is not penalized.",
-    "mix_for_denoising scales the secondary span by sqrt(E_primary / (10^(gain_db / 10) * E_secondary)), where the energies are sums of squares over the span; the square root is there because energy grows with the square of the amplitude.",
-    "bucket_relative_position works on |rel| for the distance and adds n_buckets // 2 when rel > 0; below n_buckets // 4 the bucket is |rel|, and above it the bucket is n_buckets // 4 + floor(log(|rel| / (n_buckets // 4)) / log(max_distance / (n_buckets // 4)) * (n_buckets // 4)), capped at n_buckets // 2 - 1.",
-    "gated_relative_bias computes one scale per query, 1 + g_u + (1 - g_u) * w * g_r, with g_u = sigmoid(q @ u) and g_r = sigmoid(q @ v), then multiplies row i of the bias by scale[i] with scale[:, None].",
-    "superb_weighted_sum needs a softmax over the L layer weights first (subtract the maximum so large weights do not overflow), then np.tensordot(mix, layers, axes=1) sums over the layer axis."
+    "fit_linear_probe appends a column of ones and solves (X^T X + l2 * P) W = X^T Y, where P is the identity with its last diagonal entry set to 0 so the bias is not penalized."
   ]
 }

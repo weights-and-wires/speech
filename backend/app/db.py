@@ -131,7 +131,8 @@ def carry_progress(renames: dict[str, list[str]]) -> int:
                         (row["username"], slug, row["status"], row["updated_at"]),
                     )
                 carried += 1
-            connection.execute("DELETE FROM progress WHERE slug = ?", (old,))
+            if old not in new:
+                connection.execute("DELETE FROM progress WHERE slug = ?", (old,))
     return carried
 
 

@@ -1,0 +1,21 @@
+{
+  "id": "039-wavlm-and-ssl-benchmarks",
+  "title": "Build WavLM's denoising mix and the SUPERB layer sum",
+  "brief": "Mix a scaled second signal into a span of the primary at a chosen energy ratio, bucket signed offsets for WavLM's relative position bias, gate that bias for each query, and mix layers with SUPERB's softmax-weighted sum.",
+  "needs_gpu": false,
+  "timeout": 60,
+  "packages": [
+    "numpy",
+    "torch"
+  ],
+  "hints": [
+    "mix_for_denoising adds s * secondary[start:start + length] into a copy of the primary. In the worked example the span energies are 2 and 18, so with a 6.02 dB gain s = sqrt(2 / (4 * 18)) = 1/6.",
+    "mix_for_denoising scales by sqrt(E_primary / (10^(gain_db / 10) * E_secondary)), with the energies as sums of squares over the span; the square root is there because energy grows with the square of the amplitude.",
+    "bucket_relative_position works on |rel| for the distance and adds n_buckets // 2 when rel > 0. With n = 8 and max = 16, offset -1 is bucket 1, offset +1 is bucket 4 + 1 = 5, and offset +4 is bucket 6.",
+    "Below n_buckets // 4 the bucket is |rel|, and above it the bucket is n_buckets // 4 + floor(log(|rel| / (n_buckets // 4)) / log(max_distance / (n_buckets // 4)) * (n_buckets // 4)), capped at n_buckets // 2 - 1.",
+    "gated_relative_bias computes one scale per query, 1 + g_u + (1 - g_u) * w * g_r, with g_u = sigmoid(q @ u) and g_r = sigmoid(q @ v). Both gates at 0.5 with w = 1 give 1.75, so a bias of 2 becomes 3.5.",
+    "Multiply row i of the bias by scale[i] with scale[:, None], so every key in a row shares the query's scale.",
+    "superb_weighted_sum needs a softmax over the L layer weights first (subtract the maximum so large weights do not overflow). Scores (0, 0, ln 2) give weights (1/4, 1/4, 1/2).",
+    "Then np.tensordot(mix, layers, axes=1) sums over the layer axis. Layers (4, 8, 12) with those weights give 1 + 2 + 6 = 9."
+  ]
+}

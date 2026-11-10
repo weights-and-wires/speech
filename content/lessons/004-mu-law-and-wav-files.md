@@ -137,7 +137,7 @@ Figure 2 measures the payoff on a sine at three levels. At full scale, linear 8-
 Figure 2. Measured SNR of an 8-bit sine at three levels. Linear quantization loses 20 dB for every 20 dB of level. Mu-law stays within 4 dB of itself across the whole range.
 ```
 
-WaveNet used exactly this. It predicts each sample with a softmax, and a softmax over 65,536 16-bit values was impractical. Its authors compressed with mu-law and quantized to 256 values, and reported much better quality than 256 linear levels gave. You build that model in [WaveNet](/lessons/049-wavenet).
+WaveNet used exactly this. It predicts each sample with a softmax, and a softmax over 65,536 16-bit values was impractical. Its authors compressed with mu-law and quantized to 256 values, and reported much better quality than 256 linear levels gave. You build that model in [WaveNet](/lessons/050-wavenet).
 
 > [!KEY]
 > A uniform quantizer has the same error at every level, so quiet samples suffer. Mu-law stretches the quiet range before rounding, so the error grows with the sample and the SNR stays nearly constant as the level falls.

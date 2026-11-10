@@ -1,0 +1,15 @@
+{
+  "id": "052-normalizing-flows-and-vits",
+  "title": "Build a normalizing flow and the VITS KL term",
+  "brief": "Implement affine coupling, ActNorm, and an invertible 1x1 convolution with exact log-determinants checked against autograd Jacobians, train a RealNVP by maximum likelihood, and write the KL term VITS trains with.",
+  "needs_gpu": false,
+  "timeout": 90,
+  "packages": ["numpy", "torch"],
+  "hints": [
+    "coupling_forward: slice x into halves once, call net on the conditioning half, and torch.cat the two halves back in their original order. The log-determinant is s.sum(dim=1) because the Jacobian is triangular with exp(s) on the diagonal.",
+    "actnorm_init: with mean and std over dims (0, 2), exp(log_scale) = 1 / std and bias = -mean / std.",
+    "invconv_forward: torch.einsum('ij,bjt->bit', W, x) applies W at every time step; torch.linalg.slogdet(W).logabsdet is log |det W|.",
+    "RealNVP.sample runs the layers backwards: for i in reversed(range(len(self.nets))), with the same flip each layer used going forward.",
+    "vits_kl: the -0.5 replaces the posterior's -eps^2 / 2 by its expected value, which is why the formula has no eps in it."
+  ]
+}

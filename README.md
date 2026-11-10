@@ -244,7 +244,7 @@ steps:
 4. Put `RUNPOD_ENDPOINT_ID` in the deployed `.env` and restart:
 
    ```bash
-   ssh ifkash@vm.ifkash.dev "cd ~/docs/speech && docker compose up -d"
+   ssh ifkash@vm.ifkash.dev "cd ~/docs/courses/speech && docker compose up -d"
    ```
 
 `/api/compute` reports what the endpoint has: whether it is reachable, how many

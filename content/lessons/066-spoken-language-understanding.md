@@ -1,6 +1,6 @@
 ---
 title: Spoken language understanding
-slug: 065-spoken-language-understanding
+slug: 066-spoken-language-understanding
 part: "Part 8 — Beyond recognition and synthesis"
 summary: Score intents and slots, merge a dialogue state, and compute sentence BLEU and a character F-score.
 minutes: 45
@@ -14,7 +14,7 @@ prereqs:
   - 026-word-error-rate
   - 025-n-gram-language-models
   - 038-whisper
-exercise: 065-spoken-language-understanding
+exercise: 066-spoken-language-understanding
 ---
 
 # Spoken language understanding

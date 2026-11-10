@@ -50,7 +50,7 @@ Research: `01-signals-and-classical-speech.md`, sections 9 to 17.
 | `017-linear-prediction` | Linear prediction | The prediction error, autocorrelation LPC by Levinson-Durbin, the LPC spectral envelope, formants from pole angles, and the real cepstrum. | none |
 | `018-pitch-tracking` | Pitch tracking | YIN's difference function, cumulative mean normalized difference, absolute threshold, and parabolic interpolation, scored by gross pitch error on synthetic voices with known F0. | `pitch-tracker` |
 | `019-phonemes-and-text-normalization` | Phonemes and text normalization | ARPAbet to IPA, a text normalizer for numbers, ordinals, years, and money, and dictionary lookup with a longest-match letter-to-sound fallback. | none |
-| `020-voice-activity-detection` | Voice activity detection | Frame log energy, a two-threshold VAD with hangover, and frame F1 on synthetic noisy speech. | none |
+| `020-voice-activity-detection` | Voice activity detection | Frame log energy, a two-threshold VAD with hangover, frame F1, an adaptive noise-floor tracker, a Gaussian likelihood-ratio VAD, and a trailing-silence endpoint. | none |
 
 ## Part 3 — Classical recognition
 

@@ -1,7 +1,7 @@
 {
   "id": "026-word-error-rate",
   "title": "Align a transcript and count the errors",
-  "brief": "Align a hypothesis against a reference with a Levenshtein table, then compute corpus word error rate and character error rate.",
+  "brief": "Align a hypothesis against a reference with a Levenshtein table, compute corpus word and character error rates, normalize transcripts, and test a gain with a paired bootstrap over utterances.",
   "needs_gpu": false,
   "timeout": 20,
   "packages": [
@@ -11,6 +11,8 @@
     "Fill the edit table with E[i, 0] = i and E[0, j] = j first. Then E[i, j] is the minimum of a deletion, an insertion, and a diagonal step that costs 1 only when the words differ.",
     "On the way back from E[n, m], test the diagonal move first, then the deletion, then the insertion. Call a diagonal move a hit when the two tokens are equal.",
     "For corpus WER, keep two running totals, errors and reference words, and divide once at the end.",
-    "For CER, align list(ref) against list(hyp). Spaces are characters, so they count."
+    "For CER, align list(ref) against list(hyp). Spaces are characters, so they count.",
+    "For normalize, replace punctuation with a space using re.sub(r\"[^\\w\\s]\", \" \", text), not with nothing. Delete apostrophes first, split on whitespace, and look each word up in a dict of number words.",
+    "For paired_bootstrap, draw picks = rng.integers(0, n, size=(n_resamples, n)) once. Index errors_a, errors_b, and ref_lengths with the same picks, sum along axis 1, and divide the difference of summed errors by the summed lengths."
   ]
 }

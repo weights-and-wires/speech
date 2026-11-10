@@ -13,7 +13,7 @@ objectives:
 prereqs:
   - 022-hidden-markov-models
   - 025-n-gram-language-models
-  - 026-word-error-rate
+  - 024-hybrid-acoustic-models
 exercise: 027-wfsts-and-decoding-graphs
 ---
 
@@ -21,7 +21,7 @@ exercise: 027-wfsts-and-decoding-graphs
 
 A recognizer has heard something like "cat", and three pieces of knowledge still have to agree. The acoustics score phones, the dictionary says which phones spell a word, and the language model says which words are likely. Separate searches can discard a good phone string before the dictionary votes.
 
-Classical recognizers put each piece in a **weighted finite-state transducer** (WFST): a graph whose arrows read one symbol, write another, and carry a cost. Compose the graphs and a path reads phones and writes words. The transcript you want is the cheapest path. The word-error chapter names the full graph HCLG. This chapter builds the middle of it, a lexicon $L$ composed with a bigram $G$, on the two words `a` and `cat`.
+Classical recognizers put each piece in a **weighted finite-state transducer** (WFST): a graph whose arrows read one symbol, write another, and carry a cost. Compose the graphs and a path reads phones and writes words. The transcript you want is the cheapest path. The full graph is called HCLG, after four transducers. This chapter builds the middle of it, a lexicon $L$ composed with a bigram $G$, on the two words `a` and `cat`.
 
 The same kind of graph is the CTC alignment. The blank, and the extra blank a repeated label needs, are a transducer. Its strings are exactly the strings the collapse function maps to a target.
 
@@ -29,7 +29,7 @@ The same kind of graph is the CTC alignment. The blank, and the extra blank a re
 
 - Viterbi keeps the path with the smallest sum of frame costs, from [Hidden Markov models](/lessons/022-hidden-markov-models).
 - A bigram scores the next word from the previous one, from [n-gram language models](/lessons/025-n-gram-language-models).
-- H reads HMM states, C reads context-dependent phones, L reads phones and writes words, and G is the language model, from [Word error rate](/lessons/026-word-error-rate).
+- The full graph chains four transducers: H reads HMM states, C reads context-dependent phones (the triphones of [Hybrid acoustic models](/lessons/024-hybrid-acoustic-models)), L reads phones and writes words, and G is the language model.
 - A negative log probability turns a product of probabilities into a sum of costs.
 - A transducer maps an input string to an output string (Jurafsky and Martin, 2009, section 3.4).
 

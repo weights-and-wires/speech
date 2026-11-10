@@ -63,7 +63,7 @@ Research: `01-signals-and-classical-speech.md`, sections 18 to 22.
 | `023-training-hmms` | Training HMMs with Baum-Welch | The backward pass, Baum-Welch re-estimation with monotone likelihood, and an isolated-word recognizer with one left-to-right HMM per word. | none |
 | `024-hybrid-acoustic-models` | Hybrid acoustic models | A diagonal Gaussian mixture fit with EM, triphone labels and a likelihood-gain state tie, and Viterbi on posteriors divided by the state priors. | none |
 | `025-n-gram-language-models` | n-gram language models | An interpolated Kneser-Ney bigram model, its perplexity, and n-best rescoring for a recognizer. | none |
-| `026-word-error-rate` | Word error rate | Levenshtein alignment with substitutions, deletions, and insertions, corpus WER (which can exceed 100%), and CER. | none |
+| `026-word-error-rate` | Word error rate | Levenshtein alignment with substitutions, deletions, and insertions, corpus WER (which can exceed 100%), CER for unspaced text, normalization sensitivity, and a paired bootstrap over utterances. | none |
 | `027-wfsts-and-decoding-graphs` | Weighted finite-state transducers and decoding graphs | Composition of a lexicon with a bigram, tropical shortest paths and a log-semiring total checked by enumerating paths, and a CTC topology checked against `collapse`. | none |
 
 ## Part 4 — Neural speech recognition

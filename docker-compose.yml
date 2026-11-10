@@ -4,24 +4,18 @@
 # `edge` network, the same way the other services here are reached. This bundle
 # must never publish 80 or 443 itself.
 #
-#   docker compose up -d --build
+#   docker compose up -d
 #
-# This directory holds the committed tree, which scripts/deploy.sh ships from a
-# workstation with `git archive` and then runs the line above. The PDF book in
-# ./book is built on that workstation too, copied here, and mounted read-only;
-# without it the app runs as before, with no download button.
+# This is an example. GitHub Actions builds the image on every merge to main and
+# pushes it to ghcr.io/weights-and-wires/speech; the VM runs `deploy speech`,
+# which pulls the new image and restarts the container. The image carries the
+# PDF book, so no book folder is mounted.
 
 name: speech
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        # scripts/deploy.sh sets this to the commit being deployed.
-        GIT_SHA: ${GIT_SHA:-unknown}
-    image: speech-course:local
+    image: ghcr.io/weights-and-wires/speech:latest
     container_name: speech
     restart: unless-stopped
     expose:
@@ -40,7 +34,6 @@ services:
       LOCAL_WORKERS: "1"
     volumes:
       - speech-data:/data
-      - ./book:/app/book:ro
     networks:
       - edge
     # A reader's submission is a subprocess inside this container, so cap what

@@ -270,32 +270,34 @@ machine the same files, run the following command:
 
 ## Deploy
 
-The VM holds the tree at `~/docs/speech` and runs it behind the shared Caddy on
-the external `edge` network. This bundle never publishes 80 or 443 itself.
+The VM runs the app from a container image, behind the shared Caddy on the
+external `edge` network. This bundle never publishes 80 or 443 itself.
 
-```bash
-./scripts/deploy.sh
-```
+A deploy has three steps:
 
-The repository is private and the organization disables deploy keys, so the VM
-holds no GitHub credential. The script ships the committed tree with
-`git archive` over SSH, rebuilds, and waits until `/api/health` reports the
-commit it sent. `.env` on the VM is never touched, because it holds the session
-secret and the RunPod key. `Caddyfile.example` holds the vhost block for
-`speech.ifkash.dev`, including the buffering and timeout settings the run
-stream needs.
+1. Merge to `main`.
+2. GitHub Actions builds the image and pushes it to
+   `ghcr.io/weights-and-wires/speech`.
+3. On the VM, run `deploy speech`. It pulls the new image and restarts the
+   container.
+
+The VM never builds from source and holds no copy of the tree. `.env` on the VM
+holds the session secret and the RunPod key, and a deploy never touches it.
+`Caddyfile.example` holds the vhost block for `speech.ifkash.dev`, including
+the buffering and timeout settings the run stream needs. `docker-compose.yml`
+is an example of the service definition.
 
 The VM has little disk and memory to spare, so the image is built to share its
 largest layers with the ml course: the `Dockerfile` is identical to that
 course's up to and including the CPU `torch` install, and the packages this
 course adds, such as `soundfile`, come in a later layer. Keep it that way. The
 container is capped at 1.5 CPUs and 1 GB, and `LOCAL_WORKERS=1` runs one
-submission at a time. The script prunes build cache older than three days after
-each deploy.
+submission at a time.
 
-The script also builds the PDF book on your workstation, because printing it
-needs Chrome. It copies the PDF to `~/docs/speech/book` on the VM, which the
-container mounts read-only. For more information, see
+The image also prints the PDF book, in a build stage that holds Chromium and
+the print layout's dependencies. The final image carries only the PDF and its
+manifest. The manifest's `commit` is `unknown` in the image, because the book
+stage doesn't receive `GIT_SHA`. For more information, see
 [The PDF book](#the-pdf-book).
 
 To reach the app before its DNS record resolves, tunnel the container's
@@ -331,8 +333,9 @@ ignores.
 The build fails on any formula KaTeX can't render and on anything wider than
 the page, because Chrome shrinks every page to fit the widest element. It skips
 itself when no lesson or layout file has changed; to rebuild anyway, pass
-`--force`. CI builds the book on every push and keeps it as a workflow
-artifact for seven days.
+`--force`. The image build prints the book, so a deploy needs no local build.
+CI also builds the book on every push and keeps it as a workflow artifact for
+seven days.
 
 The lockfile must come from npm 10, because the image's `npm ci` rejects a
 lockfile that npm 11 writes. After you change a dependency, run

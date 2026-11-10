@@ -1,7 +1,7 @@
 {
   "id": "032-language-model-fusion",
-  "title": "Fuse a language model and hotwords into the beam",
-  "brief": "Train a smoothed character bigram, score prefixes with it and with a hotword bonus, and plug both into CTC prefix beam search.",
+  "title": "Fuse a language model, hotwords, and ILME into the decoder",
+  "brief": "Train a smoothed character bigram, score prefixes with it and with a hotword bonus, and plug both into CTC prefix beam search. Then subtract a transducer's internal language model and rerank an n-best list.",
   "needs_gpu": false,
   "timeout": 20,
   "packages": [
@@ -10,6 +10,9 @@
   "hints": [
     "Accumulate with np.logaddexp into a defaultdict whose default is (-inf, -inf). Rank by np.logaddexp(p_b, p_nb) plus the extra prefix score, and keep the top beam_width.",
     "train_char_bigram: start each text with previous = 0, count counts[previous, current], zero column 0, add the smoothing to columns 1 and up, and divide each row by its sum.",
-    "hotword_score: count complete occurrences with a sliding window, and find the longest partial match by comparing prefix[-k:] with word[:k] for k from 1 to len(word) - 1."
+    "hotword_score: count complete occurrences with a sliding window, and find the longest partial match by comparing prefix[-k:] with word[:k] for k from 1 to len(word) - 1.",
+    "ilme_subtract: return log_p_e2e - mu * log_p_ilm + lam * log_p_ext. The internal LM gets the minus sign, and the external LM the plus.",
+    "internal_lm_logprobs: with the encoder zeroed, the logits are the prediction vectors themselves. Drop column 0, the blank, then take a log-softmax over the remaining columns.",
+    "rescore_nbest: score each hypothesis as am + lam * lm + length_bonus * len(hyp), then sort by score, highest first, and return (hyp, score) pairs."
   ]
 }

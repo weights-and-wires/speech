@@ -43,7 +43,7 @@ The repository is laid out as follows.
 
 ## The curriculum
 
-The course has 68 short chapters in eight parts, and 21 interactive demos. Each
+The course has 69 short chapters in eight parts, and 21 interactive demos. Each
 chapter teaches one idea. Readers of the earlier 42-lesson course keep their
 progress: `content/renames.json` maps each old slug to the chapters that
 replaced it.
@@ -63,7 +63,7 @@ error rate, and weighted finite-state decoding graphs.
 
 **Part 4 — Neural speech recognition.** Neural acoustic models, connectionist
 temporal classification and its decoders, attention encoder-decoders,
-transducers and streaming, Conformers and SpecAugment, self-supervised speech,
+transducers and streaming, Conformers and SpecAugment, efficient encoders, self-supervised speech,
 Whisper, speaker recognition and diarization, an ASR training recipe, and
 fine-tuning a pretrained encoder.
 

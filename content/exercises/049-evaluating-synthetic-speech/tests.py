@@ -137,3 +137,65 @@ def test_wer(sub):
     almost(fn(["a b c", "d e f g"], ["a c", "d e x f g"]), 2 / 7, 1e-12,
            label="a deletion and an insertion over 7 reference words")
     in_range(fn(["one two"], ["three four five six"]), 1.0, 2.0, label="a WER can pass 100%")
+
+
+def _scipy_stats():
+    try:
+        from scipy import stats
+    except ImportError:
+        return None
+    return stats
+
+
+@check("rank_with_ties, lcc, srcc, and system_level: average ranks for ties, and correlation after averaging per system")
+def test_ranking(sub):
+    ranks, lcc, srcc, level = (has(sub, n) for n in ("rank_with_ties", "lcc", "srcc", "system_level"))
+    # Wrong implementation caught here: ordinal ranks (argsort of argsort) that give tied values different ranks.
+    close(ranks(np.array([3.0, 1, 3, 2])), [3.5, 1, 3.5, 2], label="ranks of [3, 1, 3, 2], where the two 3s share ranks 3 and 4")
+    close(ranks(np.array([5.0, 5, 5])), [2, 2, 2], label="ranks of three equal values")
+    y = np.array([1.0, 2, 3, 4, 5])
+    x = np.array([1.0, 2, 3, 4, 20])
+    almost(srcc(x, y), 1.0, 1e-12, label="SRCC when the order agrees, whatever the spacing")
+    almost(lcc(x, y), 0.8, 1e-12, label="LCC for the same pair, which the outlier pulls down from 1")
+    xt, yt = np.array([2.0, 2, 1, 3, 3]), np.array([1.0, 2, 3, 4, 5])
+    almost(srcc(xt, yt), 0.6324555320336759, 1e-9, label="SRCC with tied predictions, from average ranks")
+    rng = np.random.default_rng(5)
+    a = np.round(rng.normal(size=40), 1)
+    b = np.round(a + rng.normal(0, 0.8, 40), 1)
+    stats = _scipy_stats()
+    if stats is not None:
+        almost(srcc(a, b), stats.spearmanr(a, b)[0], 1e-9, label="SRCC against scipy.stats.spearmanr, with rounded values that tie")
+        almost(lcc(a, b), stats.pearsonr(a, b)[0], 1e-9, label="LCC against scipy.stats.pearsonr")
+    # Wrong implementation caught here: correlating utterance scores when system-level was asked.
+    pred = np.array([3.0, 2.0, 3.2, 2.8, 4.2, 3.8, 3.0, 4.0, 2.0, 1.5, 2.5, 1.9])
+    true = np.array([2.0, 3, 3, 4, 3, 4, 4, 5, 1, 2, 2, 3])
+    ids = np.array([0] * 4 + [1] * 4 + [2] * 4)
+    close(level(pred, ids), [2.75, 3.75, 1.975], label="per-system mean predictions")
+    close(level(true, ids[::-1]), [2.0, 4.0, 3.0], label="per-system means with labels 2, 1, 0 in that order, listed by sorted label")
+    almost(srcc(level(pred, ids), level(true, ids)), 1.0, 1e-12, label="system-level SRCC")
+    almost(srcc(pred, true), 0.5527684875613533, 1e-9, label="utterance-level SRCC on the same scores, which must differ from the system-level 1.0")
+
+
+@check("wilcoxon_signed_rank drops zero differences and averages tied ranks: W = 17 and z = 1.38 on the hand-worked pairs")
+def test_wilcoxon(sub):
+    fn = has(sub, "wilcoxon_signed_rank")
+    a = np.array([5.0, 3, 4, 4, 5, 3, 4, 4])
+    b = np.array([3.0, 4, 4, 3, 2, 4, 4, 2])
+    # d = [2, -1, 0, 1, 3, -1, 0, 2]. Wrong implementation caught here: keeping the two zero differences,
+    # which takes ranks 1 and 2 and gives W = 25 instead of 17.
+    w, z = fn(a, b)
+    almost(w, 17.0, 1e-9, label="W, the sum of the ranks of the positive differences (4.5 + 2 + 6 + 4.5)")
+    almost(z, (17 - 10.5) / np.sqrt(22.125), 1e-9, label="z with mean 10.5 and tie-corrected variance 22.125")
+    w_flip, _ = fn(b, a)
+    almost(w + w_flip, 21.0, 1e-9, label="W for (a, b) plus W for (b, a), which must equal n(n + 1)/2 = 21")
+    rng = np.random.default_rng(6)
+    p = np.round(rng.normal(3.5, 0.8, 30), 1)
+    q = np.round(p - 0.3 + rng.normal(0, 0.5, 30), 1)
+    stats = _scipy_stats()
+    if stats is not None:
+        ref = stats.wilcoxon(p, q, alternative="greater", method="approx")
+        w, z = fn(p, q)
+        almost(w, float(ref.statistic), 1e-9, label="W against scipy.stats.wilcoxon (alternative='greater'), with ties and zeros")
+        almost(z, float(ref.zstatistic), 1e-9, label="z against scipy's normal approximation")
+    w, z = fn(np.array([1.0, 2, 3]), np.array([1.0, 2, 3]))
+    almost(w, 0.0, 1e-12, label="W when every difference is zero")

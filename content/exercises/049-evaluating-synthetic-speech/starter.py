@@ -98,6 +98,45 @@ def word_error_rate(references: list[str], transcripts: list[str]) -> float:
     raise NotImplementedError("word_error_rate")
 
 
+def rank_with_ties(x: np.ndarray) -> np.ndarray:
+    """Ranks 1..N of x, with tied values sharing the average of the ranks they span.
+
+    x has shape (N,). Return a float array of shape (N,): rank_with_ties([3, 1, 3, 2])
+    is [3.5, 1, 3.5, 2], because the two 3s would take ranks 3 and 4.
+    """
+    raise NotImplementedError("rank_with_ties")
+
+
+def lcc(x: np.ndarray, y: np.ndarray) -> float:
+    """Pearson linear correlation coefficient of two arrays of shape (N,). Return a Python float."""
+    raise NotImplementedError("lcc")
+
+
+def srcc(x: np.ndarray, y: np.ndarray) -> float:
+    """Spearman rank correlation: the Pearson correlation of the average ranks of x and y."""
+    raise NotImplementedError("srcc")
+
+
+def system_level(scores: np.ndarray, system_ids: np.ndarray) -> np.ndarray:
+    """Average utterance scores per system.
+
+    scores has shape (N,) and system_ids has shape (N,), one system label per utterance. Return
+    one mean per system, shape (S,), ordered by np.unique(system_ids).
+    """
+    raise NotImplementedError("system_level")
+
+
+def wilcoxon_signed_rank(a: np.ndarray, b: np.ndarray) -> tuple[float, float]:
+    """The Wilcoxon signed-rank test for paired ratings a and b of shape (N,).
+
+    Take d = a - b and drop the zero differences. Rank |d| with average ranks for ties. Return
+    (W, z): W is the sum of the ranks of the positive differences, and z is the normal approximation
+    (W - n(n + 1) / 4) / sqrt(n(n + 1)(2n + 1) / 24 - sum(t**3 - t) / 48), where n counts the
+    nonzero differences and t runs over the sizes of the groups of tied |d|.
+    """
+    raise NotImplementedError("wilcoxon_signed_rank")
+
+
 # Provided: a toy voice, its cepstra, and simulated listeners ---------------------
 
 RATE = 16000
@@ -207,6 +246,20 @@ if __name__ == "__main__":
         naive = 1.96 * ratings.std(ddof=1) / np.sqrt(ratings.size)
         print(f"  {name:9s} {mean:.2f} [{low:.2f}, {high:.2f}], against +/- {naive:.2f} if all 720 ratings "
               "were independent")
+
+    # Predicting MOS: a stand-in predictor scores 30 clips per system, and the listeners' per-clip mean is the target.
+    clip_mos, clip_pred, clip_system = [], [], []
+    for k, mos in enumerate(true_mos.values()):
+        listeners = np.clip(np.round(mos + raters + items + rng.normal(0, 0.7, (24, 30))), 1, 5).mean(axis=0)
+        clip_mos.append(listeners)
+        clip_pred.append(3.5 + 0.6 * (listeners - 3.5) + rng.normal(0, 0.5, 30))
+        clip_system.append(np.full(30, k))
+    clip_mos, clip_pred, clip_system = map(np.concatenate, (clip_mos, clip_pred, clip_system))
+    print(f"Predictor, utterance level: LCC {lcc(clip_pred, clip_mos):.2f}, SRCC {srcc(clip_pred, clip_mos):.2f}")
+    sys_pred, sys_mos = system_level(clip_pred, clip_system), system_level(clip_mos, clip_system)
+    print(f"Predictor, system level:    LCC {lcc(sys_pred, sys_mos):.2f}, SRCC {srcc(sys_pred, sys_mos):.2f} over 3 systems")
+    w, z = wilcoxon_signed_rank(clip_mos[:30], clip_mos[30:60])
+    print(f"Wilcoxon, reference against A on the same 30 items: W = {w:.1f}, z = {z:+.2f}")
 
     wer = word_error_rate(["The birch canoe slid on the smooth planks."], ["the birch canoe slid on smooth planks"])
     print(f"WER of a transcript that drops one word of eight: {100 * wer:.1f}%")

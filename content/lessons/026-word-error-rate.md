@@ -286,7 +286,7 @@ The references hold 15 words. Scored as written, 10 of them count as errors, a W
 Figure 3. Corpus WER of three correct transcripts under four treatments. Notice that case and punctuation account for most of the drop, and the last 13.3% is the number words.
 ```
 
-The exercise's `normalize(text)` lowercases, deletes apostrophes, turns other punctuation into spaces, and writes "zero" to "ten" as digits. It is deliberately small. The [Whisper chapter](/lessons/038-whisper) teaches a fuller normalizer and shows the same effect at scale: 99.8% WER on raw LibriSpeech references and 8.3% once both sides are normalized.
+The exercise's `normalize(text)` lowercases, deletes apostrophes, turns other punctuation into spaces, and writes "zero" to "ten" as digits. It is deliberately small. The [Whisper chapter](/lessons/039-whisper) teaches a fuller normalizer and shows the same effect at scale: 99.8% WER on raw LibriSpeech references and 8.3% once both sides are normalized.
 
 > [!KEY]
 > A WER describes a recognizer and a normalizer together. Run the same function over the reference and the hypothesis, and report it beside the number.

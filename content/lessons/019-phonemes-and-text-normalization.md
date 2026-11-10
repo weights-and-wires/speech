@@ -128,7 +128,7 @@ Work the sentence by hand, left to right:
 2. `21st` has an ordinal suffix. The cardinal of 21 is "twenty one", so its last word becomes "first".
 3. `$3.50` is money. The whole part, 3, gives "three dollars", and the first two decimal digits, 50, give "fifty cents".
 
-The result is "the twenty first voice costs three dollars fifty cents". One regular expression finds all the tokens, with money tried first, so the `$` is not left behind. Whisper uses the inverse direction for scoring: it ships an `EnglishTextNormalizer` so that "twenty one" and "21" count as the same word, as [Whisper and large-scale recognition](/lessons/038-whisper) explains.
+The result is "the twenty first voice costs three dollars fifty cents". One regular expression finds all the tokens, with money tried first, so the `$` is not left behind. Whisper uses the inverse direction for scoring: it ships an `EnglishTextNormalizer` so that "twenty one" and "21" count as the same word, as [Whisper and large-scale recognition](/lessons/039-whisper) explains.
 
 ## Look the words up, then guess
 

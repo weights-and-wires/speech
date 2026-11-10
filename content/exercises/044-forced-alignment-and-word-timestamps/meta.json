@@ -1,0 +1,16 @@
+{
+  "id": "044-forced-alignment-and-word-timestamps",
+  "title": "Align a transcript and read word times",
+  "brief": "Fill the CTC Viterbi trellis with the blank-skip rule, trace the best path for a known transcript, and turn the frame path into token spans and word start and end times in seconds.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": [
+    "numpy"
+  ],
+  "hints": [
+    "viterbi_trellis: build the blank-extended list [blank, t0, blank, t1, ..., blank], start with delta[0, 0] and delta[0, 1], and for each cell take the best of stay, step, and skip. The skip needs ext[s] != blank and ext[s] != ext[s - 2].",
+    "forced_align: call viterbi_trellis, pick the better of the last two states, then walk back with states[t - 1] = back[t, states[t]]. Raise ValueError when that best score is -inf.",
+    "token_spans: np.flatnonzero(states == 2 * k + 1) lists the frames of token k; the span is (frames[0], frames[-1] + 1).",
+    "word_timestamps: take token_spans for all tokens, then for each word use the first token's start and the last token's end, both multiplied by hop_seconds."
+  ]
+}

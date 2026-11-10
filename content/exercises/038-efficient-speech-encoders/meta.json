@@ -1,0 +1,17 @@
+{
+  "id": "038-efficient-speech-encoders",
+  "title": "Count encoder compute, shrink the frame rate, and stream a state-space layer",
+  "brief": "Count the FLOPs of an encoder at each subsampling factor, build a depthwise-separable subsampler, write Zipformer-style downsample, upsample, and bypass, and write a diagonal state-space layer whose recurrent, convolutional, and chunked forms agree.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "torch"],
+  "hints": [
+    "encoder_flops: with T = frames // subsample, one layer costs 24 * T * dim**2 + 4 * T**2 * dim. For frames=1000, dim=256, layers=1, subsample=4 that is 393,216,000 + 64,000,000 = 457,216,000.",
+    "subsample_len: every stage is Conv2d(kernel 3, stride 2, padding 1), so one stage turns n into (n - 1) // 2 + 1. For n=83, three stages give 42, 21, 11.",
+    "subsample_params: the first stage is a dense Conv2d(1, C, 3), which has 9 * C + C parameters. A separable stage adds a depthwise conv (9 * C + C) and a 1x1 pointwise conv (C * C + C). With C=256 and 3 stages the separable total is 139,264 and the dense total is 1,182,720.",
+    "downsample: pad the end by repeating the last frame until T is a multiple of factor, reshape to (T // factor, factor, d), and weight the middle axis with softmax(logits). Frames [1, 3] with logits [0, ln 3] give 0.25 * 1 + 0.75 * 3 = 2.5.",
+    "ssm_recurrent: h = a * h + b * x[t], then y[t] = c @ h. For a=[0.5, 0.25], b=[1, 2], c=[1, 1] and x=[1, 0, 0, 2], y is [3, 1, 0.375, 6.15625].",
+    "ssm_kernel: K[k] = sum(c * a**k * b). K[0] = 3, K[1] = 1, K[2] = 0.375, K[3] = 0.15625 for the same a, b, c. The exponent is k, not k - 1, because the input is added before the output is read.",
+    "ssm_chunk: the convolutional part is ssm_convolve(ssm_kernel(a, b, c, L), x). Add the carried state's contribution at step t, which is sum(c * a**(t + 1) * h). The new state is a**L * h plus sum over j of a**(L - 1 - j) * b * x[j]."
+  ]
+}

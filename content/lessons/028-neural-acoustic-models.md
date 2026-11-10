@@ -259,7 +259,7 @@ Figure 3. For one output frame at offset 0, the filled dots are the frames the s
 
 A long short-term memory network (LSTM; Hochreiter and Schmidhuber, 1997) supplies context another way. It reads one frame at a time and carries a gated state forward, so frame $t$ can depend on every earlier frame. There is no receptive field to count. Sak, Senior, and Beaufays (2014) beat a feed-forward network with about ten times as many parameters using a two-layer LSTM.
 
-Two costs follow. The state at $t$ needs the state at $t - 1$, so the frames of one utterance cannot run in parallel as a TDNN's can. And right context needs a second LSTM that runs backward from the end, a **bidirectional LSTM (BLSTM)**. Each output then sees the whole utterance, but none can appear until the last frame arrives. Later encoders keep a convolutional front end and replace the recurrence with self-attention, where any two frames interact in one parallel step. [Conformers and SpecAugment](/lessons/036-conformers-and-specaugment) builds that.
+Two costs follow. The state at $t$ needs the state at $t - 1$, so the frames of one utterance cannot run in parallel as a TDNN's can. And right context needs a second LSTM that runs backward from the end, a **bidirectional LSTM (BLSTM)**. Each output then sees the whole utterance, but none can appear until the last frame arrives. Later encoders keep a convolutional front end and replace the recurrence with self-attention, where any two frames interact in one parallel step. [Conformers and SpecAugment](/lessons/037-conformers-and-specaugment) builds that.
 
 ## Why 100 decisions a second is too many
 

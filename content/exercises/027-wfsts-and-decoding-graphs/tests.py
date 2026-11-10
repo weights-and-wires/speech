@@ -11,6 +11,13 @@ largest sum, as if the weights were probabilities to accumulate. On the
 two-path graph below that sum is 0.9. The tropical path is the minimum
 sum, 0.4.
 
+`context_free_c` reads every triphone from one looping state and writes
+its middle phone. It accepts `sil-k+t` followed by `ah-t+sil`, whose
+windows do not overlap, and a string that starts with `ah-k+t`, which
+has no silence at the boundary. `hclg_reversed` composes G, L, C, and H
+in the opposite order, so no output label meets an input label and the
+graph has no path.
+
 `ctc_topology_skip_repeat_blank` draws an arc from one label straight to
 the same label again. The string (1, 1) is then accepted for target
 [1, 1], but collapse((1, 1)) is [1].
@@ -293,6 +300,74 @@ def test_total_weight(sub):
     got = float(total_weight(single))
     if abs(got - 0.5) > 1e-6:
         fail(f"one path of cost 0.5: expected total 0.5, got {got}")
+
+
+def _translate(fst, symbols, limit=8):
+    """Every (outputs, cost) the graph writes for exactly these input symbols.
+
+    Cycles are fine because each step with a real input consumes a symbol.
+    At most `limit` input-epsilon steps in a row are followed.
+    """
+    outgoing = _outgoing(fst)
+    found = []
+
+    def walk(state, index, cost, outputs, eps_run):
+        if index == len(symbols) and state in fst["finals"]:
+            found.append((outputs, round(cost + float(fst["finals"][state]), 6)))
+        for dst, ilabel, olabel, weight in outgoing.get(state, []):
+            nout = outputs if olabel == EPS else outputs + (olabel,)
+            if ilabel == EPS and eps_run < limit:
+                walk(dst, index, cost + weight, nout, eps_run + 1)
+            elif index < len(symbols) and ilabel == symbols[index]:
+                walk(dst, index + 1, cost + weight, nout, 0)
+
+    walk(fst["start"], 0, 0.0, (), 0)
+    return sorted(found)
+
+
+def _expect(fst, symbols, want, label):
+    got = _translate(fst, tuple(symbols))
+    want = sorted((tuple(outputs), round(cost, 6)) for outputs, cost in want)
+    if got != want:
+        fail(f"{label}: reading {tuple(symbols)} expected {want}, got {got}")
+
+
+@check("context_transducer writes the middle phone of each triphone, and only where the windows overlap")
+def test_context_transducer(sub):
+    # context_free_c accepts the two inconsistent strings below.
+    context_transducer = has(sub, "context_transducer")
+    c = context_transducer(["ah", "k", "t"])
+    _expect(c, ["sil-k+t", "k-t+sil"], [(("k", "t"), 0.0)], "cat")
+    _expect(c, ["sil-ah+sil"], [(("ah",), 0.0)], "one phone")
+    _expect(c, ["sil-k+k", "k-k+t", "k-t+sil"], [(("k", "k", "t"), 0.0)], "a repeated phone")
+    _expect(c, ["sil-k+t", "ah-t+sil"], [], "second window does not overlap the first")
+    _expect(c, ["ah-k+t", "k-t+sil"], [], "no silence before the first phone")
+    _expect(c, ["sil-k+t", "k-t+t"], [], "no silence after the last phone")
+    _expect(c, ["sil-k+t"], [], "stops before the right context is silence")
+    sp = context_transducer(["a", "b"], boundary="sp")
+    _expect(sp, ["sp-a+b", "a-b+sp"], [(("a", "b"), 0.0)], "boundary sp")
+    _expect(sp, ["sil-a+b", "a-b+sil"], [], "boundary sil is not sp")
+
+
+@check("hmm_transducer reads senones as triphones, and hclg composes H, C, L, and G in that order")
+def test_hclg(sub):
+    # hclg_reversed composes G, L, C, and H, which leaves no path at all.
+    hmm_transducer, context_transducer, hclg = (
+        has(sub, "hmm_transducer"),
+        has(sub, "context_transducer"),
+        has(sub, "hclg"),
+    )
+    senones = {"sil-ah+sil": (0, 1), "sil-k+t": (2, 3), "k-t+sil": (4, 1)}
+    h = hmm_transducer(senones)
+    _expect(h, [0, 1], [(("sil-ah+sil",), 0.0)], "H on one triphone")
+    _expect(h, [2, 3, 4, 1], [(("sil-k+t", "k-t+sil"), 0.0)], "H on two triphones")
+    _expect(h, [4, 1, 0, 1], [(("k-t+sil", "sil-ah+sil"), 0.0)], "H on a shared senone")
+    _expect(h, [2, 1], [], "senone 1 does not finish sil-k+t")
+    _expect(h, [2], [], "a triphone needs all its senones")
+    full = hclg(h, context_transducer(["ah", "k", "t"]), _lexicon(), _grammar())
+    _expect(full, [2, 3, 4, 1], [(("cat",), 1.4)], "senones of cat")
+    _expect(full, [0, 1], [(("a",), 1.1)], "senones of a")
+    _expect(full, [2, 3, 0, 1], [], "triphone windows that do not overlap")
 
 
 def _collapse():

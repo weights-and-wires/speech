@@ -1,6 +1,6 @@
-"""Weighted finite-state transducers and a CTC topology.
+"""Weighted finite-state transducers, the H and C graphs, and a CTC topology.
 
-Fill in the five functions, then press Run. Epsilon is the string "<eps>".
+Fill in the eight functions, then press Run. Epsilon is the string "<eps>".
 A transducer is a dict with "start", "arcs", and "finals". Each arc is
 (src, dst, ilabel, olabel, weight). "finals" maps a state to its final cost.
 """
@@ -57,6 +57,35 @@ def total_weight(fst):
     raise NotImplementedError("total_weight")
 
 
+def context_transducer(phones, boundary="sil"):
+    """The transducer C: triphone labels in, plain phones out.
+
+    A triphone label is `left-phone+right`. Reading `a-b+c` writes `b`, and
+    the next triphone must be `b-c+...`, so the states remember the window:
+    state `(a, b)` expects `a-b+c` for some `c`. The first triphone has
+    `boundary` on its left, and the string ends at a triphone with
+    `boundary` on its right. Every arc costs 0.
+    """
+    raise NotImplementedError("context_transducer")
+
+
+def hmm_transducer(senones):
+    """The transducer H: senone ids in, triphone labels out.
+
+    `senones` maps a triphone label to the tuple of senone ids of its HMM
+    states. Each triphone is a chain that reads its senones in order and
+    writes the label on its last arc. That arc returns to the start state,
+    so triphones can follow one another. Every arc costs 0. Self-loops are
+    left to the decoder.
+    """
+    raise NotImplementedError("hmm_transducer")
+
+
+def hclg(h, c, l, g):
+    """Compose H, C, L, and G, in that order, into one graph."""
+    raise NotImplementedError("hclg")
+
+
 def ctc_topology(target, blank=0):
     """The CTC graph for `target`.
 
@@ -95,6 +124,15 @@ if __name__ == "__main__":
     for cost, inputs, outputs in n_best(graph, 5):
         print(" ".join(inputs), "->", " ".join(outputs), f"cost {cost:.1f}")
     print("log-semiring total", total_weight(graph))
+    senones = {"sil-ah+sil": (0, 1), "sil-k+t": (2, 3), "k-t+sil": (4, 1)}
+    full = hclg(
+        hmm_transducer(senones),
+        context_transducer(["ah", "k", "t"]),
+        lexicon,
+        grammar,
+    )
+    for cost, inputs, outputs in n_best(full, 5):
+        print("senones", " ".join(map(str, inputs)), "->", " ".join(outputs), f"cost {cost:.1f}")
     show_plot(
         np.array([cost for cost, _, _ in n_best(graph, 5)]),
         label="Tropical cost of each path in the composed lexicon and bigram",

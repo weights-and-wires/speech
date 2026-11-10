@@ -22,7 +22,7 @@ def edit_distance(a, b):
     return go(0, 0)
 
 
-@check("levenshtein_align counts substitutions, deletions, and insertions on the worked pairs")
+@check("levenshtein_align counts S, D, and I on the worked pairs and spells out both sequences in order")
 def test_align_counts(sub):
     align = has(sub, "levenshtein_align")
     cases = [("i like green tea", "i like the green tee", (1, 0, 1)),
@@ -33,11 +33,6 @@ def test_align_counts(sub):
         s, d, i, _ = align(ref.split(), hyp.split())
         if (s, d, i) != want:
             fail(f"'{ref}' against '{hyp}': expected (S, D, I) = {want}, got {(s, d, i)}")
-
-
-@check("The alignment spells out both the reference and the hypothesis, in order")
-def test_align_spells(sub):
-    align = has(sub, "levenshtein_align")
     ref, hyp = "i like green tea".split(), "i like the green tee".split()
     _, _, _, alignment = align(ref, hyp)
     rebuilt_ref = [r for op, r, h in alignment if op != "I"]
@@ -68,7 +63,7 @@ def test_align_random(sub):
                  f"length and hits + S + I the hypothesis length")
 
 
-@check("wer is corpus-level: total errors over total reference words")
+@check("wer is corpus-level, total errors over total reference words, and can pass 100%")
 def test_wer_corpus(sub):
     wer = has(sub, "wer")
     refs = ["the cat sat on the mat", "hello"]
@@ -76,11 +71,6 @@ def test_wer_corpus(sub):
     # 2 errors over 6 words, then 3 insertions over 1 word: corpus WER 5 / 7, not the mean of 1/3 and 3.
     almost(wer(refs, hyps), 5 / 7, 1e-12, label="corpus WER, total errors over total reference words")
     almost(wer(["a b c d"], ["a b c d"]), 0.0, 1e-12, label="WER of a perfect transcript")
-
-
-@check("wer can pass 100% when the recognizer inserts words")
-def test_wer_over_100(sub):
-    wer = has(sub, "wer")
     almost(wer(["yes"], ["no no no"]), 3.0, 1e-12, label="WER of 'no no no' against 'yes'")
 
 

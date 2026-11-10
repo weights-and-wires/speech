@@ -1,4 +1,4 @@
-"""Self-supervised speech: the pieces of wav2vec 2.0, HuBERT, and BEST-RQ.
+"""Self-supervised speech: the pieces of wav2vec 2.0, HuBERT, BEST-RQ, WavLM, and SUPERB.
 
 Every time axis is in encoder frames unless a name says samples. One frame of
 wav2vec 2.0 or HuBERT is 320 samples, 20 ms at 16 kHz. Losses are means over
@@ -154,6 +154,54 @@ def probe_accuracy(weights: np.ndarray, features: np.ndarray, labels: np.ndarray
     raise NotImplementedError("probe_accuracy")
 
 
+def mix_for_denoising(
+    primary: np.ndarray, secondary: np.ndarray, start: int, length: int, gain_db: float
+) -> np.ndarray:
+    """WavLM's noisy or overlapped input: add `secondary` into one span of `primary`.
+
+    Only samples start .. start + length - 1 change. The secondary signal's
+    span is scaled so that the energy (the sum of squares) of the primary span
+    is `gain_db` decibels above the energy of the scaled secondary span. The
+    pretraining targets stay those of the clean primary signal. Returns a new
+    array, and leaves both inputs alone.
+    """
+    raise NotImplementedError("mix_for_denoising")
+
+
+def bucket_relative_position(rel: np.ndarray, n_buckets: int = 320, max_distance: int = 800) -> np.ndarray:
+    """The T5 and WavLM bucket of each signed offset rel = i - j, as ints.
+
+    The first half of the buckets holds offsets with rel <= 0, and the second
+    half holds rel > 0. Inside a half, |rel| below n_buckets / 4 gets its own
+    bucket, larger distances share buckets spaced evenly in log(|rel|) up to
+    max_distance, and everything at or beyond max_distance shares the last
+    bucket of the half.
+    """
+    raise NotImplementedError("bucket_relative_position")
+
+
+def gated_relative_bias(
+    queries: np.ndarray, u: np.ndarray, v: np.ndarray, w: float, bias: np.ndarray
+) -> np.ndarray:
+    """WavLM's gated relative position bias, shape (T, T).
+
+    For query i, the update gate is g_u = sigmoid(q_i . u) and the reset gate is
+    g_r = sigmoid(q_i . v). Row i of the result is bias[i] * (1 + g_u + (1 - g_u) * w * g_r),
+    so the gates depend on the query alone and every key in the row shares one scale.
+    """
+    raise NotImplementedError("gated_relative_bias")
+
+
+def superb_weighted_sum(layers: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    """The SUPERB input to a downstream model, shape (T, D).
+
+    `layers` has shape (L, T, D), the hidden states of L layers. `weights` has
+    shape (L,), one learnable score per layer. Returns the sum over layers of
+    softmax(weights)[l] * layers[l].
+    """
+    raise NotImplementedError("superb_weighted_sum")
+
+
 # The Run experiment -----------------------------------------------------------
 
 KERNELS = [10, 3, 3, 3, 3, 2, 2]
@@ -247,6 +295,10 @@ if __name__ == "__main__":
     print(f"One second at 16 kHz gives {n} frames; each frame sees {field} samples and moves {hop}.")
     starts = np.random.default_rng(0).random(5000) < 0.065
     print(f"Span masking with p = 0.065 and M = 10 masks {span_mask(starts, 10).mean():.1%} of frames.")
+    mixed = mix_for_denoising(np.ones(6), np.array([0.0, 0.0, 3.0, -3.0, 0.0, 0.0]), 2, 2, 10 * np.log10(4))
+    print(f"WavLM mixes a span into a clip of ones at 6.02 dB: {np.round(mixed, 3).tolist()}.")
+    buckets = bucket_relative_position(np.array([-20, -1, 0, 1, 4, 20]), 8, 16)
+    print(f"With 8 buckets and a maximum distance of 16, offsets -20, -1, 0, 1, 4, 20 land in buckets {buckets.tolist()}.")
 
     try:
         import torch

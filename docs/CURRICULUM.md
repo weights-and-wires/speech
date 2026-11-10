@@ -100,7 +100,7 @@ Research: `03-tts-vocoders-codecs.md`, and `04-flows-diffusion-generative.md` fo
 | `046-wavenet` | WaveNet | Mu-law coding, a dilated causal convolution stack with its receptive field checked by an impulse test, the gated residual stack, and cached sample-by-sample generation that matches the parallel pass. | `wavenet-receptive-field` |
 | `047-gan-vocoders` | GAN vocoders | **GPU.** The Snake activation, the multi-period discriminator's reshape, the multi-resolution STFT loss, and the LSGAN and feature-matching losses. The run trains a small HiFi-GAN-style generator on one `librispeech-dev-clean` speaker and plays what it makes. | none |
 | `048-normalizing-flows-and-vits` | Normalizing flows and VITS | Affine coupling, ActNorm, and an invertible 1x1 convolution with log-determinants checked against autograd, a RealNVP trained on 2-D data, and the VITS KL term. | none |
-| `049-evaluating-synthetic-speech` | Evaluating synthetic speech | Mel cepstral distortion with DTW alignment, F0 RMSE and voicing error, cosine speaker similarity, bootstrap confidence intervals for MOS, and the WER an ASR model gives synthetic speech. | none |
+| `049-evaluating-synthetic-speech` | Evaluating synthetic speech | Mel cepstral distortion with DTW alignment, F0 RMSE and voicing error, cosine speaker similarity, bootstrap confidence intervals for MOS, the ASR WER gap against real recordings, MOS predictors judged by LCC and SRCC at utterance and system level, MUSHRA screening, CMOS, and the Wilcoxon signed-rank test. | none |
 
 ## Part 6 — Codecs and token models
 

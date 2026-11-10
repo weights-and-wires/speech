@@ -2,14 +2,16 @@
 title: Evaluating synthetic speech
 slug: 049-evaluating-synthetic-speech
 part: "Part 5 — Speech synthesis"
-summary: Score synthetic speech with MCD-DTW, F0 error, speaker similarity, ASR word error, and MOS with honest intervals, and weigh the ethics of cloning.
+summary: Score synthetic speech with MCD-DTW, F0 error, speaker similarity, ASR WER bias, MOS predictors, and listening-test statistics.
 minutes: 45
 gpu: false
 objectives:
   - Compute mel cepstral distortion between two utterances of different lengths after aligning them with DTW.
   - Measure F0 RMSE over frames voiced in both contours, and the voicing error rate.
-  - Score speaker similarity by cosine and intelligibility by the WER of an ASR model, and name the choices that change those numbers.
+  - Score speaker similarity by cosine and intelligibility by the WER gap of an ASR model, and name the choices that change those numbers.
+  - "Judge a MOS predictor with LCC and SRCC at the utterance and system levels, using average ranks for ties."
   - "Put a bootstrap confidence interval on a MOS that respects raters and items, and explain why the naive interval is too narrow."
+  - "Screen MUSHRA listeners, read CMOS, and compare two systems with the Wilcoxon signed-rank test."
   - Explain consent and watermarking as the minimum practice for voice cloning.
 prereqs:
   - 014-mfccs
@@ -22,19 +24,19 @@ exercise: 049-evaluating-synthetic-speech
 
 # Evaluating synthetic speech
 
-A recognizer is easy to score: compare its transcript with the right one and count the errors. A synthesizer has no right answer. The same sentence can be read well in many ways, and the only judge that finally matters is a person listening. People are slow, expensive, and noisy, so synthesis research runs on a mix of listening tests and automatic measures that stand in for them. So how do you tell whether one voice is better than another, and how sure can you be?
+A recognizer is easy to score: compare its transcript with the right one and count the errors. A synthesizer has no right answer, because one sentence can be read well in many ways, and the judge that finally matters is a person listening. People are slow, expensive, and noisy, so research mixes listening tests with automatic stand-ins. How do you tell whether one voice is better than another, and how sure can you be?
 
-Every automatic measure answers one narrow question. Does the spectrum match a recording of the same sentence? Is the pitch right? Does it sound like the target speaker? Can a recognizer understand it? None of them answers "is it good?", and each can be gamed. A careful report gives several, names the tools and settings behind each, and adds a listening test with an honest confidence interval.
+Every automatic measure answers one narrow question: does the spectrum match a recording, is the pitch right, does it sound like the target, can a recognizer understand it? None answers "is it good?", and each can be gamed. A careful report gives several and adds a listening test with an honest interval.
 
-You build the standard toolkit: mel cepstral distortion with alignment, F0 error, speaker similarity, the word error rate of an ASR model, and a bootstrap interval for a mean opinion score. The chapter ends with the part of evaluation that isn't a number: whether a voice should be cloned at all.
+You build the toolkit, from MCD to the Wilcoxon test, and end with whether a voice should be cloned at all.
 
 ## What you already know
 
-- Dynamic time warping aligns two sequences of different lengths by the cheapest monotone path through a cost matrix (see [Dynamic time warping](/lessons/021-dynamic-time-warping)).
-- MFCCs are a DCT of log-mel energies, and coefficient 0 tracks loudness (see [MFCCs](/lessons/014-mfccs)).
-- Word error rate counts substitutions, deletions, and insertions against the reference's word count (see [Word error rate](/lessons/026-word-error-rate)).
+- DTW aligns two sequences of different lengths by the cheapest monotone path through a cost matrix (see [Dynamic time warping](/lessons/021-dynamic-time-warping)).
+- MFCCs are a DCT of log-mel energies, with coefficient 0 tracking loudness (see [MFCCs](/lessons/014-mfccs)).
+- WER counts substitutions, deletions, and insertions over the reference's words (see [Word error rate](/lessons/026-word-error-rate)).
 - A speaker embedding maps an utterance to a vector, compared by cosine (see [Speaker embeddings and verification](/lessons/039-speaker-verification)).
-- YIN gives an F0 per frame, and 0 marks an unvoiced frame (see [Pitch tracking](/lessons/018-pitch-tracking)).
+- YIN gives an F0 per frame, with 0 for unvoiced (see [Pitch tracking](/lessons/018-pitch-tracking)).
 
 ## Mel cepstral distortion
 
@@ -44,20 +46,15 @@ $$
 \operatorname{MCD}(c, \hat c) = \frac{10}{\ln 10}\sqrt{2 \sum_{d=1}^{D} (c_d - \hat c_d)^2}\ \text{dB}.
 $$
 
-Read it aloud: take the Euclidean distance between the two cepstra from coefficient 1 to $D$, scale it by $\sqrt 2$, and multiply by $10 / \ln 10 = 4.3429$. That constant turns a natural-log amplitude difference into decibels. Common choices of $D$ are 13 and 24. In numpy, for arrays of frames:
-
-```python
-diff = c_ref[..., 1:] - c_syn[..., 1:]
-mcd = 10 / np.log(10) * np.sqrt(2 * np.sum(diff**2, axis=-1))
-```
+Read it aloud: take the Euclidean distance between the two cepstra from coefficient 1 to $D$ (often 13 or 24), scale it by $\sqrt 2$, and multiply by $10 / \ln 10 = 4.3429$, which turns a natural-log amplitude difference into decibels.
 
 For one frame with $c = (1.0, 0.5, -0.2)$ and $\hat c = (0.9, 0.3, -0.1)$ in coefficients 1 to 3, the squared differences are $0.01 + 0.04 + 0.01 = 0.06$. Doubled that is $0.12$, its square root $0.3464$, and the MCD is $4.3429 \times 0.3464 = 1.504$ dB.
 
 ## Align before you compare
 
-A synthesized sentence rarely has the same length as the recording. Pairing frame $t$ with frame $t$ compares the start of one vowel with the middle of another, and it can't even pair frames past the shorter clip's end. Take a reference with first cepstral coefficients $c_1 = (0, 1, 2, 3)$ and a copy that holds two frames a little longer, $c_1 = (0, 0, 1, 2, 2, 3)$. It is the same sentence, but pairing by position gives errors of $0, 1, 1, 1$ in $c_1$, which is a mean MCD of 4.61 dB.
+A synthesized sentence rarely matches the recording's length, and pairing frame $t$ with frame $t$ compares the start of one vowel with the middle of another. Take $c_1 = (0, 1, 2, 3)$ and a copy with two repeated frames, $c_1 = (0, 0, 1, 2, 2, 3)$. Pairing by position gives a mean MCD of 4.61 dB for the same sentence.
 
-So MCD is computed after DTW: build the matrix of frame-to-frame MCDs, find the cheapest monotone path through it, and average the MCD along that path (Figure 1):
+So MCD is computed after DTW: find the cheapest monotone path through the matrix of frame-to-frame MCDs, and average the MCD along it (Figure 1):
 
 $$
 \operatorname{MCD}_{\text{DTW}} = \frac{1}{|\pi^*|} \sum_{(n, m) \in \pi^*} \operatorname{MCD}\left(c^{(n)}, \hat c^{(m)}\right).
@@ -155,60 +152,46 @@ $$
 Figure 1. The grid shows the MCD in dB between every reference frame and every synthesized frame. Notice that the synthesized sentence repeats two frames, and that the DTW path absorbs the repeats at zero cost where pairing by position does not.
 ```
 
-Read it aloud: $\pi^*$ is the DTW path, a list of frame pairs, and the score is the mean distortion over its $|\pi^*|$ steps. In the figure the path pairs each repeated frame with its original, so the copy scores exactly 0.
+Here $\pi^*$ is the DTW path, a list of frame pairs, and the score is the mean distortion over its $|\pi^*|$ steps. In the figure the path pairs each repeated frame with its original, so the copy scores 0.
 
 > [!KEY]
 > Align first, then compare. MCD-DTW averages the frame distortion along the DTW path, so a difference in timing doesn't count as a difference in spectrum.
 
-> [!WARNING]
-> MCD numbers are comparable only within one implementation. Toolkits differ in how they compute the cepstrum (SPTK mel-cepstra with a warping of 0.42 at 16 kHz, or MFCCs), in $D$, in whether they drop $c_0$, and in whether they divide by the path length or the reference length. Report the tool.
-
 ## Pitch error
 
-MCD mostly ignores pitch, because the low cepstral coefficients describe the envelope, not the harmonics. Pitch gets its own two numbers. The *F0 RMSE* is the root mean squared difference in F0 over frames voiced in both contours. The *V/UV error* is the fraction of frames where one contour is voiced and the other isn't:
+MCD mostly ignores pitch, because low cepstral coefficients describe the envelope, not the harmonics. Pitch gets two numbers. The *F0 RMSE* is the root mean squared difference in F0 over frames voiced in both contours. The *V/UV error* is the fraction of frames where one contour is voiced and the other isn't:
 
 $$
 \text{F0 RMSE} = \sqrt{\frac{1}{|V|} \sum_{t \in V} \left(f_t - \hat f_t\right)^2}, \qquad
 V = \{t : f_t > 0 \text{ and } \hat f_t > 0\}.
 $$
 
-Read it aloud: keep only the frames where both have a pitch, square the differences in hertz, average, and take the square root. When the lengths differ, pair the frames along the DTW path first.
+Read it aloud: square the hertz differences over frames voiced in both, average, and take the root. When the lengths differ, pair frames along the DTW path first.
 
-Take $f = [200, 210, 0, 220]$ and $\hat f = [190, 215, 180, 0]$ Hz. Frames 0 and 1 are voiced in both, with errors 10 and $-5$ Hz, so the RMSE is $\sqrt{(100 + 25)/2} = 7.91$ Hz. Frames 2 and 3 disagree on voicing, so the V/UV error is $2/4 = 50\%$. Skipping the mask would be a bug, because an unvoiced frame stores 0 and would add a fake error of 200 Hz. Because pitch is heard as ratios, many papers report the error in cents, $1200 \log_2(f / \hat f)$, instead of hertz.
+Take $f = [200, 210, 0, 220]$ and $\hat f = [190, 215, 180, 0]$ Hz. Frames 0 and 1 are voiced in both, with errors 10 and $-5$ Hz, so the RMSE is $\sqrt{(100 + 25)/2} = 7.91$ Hz. Frames 2 and 3 disagree on voicing, so the V/UV error is $2/4 = 50\%$. Skipping the mask would add a fake 200 Hz error for each unvoiced frame, which stores 0.
 
 ## Speaker similarity and intelligibility
 
-**Speaker similarity** runs a speaker verification model on the synthesized clip and on a real clip of the target speaker, and takes the cosine of the two embeddings. It ranges from $-1$ to 1. Many zero-shot TTS papers use a WavLM-large model fine-tuned for verification. The number depends entirely on the verifier, so scores from different verifiers can't be compared. Papers also say which real clip they compared against, the original prompt or the prompt after passing through a codec, because the two give different numbers.
+**Speaker similarity** runs a speaker verification model on the synthesized clip and on a real clip of the target speaker, and takes the cosine of the two embeddings, from $-1$ to 1. Many zero-shot TTS papers use a fine-tuned WavLM-large verifier. Scores from different verifiers can't be compared, and papers must say which real clip they used, the original prompt or the prompt after a codec.
 
-**Intelligibility** is scored by transcribing the synthesized audio with a fixed ASR model and computing the WER against the text the system was asked to read. The Seed-TTS evaluation uses Whisper-large-v3 for English, and other work uses a HuBERT-Large CTC model fine-tuned on LibriSpeech. Two choices change the numbers:
+**Intelligibility** is scored by transcribing the synthesized audio with a fixed ASR model and computing the WER against the text the system was asked to read. The Seed-TTS evaluation uses Whisper-large-v3 for English, and other work uses a HuBERT-Large CTC model. Three effects change the numbers:
 
-- **Normalization.** `Dr. Smith paid $5` and `doctor smith paid five dollars` differ by several word edits, but by none once one normalizer writes both the same way. Normalize both sides with the same normalizer, and report which.
-- **The recognizer's language model.** Whisper can guess a word the synthesizer mispronounced, which hides errors. A CTC model with no language model is stricter.
+- **Normalization.** `Dr. Smith paid $5` and `doctor smith paid five dollars` differ by several edits, but by none after one normalizer writes both the same way. Report the normalizer.
+- **The recognizer's language model.** A strong recognizer can guess a word the synthesizer mispronounced, which hides the error. A CTC model with no language model is stricter.
+- **The recognizer's own errors.** Every model errs on clean human speech, and more outside its training domain, such as accents and names.
+
+The WER of synthetic speech therefore mixes the synthesizer's faults with the recognizer's. Transcribe the ground-truth recordings of the same sentences with the same model, and report the gap, $\text{WER}_{\text{synth}} - \text{WER}_{\text{real}}$. If a system scores 3.1% and its recordings score 2.4%, the gap is 0.7 points, and that is the number to compare.
 
 > [!TIP]
-> Report every automatic score with the model and settings that produced it, such as "WER by Whisper-large-v3 with the Whisper English normalizer" or "SIM by WavLM-large". A score without its tool can't be compared with anything.
+> Report every automatic score with the tool and settings behind it, such as "WER by Whisper-large-v3 with the Whisper English normalizer". MCD differs by cepstrum type, $D$, and whether $c_0$ is dropped. A score without its tool can't be compared with anything.
 
 ## Listening tests
 
-The *mean opinion score* (MOS) is the listening test most papers report. Raters hear each clip and score it from 1 (bad) to 5 (excellent), following ITU-T P.800, and the MOS is the mean. *CMOS* plays two systems' versions of the same sentence and asks for a preference from $-3$ to $+3$. *MUSHRA* plays all systems side by side, with a hidden reference and a low-pass anchor, on a 0 to 100 scale, and it is more sensitive for high-quality systems. Automatic MOS predictors such as UTMOS are useful for regression tests, but they inherit the biases of their training data.
+The *mean opinion score* (MOS) is the mean of raters' scores from 1 (bad) to 5 (excellent), following ITU-T P.800. A MOS needs a confidence interval, and the textbook interval, $\bar s \pm 1.96\,\hat\sigma/\sqrt{n}$, is too narrow because it treats all $n$ ratings as independent.
 
-A MOS without a confidence interval says little, and the textbook interval is too narrow. It treats all $n$ ratings as independent:
+But a harsh rater scores every clip low, and a hard sentence gets low scores from everyone, so a rerun with other raters and sentences moves the mean by far more. A *bootstrap over raters and items* measures the movement directly. Resample whole raters with replacement, resample whole items with replacement, recompute the mean of the resampled table, and repeat a few thousand times. The 2.5th and 97.5th percentiles of those means are a 95% interval.
 
-$$
-\bar s \pm 1.96\,\frac{\hat\sigma}{\sqrt{n}}.
-$$
-
-Read it aloud: the mean, plus or minus 1.96 standard errors, where the standard error is the standard deviation of the ratings over the square root of their number. With 200 ratings and $\hat\sigma = 0.8$, the half-width is $1.96 \times 0.8 / \sqrt{200} = 0.111$.
-
-But ratings aren't independent. A harsh rater scores every clip low, and a hard sentence gets low scores from everyone. Rerun the test with other raters and other sentences, and the mean moves by far more than $\hat\sigma / \sqrt{n}$ predicts. A *bootstrap over raters and items* measures that movement directly. Resample whole raters with replacement, resample whole items with replacement, recompute the mean of the resampled table, and repeat a few thousand times. The 2.5th and 97.5th percentiles of those means are a 95% interval:
-
-```python
-r = rng.integers(0, n_raters, n_raters)
-i = rng.integers(0, n_items, n_items)
-means[b] = ratings[np.ix_(r, i)].mean()
-```
-
-Figure 2 shows the exercise's simulated test, where 24 raters with personal offsets each score 30 items. The bootstrap half-widths come out between 0.16 and 0.22, while the naive formula over all 720 ratings claims 0.06 or 0.07. A MOS also depends on the raters and on the other systems in the same test, so compare MOS values only within one test.
+Figure 2 shows the exercise's simulated test, where 24 raters with personal offsets score 30 items. The bootstrap half-widths are 0.16 to 0.22, against 0.06 or 0.07 from the naive formula.
 
 ```figure
 <svg viewBox="0 0 600 260" role="img" aria-label="Mean opinion scores for three systems with a 95 percent bootstrap interval over raters and items, and the much narrower naive interval">
@@ -249,45 +232,71 @@ Figure 2. Each system's simulated MOS with its bootstrap interval, above the nai
 > [!KEY]
 > Resample whole raters and whole items, not single ratings. The interval then reflects what would change if you ran the test again with other people and other sentences.
 
+## Compare systems with MUSHRA and CMOS
+
+*MUSHRA* (ITU-R BS.1534-3) shows a listener every system's version of one sentence at once, each with a slider from 0 to 100. Every trial also hides the reference among the clips, plus *anchors*: low-pass copies of the reference with 3.5 kHz and 7 kHz cutoffs. These expose careless listeners. The recommendation excludes a listener who rates the hidden reference below 90 on more than 15% of the items, or the mid-range anchor above 90 on more than 15%.
+
+*CMOS* plays two systems' versions of a sentence in random order, and the listener rates the second against the first from $-3$ (much worse) to $+3$ (much better). Flip the sign of trials that played B first, so positive means A is better.
+
+Both give *paired* ratings. Average each item over listeners, then take $d_i = a_i - b_i$. The *Wilcoxon signed-rank test* uses only the signs and ranks of the differences, so one extreme rating can't dominate. Drop every $d_i = 0$, because a tie has no sign, and let $n$ count the rest. Rank $|d_i|$ from 1 upward, with average ranks for ties. $W$ is the sum of the ranks of the positive $d_i$.
+
+If the systems are equal, $W$ has mean $n(n+1)/4$ and variance $n(n+1)(2n+1)/24 - \sum_g (t_g^3 - t_g)/48$, where $t_g$ is the size of the $g$-th group of tied $|d_i|$. Then $z = (W - \text{mean})/\sqrt{\text{variance}}$.
+
+Take $d = (2, -1, 0, 1, 3, -1, 0, 2)$. Dropping the zeros leaves $n = 6$ and $|d| = (2, 1, 1, 3, 1, 2)$. The three 1s get rank 2 each, the two 2s get 4.5 each, and the 3 gets 6. The positive differences are 2, 1, 3, and 2, so $W = 4.5 + 2 + 6 + 4.5 = 17$. With mean 10.5 and variance $22.75 - 30/48 = 22.125$, $z = 1.38$. Keeping the zeros would push $W$ to 25.
+
+## Predict MOS and judge the predictor
+
+A *MOS predictor* learns to guess a listener's score without a listening test. UTMOS (Saeki et al., 2022) builds on self-supervised speech encoders: the encoder turns a clip into frame features, pooling averages them into one vector $\bar h$, and a small regression head, such as ridge regression $\hat s = w^\top \bar h + b$, trains on listener scores. The exercise builds the scoring.
+
+You judge a predictor at two levels. At the *utterance level*, you compare predicted and listener scores clip by clip. At the *system level*, you first average each system's clips, then compare those few means. The VoiceMOS Challenge (Huang et al., 2022) ranked entries by system-level SRCC, because it wanted to rank systems.
+
+The *linear correlation coefficient* (LCC, or Pearson) measures how well a straight line fits the pairs $(x_i, y_i)$: the sum of $(x_i - \bar x)(y_i - \bar y)$ over the root of the product of the two sums of squares. The *Spearman rank correlation coefficient* (SRCC) is the LCC of the ranks, so it checks only whether the orderings agree. Tied values get the average of their ranks, so `[3, 1, 3, 2]` has ranks `[3.5, 1, 3.5, 2]`. Otherwise a tied value's rank would depend on its input position.
+
+The two can disagree. With listener scores $y = (1, 2, 3, 4, 5)$ and predictions $x = (1, 2, 3, 4, 20)$, the orders agree, so SRCC is 1.00, but the outlier bends the line and LCC is 0.80. Next, take three systems with four clips each, where predicted system means are 2.75, 3.75, and 1.975 against listener means of 3, 4, and 2. At the system level, SRCC is 1.00 and LCC is 0.997, but over all 12 clips they are 0.55 and 0.60. A predictor can rank systems perfectly and still miss clips, so report the level with every number.
+
 ## Consent and watermarking
 
-Later chapters build zero-shot and voice-conversion systems that imitate a voice from a few seconds of audio. That is useful for dubbing, for accessibility, and for people who are losing their voice to illness. It is also the whole toolkit of a phone scam that sounds like a relative, or a fake recording of a public figure. Evaluation is where a project decides what it is willing to ship, so the minimum practice belongs here:
+Later chapters build systems that imitate a voice from a few seconds of audio. That helps dubbing and people losing their voice to illness, and it is also the toolkit of a phone scam that sounds like a relative. The minimum practice is:
 
-- **Consent.** Clone only voices whose owners agreed to it, for the use at hand. Research datasets such as LJSpeech and LibriTTS come from recordings released for reuse, and your own voice is always available. A voice in a video online is not consent.
-- **Watermarking.** Mark generated audio so it can be recognized later. AudioSeal, from 2024, embeds an imperceptible watermark and ships a detector that finds it even in a short excerpt of a longer clip. Resemble AI's open Chatterbox models embed their own watermark, called Perth, in every output.
-- **Detection and disclosure.** Spoofing countermeasures, which [Voice conversion and spoofing](/lessons/065-voice-conversion-and-spoofing) scores by equal error rate, try to detect synthetic speech without a watermark. They often miss generators they weren't trained on. Labeling synthetic audio as synthetic doesn't depend on either.
+- **Consent.** Clone only voices whose owners agreed, for the use at hand. A voice in an online video is not consent.
+- **Watermarking.** Mark generated audio so it can be recognized later. AudioSeal (2024) embeds an imperceptible watermark that a detector finds in a short excerpt.
+- **Detection and disclosure.** Spoofing countermeasures, scored in [Voice conversion and spoofing](/lessons/065-voice-conversion-and-spoofing), detect synthetic speech without a watermark but often miss unseen generators. Labeling synthetic audio depends on neither.
 
-A watermark can be removed by a determined attacker, and a detector can be fooled. Neither replaces consent. They make careless misuse harder and accidental misuse traceable.
+Neither a watermark nor a detector replaces consent. They make careless misuse harder and accidental misuse traceable.
 
 > [!RECAP]
-> - MCD is $(10/\ln 10)\sqrt{2\sum_{d \ge 1}(c_d - \hat c_d)^2}$ dB per frame, without $c_0$, and MCD-DTW averages it along the DTW path.
-> - F0 RMSE uses frames voiced in both contours, and V/UV error is the fraction of frames whose voicing disagrees.
-> - Speaker similarity is a cosine of embeddings, and WER comes from a fixed ASR model after normalizing both texts.
-> - A MOS interval comes from resampling whole raters and whole items.
-> - Consent comes first, and watermarks and detectors only help afterward.
+> - MCD-DTW averages the frame MCD, without $c_0$, along the DTW path, and F0 RMSE uses frames voiced in both contours.
+> - Report the WER gap against the same ASR on real recordings.
+> - A MOS interval resamples whole raters and items, and MUSHRA screening and Wilcoxon handle comparisons.
+> - SRCC uses average ranks, and a MOS predictor is judged at the utterance and system levels.
 
 ## Build it step by step
 
 Build the functions in the order the checks test them.
 
-1. **`mel_cepstral_distortion(c_ref, c_syn)`** slices off coefficient 0 and reduces over the last axis, so broadcasting `c_ref[:, None, :]` against `c_syn[None, :, :]` gives the whole cost matrix. The common mistake is keeping $c_0$, which turns MCD into a loudness difference.
-2. **`dtw_path(cost)`** fills the DTW table with the diagonal, down, and right moves and backtracks from the last cell. Return the path as a list of `(i, j)` pairs from `(0, 0)`. The common mistake is stopping the backtrack one cell early, which drops `(0, 0)`.
-3. **`mcd_dtw(c_ref, c_syn)`** builds the matrix, finds the path, and averages over the path's cells.
+1. **`mel_cepstral_distortion(c_ref, c_syn)`** drops coefficient 0 and reduces over the last axis, so broadcasting gives the whole cost matrix. The common mistake is keeping $c_0$.
+2. **`dtw_path(cost)`** fills the DTW table and backtracks from the last cell, returning `(i, j)` pairs from `(0, 0)`. The common mistake is stopping one cell early, which drops `(0, 0)`.
+3. **`mcd_dtw(c_ref, c_syn)`** averages the cost over the path's cells.
 4. **`f0_rmse(f0_ref, f0_syn)`** masks the frames voiced in both and returns `(rmse, vuv_error)`. The common mistake is including frames where one contour is 0.
-5. **`speaker_similarity(e1, e2)`** normalizes each row and takes the row-wise dot product.
-6. **`bootstrap_mos(ratings, n_boot, level, seed)`** resamples rater and item indices, indexes with `np.ix_`, and takes percentiles. The common mistake is `ratings[r, i]`, which picks a diagonal of single ratings instead of a table.
-7. **`normalize_text(text)`** and **`word_error_rate(references, transcripts)`** lowercase, strip punctuation with a regular expression, run the Levenshtein recursion over words, and divide the total edits by the total reference words.
+5. **`speaker_similarity(e1, e2)`** normalizes each row and takes row-wise dot products.
+6. **`bootstrap_mos(ratings, n_boot, level, seed)`** indexes with `np.ix_` and takes percentiles. The common mistake is `ratings[r, i]`, which picks single ratings, not a table.
+7. **`normalize_text(text)`** and **`word_error_rate(references, transcripts)`** lowercase, strip punctuation, run the Levenshtein recursion over words, and divide total edits by reference words.
+8. **`rank_with_ties(x)`**, **`lcc(x, y)`**, **`srcc(x, y)`**, and **`system_level(scores, system_ids)`** give average ranks, the correlations, and one mean per system. The common mistake is ordinal ranks (`argsort` of `argsort`), which don't average ties.
+9. **`wilcoxon_signed_rank(a, b)`** drops zero differences, ranks $|d|$ with `rank_with_ties`, and returns `(W, z)`. The common mistake is keeping the zeros.
 
 ## Where this breaks
 
-**Reference-based scores punish good variety.** MCD and F0 RMSE compare against one recording. A system that reads the sentence with different, but natural, emphasis scores worse than one that averages. These scores suit vocoders and codecs, which aim to reproduce the input, better than TTS.
-
-**Metrics can be gamed.** A system tuned on WER can learn to speak slowly and over-articulate. One tuned on a MOS predictor can learn that predictor's blind spots. Keep a listening test in the loop.
-
-**Rater quality and item count.** Crowd raters vary, and some don't listen, so include hidden references and deliberately degraded anchors. Thirty sentences can all be easy, and the item resampling in the bootstrap makes that visible as a wide interval.
+**Reference-based scores punish variety.** MCD and F0 RMSE compare against one recording, so natural but different emphasis scores worse. **Metrics can be gamed.** A system tuned on WER can learn to over-articulate, and one tuned on a MOS predictor can learn its blind spots.
 
 ## The exercise
 
-You implement `mel_cepstral_distortion`, `dtw_path`, `mcd_dtw`, `f0_rmse`, `speaker_similarity`, `bootstrap_mos`, `normalize_text`, and `word_error_rate`. The checks reproduce the hand-worked 1.504 dB and 7.91 Hz, compare your DTW path's cost with brute-force enumeration of every path, confirm that MCD-DTW is zero for a copy with repeated frames, and check that your bootstrap interval matches the spread that rater and item effects cause, far wider than the naive formula.
+You implement the functions above. The checks reproduce the hand-worked 1.504 dB and 7.91 Hz, compare your DTW path with brute force, and check your bootstrap interval against the spread that rater and item effects cause. They also check ranks with ties, SRCC and LCC against `scipy.stats`, system-level averaging, and the hand-worked $W = 17$.
 
-Press **Run** to synthesize a reference voice from a source and formant filters, two imitations, and a different speaker. The run prints each one's MCD-DTW, F0 RMSE, V/UV error, and speaker similarity, draws the MCD matrix that DTW searches, reports bootstrap MOS intervals from a simulated listening test, and plays all four voices.
+Press **Run** to synthesize a reference voice, two imitations, and a different speaker. The run prints their scores and bootstrap MOS intervals, scores a stand-in MOS predictor at both levels, runs a Wilcoxon test, and plays all four voices.
+
+## Further reading
+
+- Saeki et al., "UTMOS: UTokyo-SaruLab System for VoiceMOS Challenge 2022," Interspeech 2022 (https://arxiv.org/abs/2204.02152).
+- Huang et al., "The VoiceMOS Challenge 2022," Interspeech 2022 (https://arxiv.org/abs/2203.11389).
+- ITU-R Recommendation BS.1534-3, "Method for the subjective assessment of intermediate quality level of audio systems" (MUSHRA), 2015 (https://www.itu.int/rec/R-REC-BS.1534-3-201510-I/en).
+- ITU-T Recommendation P.800, "Methods for subjective determination of transmission quality," 1996, Annex E (CCR) (https://www.itu.int/rec/T-REC-P.800-199608-I/en).

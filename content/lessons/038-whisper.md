@@ -10,6 +10,7 @@ objectives:
   - Write greedy and beam-search decoding loops that work over any decoder's next-token logits, with Whisper's suppression lists.
   - Implement Whisper's timestamp rules as a logit filter, and explain what each rule prevents.
   - Normalize text the way Whisper's evaluation does, and compute corpus WER on LibriSpeech with and without it.
+  - Describe how Whisper's 680,000 hours of training data were filtered and split, and detect the spoken language with a softmax over the language tokens only.
 prereqs:
   - 013-log-mel-spectrograms
   - 026-word-error-rate
@@ -21,7 +22,7 @@ exercise: 038-whisper
 
 You decode the same 20 LibriSpeech utterances with the same `whisper-tiny` weights and score the result twice. The first score is a word error rate of 99.8%. The second is 8.3%. The transcripts did not change, so something other than the model decides what "correct" means.
 
-Whisper took a different bet from the recognizers you have built so far: 680,000 hours of web audio paired with whatever transcripts came with it, and a plain Transformer encoder-decoder trained to predict them. The labels are noisy, but there are so many that the model copes with accents, noise, and dozens of languages. Even so, the trained model is only half of a recognizer. A short prompt of special tokens sets what you ask for, and the decoding loop and the scoring decide what you get.
+Whisper took a different bet from the recognizers you have built so far: 680,000 hours of web audio paired with whatever transcripts came with it, and a plain Transformer encoder-decoder trained to predict them. The labels are noisy, but there are so many that the model copes with accents, noise, and dozens of languages.
 
 This chapter has one idea: **the weights are fixed, and everything around them is yours to build.** You write the prompt, a greedy loop, Whisper's beam search, the timestamp rules, and the scoring that makes a WER fair.
 
@@ -30,7 +31,6 @@ This chapter has one idea: **the weights are fixed, and everything around them i
 - Whisper's input is an 80-band log-mel spectrogram of a 30 s window (see [Log-mel spectrograms](/lessons/013-log-mel-spectrograms)).
 - WER is substitutions, deletions, and insertions over the reference words, from a Levenshtein alignment (see [Word error rate](/lessons/026-word-error-rate)).
 - An attention encoder-decoder reads the encoder's output and predicts one token at a time (see [Attention encoder-decoders](/lessons/033-attention-encoder-decoders)).
-- Beam search keeps several hypotheses and ranks finished ones with a length correction.
 
 ## The model in one pass
 
@@ -71,11 +71,19 @@ The decoder is a Transformer language model that attends to the encoder output. 
 Figure 1. The encoder runs once per 30 s window. The decoder runs once per generated token, and everything you control, the prompt, the filter, and the choice rule, sits around that loop.
 ```
 
-In Figure 1, everything left of the decoder is fixed. The decoder runs once per generated token, so the loop around it decides what comes out.
+## Where the weights come from
+
+Whisper's recipe is mostly a data recipe. Radford et al. (2023) collected audio with transcripts from the internet: 680,000 hours of weakly supervised data, meaning labels that nobody checked. Three steps cleaned it.
+
+- **Drop machine-generated transcripts.** Many web transcripts are the output of other recognizers, and a model trained on them learns "transcript-ese". The authors' heuristics flag text that looks machine-made, such as all-uppercase or all-lowercase transcripts, or transcripts with no commas.
+- **Match the spoken language to the transcript language.** An audio language detector, fine-tuned on VoxLingua107, labels the speech. If it disagrees with the language of the transcript, the pair is not a recognition example. If the transcript is English, the pair becomes an X-to-English translation example instead.
+- **Cut 30 s segments.** Each is paired with the transcript text inside it. Segments with no speech stay in, at a lower sampling rate, and teach the model to emit `<|nospeech|>`.
+
+Of the 680,000 hours, 117,000 cover 96 languages other than English, 125,000 are X-to-English translation, and the remaining 438,000 are English transcription. One token format trains all three, because the task and language are tokens at the start of the target.
 
 ## The prompt is the task
 
-One multitask model has to know which task you want, so every decode starts from tokens the decoder did not choose. The following table lists the ones you use, with the ids from the tokenizer in `assets/whisper-tiny`.
+Every decode starts from tokens the decoder did not choose. The following table lists the ones you use, with the ids from the tokenizer in `assets/whisper-tiny`.
 
 | Token | Id | Meaning |
 |---|---|---|
@@ -89,6 +97,8 @@ One multitask model has to know which task you want, so every decode starts from
 
 The English transcription prompt without timestamps is `[50258, 50259, 50359, 50363]`. With timestamps, drop the last id.
 
+The model also predicts the language token. To detect the language, run the decoder one step after `<|startoftranscript|>`, take the softmax **over the language tokens only**, and pick the largest. A softmax over all 51,865 logits lets text and timestamp tokens take probability, so the language probabilities do not sum to 1, and a text token can hold the top logit. `detect_language` implements this, and `build_prompt` uses its answer when you pass `language=None`.
+
 Timestamp tokens count time in steps of 20 ms, the encoder's resolution:
 
 $$
@@ -99,7 +109,7 @@ Read it aloud: a time $t$ in seconds becomes the id of `<|0.00|>` plus the numbe
 
 ## A decoder is a function
 
-To keep the loops independent of Whisper, the exercise treats a decoder as a function `step_fn(tokens) -> logits`. It takes the whole sequence so far, prompt included, and returns a 1-D array of next-token logits. The Run wraps `whisper-tiny` in one, and the checks use fake decoders.
+The exercise treats a decoder as a function `step_fn(tokens) -> logits`. It takes the whole sequence so far, prompt included, and returns a 1-D array of next-token logits. The Run wraps `whisper-tiny` in one.
 
 **Greedy decoding** takes the likeliest token until it picks `<|endoftext|>` or reaches a length limit. It also sums the log-probability of every choice, which Whisper uses to judge a decode:
 
@@ -117,12 +127,9 @@ token = int(np.argmax(logp))
 
 The **filter** sets forbidden tokens to $-\infty$ before the softmax, which gives them probability zero. Whisper's generation config names two lists. `suppress_tokens` holds 88 ids of non-speech symbols, such as brackets and musical notes, and applies at every step. `begin_suppress_tokens` is `[220, 50257]`, a lone space and `<|endoftext|>`, and applies only at the first step, so the model cannot return an empty transcript. With both lists, the Run's greedy tokens on the first utterance match `model.generate` exactly.
 
-> [!TIP]
-> Filter before the log-softmax. The summed log-probability then measures the distribution the decoder actually chose from, which is the one Whisper reports.
-
 ## Beam search: why not always take the best token?
 
-Greedy decoding cannot take back a choice, and a token that looks best can lead to a poor sentence. Beam search keeps $B$ unfinished hypotheses, so a weaker start gets a second chance.
+Greedy decoding cannot take back a choice. Beam search keeps $B$ unfinished hypotheses, so a weaker start gets a second chance.
 
 Whisper's version works like this. At each step, extend every beam by its $B + 1$ likeliest tokens, one more than the beam size, so a beam whose best token is `<|endoftext|>` still leaves $B$ live candidates. Sort all extensions by summed log-probability and walk down the list. An extension ending in `<|endoftext|>` joins the finished set, and anything else joins the next beams until $B$ are kept. Stop once $B$ hypotheses have finished.
 
@@ -183,8 +190,6 @@ Take a decoder over four tokens: `<eot>`, `a`, `cat`, and `the`. At the first st
 Figure 2. Greedy commits to a, which is 0.2 nats likelier than the, and then ends with a score of -1.987. Beam search keeps the word the alive, finds the cat, and its per-token score of -0.412 beats both finished rivals.
 ```
 
-Greedy committed to `a` because it was likelier by 0.2 nats, and it never saw that nothing good followed.
-
 > [!KEY]
 > Beam search keeps a hypothesis alive after a less likely first token, so it can find a sequence that is likelier as a whole. Greedy decoding cannot take back a choice.
 
@@ -237,16 +242,13 @@ With timestamps on, the decoder writes segments as `<|t0|> text <|t1|><|t1|> tex
 Figure 3. One segment is a timestamp, text, and a timestamp. The rules are masks on the logits, applied in order, so the network never has to learn the grammar exactly.
 ```
 
-Rule 5 compares one token against a crowd. If each of the 1,501 timestamps has probability 0.0004, together they hold 0.60, which beats a single text token at 0.30. In log space the test is `np.logaddexp.reduce(logp[50364:]) > logp[:50364].max()`. It closes a segment when the decoder is unsure which time to pick but sure that a time comes next.
-
-> [!KEY]
-> The prompt, the suppression lists, and the timestamp rules are part of the recognizer. The same weights give different transcripts under a different decoding loop.
+Rule 5 compares one token against a crowd. If each of the 1,501 timestamps has probability 0.0004, together they hold 0.60, which beats a single text token at 0.30. In log space the test is `np.logaddexp.reduce(logp[50364:]) > logp[:50364].max()`.
 
 ## Normalize before you score
 
 Return to the opening question. LibriSpeech references are uppercase, unpunctuated, and spell titles out: `MISTER QUILTER IS THE APOSTLE`. Whisper writes `Mr. Quilter is the apostle.` Scored word by word, almost every word is wrong, because `Mr.` is not `MISTER` and `apostle.` is not `APOSTLE`. On the Run's 20 utterances, greedy output scores 99.8% WER against the raw references, and 8.3% once both sides are normalized.
 
-Whisper's evaluation applies an English normalizer to reference and hypothesis alike. The exercise implements its core, in this order:
+Whisper's evaluation applies an English normalizer to both sides. The exercise implements its core, in this order:
 
 1. Lowercase.
 2. Delete text inside brackets `[]`, angle brackets `<>`, and parentheses.
@@ -254,9 +256,9 @@ Whisper's evaluation applies an English normalizer to reference and hypothesis a
 4. Expand contractions and titles: `won't` to `will not`, `n't` to ` not`, `'re` to ` are`, `mr` to `mister`, and the others in `REPLACEMENTS`.
 5. Turn every remaining punctuation mark or symbol into a space, and collapse runs of spaces.
 
-For example, `Um, I won't go [laughs] (quietly)!` becomes `i will not go`. The full normalizer also turns spoken numbers into digits and British spellings into American ones, so the Run still counts `west 10th street` against `west tenth street` as an error.
+For example, `Um, I won't go [laughs] (quietly)!` becomes `i will not go`. The full normalizer also turns spoken numbers into digits, so the Run still counts `west 10th street` against `west tenth street` as an error.
 
-WER itself is the one from [Word error rate](/lessons/026-word-error-rate): $(S + D + I) / N$, summed over the whole corpus before dividing, so a long utterance counts for more than a short one.
+WER is the one from [Word error rate](/lessons/026-word-error-rate), summed over the whole corpus before dividing, so a long utterance counts for more than a short one.
 
 > [!WARNING]
 > Normalize both sides with the same function. Normalizing only the hypothesis leaves the uppercase reference unmatched, and every word counts as wrong.
@@ -267,30 +269,39 @@ WER itself is the one from [Word error rate](/lessons/026-word-error-rate): $(S 
 > - Beam search extends each beam by $B + 1$ tokens, stops after $B$ finish, and ranks by log-probability per token.
 > - The timestamp rules are five masks, applied in order.
 > - Normalize both sides the same way, then compute corpus WER.
+> - The 680,000 training hours were filtered for machine-made transcripts and language mismatch. Language detection is a softmax over the language tokens only.
 
 ## Build it step by step
 
 The checks test the functions in this order. `word_errors` is provided, because you built it in [Word error rate](/lessons/026-word-error-rate).
 
-1. **`build_prompt(language, task, timestamps)`.** Returns a list of ints from `SPECIAL` and `LANGUAGES`. Common mistake: adding `<|notimestamps|>` when timestamps are wanted.
+1. **`build_prompt(language, task, timestamps, detected)`.** Returns a list of ints from `SPECIAL` and `LANGUAGES`, using `detected` when `language` is None. Common mistake: adding `<|notimestamps|>` when timestamps are wanted.
 2. **`greedy_decode(step_fn, prompt, eot, max_new_tokens, logit_filter)`.** Returns `(generated, sum_logprob)`, with `eot` included when chosen. Common mistake: taking the log-softmax before filtering.
 3. **`beam_search_decode(step_fn, prompt, eot, beam_size, max_new_tokens, logit_filter)`.** Same return shape. Key candidates by `tuple(tokens)`, and close live beams with `eot` if the length limit arrives first. Common mistake: counting `eot` in the length.
 4. **`apply_timestamp_rules(logits, generated, ...)`.** Returns a filtered copy of shape `(V,)`. Common mistake: applying rule 5 before rules 1 to 4.
 5. **`normalize_text(text)`.** Returns a string. Use `re.sub` for each step. Common mistake: stripping apostrophes before expanding contractions.
 6. **`corpus_wer(references, hypotheses)`.** Normalizes both sides, calls `word_errors` on each pair, and sums the edits before dividing. Common mistake: averaging per-utterance WERs.
 
+7. **`detect_language(logits_at_lang_position, language_token_ids)`.** Returns `(code, probs)`, with `probs` summing to 1 over the language tokens. Common mistake: taking the softmax over the whole vocabulary.
+
 ## Where this breaks
 
-**Long audio.** One window holds 30 s. Whisper's `transcribe` decodes one window, moves forward to the last timestamp, and passes the previous text as a prompt. When a decode repeats itself (gzip compression ratio above 2.4) or is unsure (average log-probability below $-1.0$), it retries at higher temperatures.
+**Long audio and hallucination.** One window holds 30 s. Whisper's `transcribe` decodes one window, moves forward to the last timestamp, and passes the previous text as a prompt. When a decode repeats itself (gzip compression ratio above 2.4) or is unsure (average log-probability below $-1.0$), it retries at higher temperatures. Silence and noise can still produce invented text or a loop that repeats one phrase. A later lesson on long-form transcription covers the window logic and these failures.
 
-**Normalizer mismatch.** Two papers with different normalizers report incomparable WERs. State the normalizer, the split, and whether you used an external language model.
+**Decoder cost.** The encoder runs once per window, but the decoder runs once per token, and each step re-reads the 1,500 encoder positions and the cache of earlier tokens. Distil-Whisper (Gandhi et al., 2023) keeps the whole encoder and cuts the decoder to 2 layers, which the authors report makes it 5.8 times faster with 51% fewer parameters. A later lesson on streaming and on-device recognition covers the cache and other speed-ups.
 
-**Small models.** Beam 5 brought 8.3% down to 7.1% in the Run, but a larger model helps more than a wider beam.
+**Normalizer mismatch.** Two papers with different normalizers report incomparable WERs. State the normalizer and the split.
 
 ## The exercise
 
-You build `build_prompt`, the loops `greedy_decode` and `beam_search_decode`, the filter `apply_timestamp_rules`, and the scoring functions `normalize_text` and `corpus_wer`.
+You build `build_prompt`, `detect_language`, the loops `greedy_decode` and `beam_search_decode`, the filter `apply_timestamp_rules`, and the scoring functions `normalize_text` and `corpus_wer`.
 
-None of the checks needs Whisper. They drive your loops with fake decoders: greedy against step-by-step argmax, beam size 1 against greedy, a wide beam against brute force, and the greedy trap from this chapter. They check the timestamp rules on crafted logits, the normalizer on strings, and `corpus_wer` against an independent edit distance.
+None of the checks needs Whisper. They drive your loops with fake decoders: greedy against step-by-step argmax, beam size 1 against greedy, a wide beam against brute force, and the greedy trap from this chapter. They check the timestamp rules on crafted logits, `detect_language` on logits where a text token has the largest logit of all, the normalizer on strings, and `corpus_wer` against an independent edit distance.
 
-The **Run** is the GPU experiment. It loads `whisper-tiny`, verifies the special-token ids against its tokenizer, and transcribes LibriSpeech dev-clean with your loops, printing WER before and after normalization. It picks `cuda` when a GPU is present and decodes 20 utterances with beam size 5. Without a GPU, it says it is running the small version, 4 utterances and beam size 3, so it finishes in under a minute. Without the assets, it names what it needs and decodes a toy decoder instead.
+The **Run** is the GPU experiment. It loads `whisper-tiny`, verifies the special-token ids against its tokenizer, prints the detected language of the first utterance, and transcribes LibriSpeech dev-clean with your loops, printing WER before and after normalization. It decodes 20 utterances with beam size 5 on a GPU. Without one, it says it is running the small version, 4 utterances and beam size 3. Without the assets, it names what it needs and decodes a toy decoder instead.
+
+## Further reading
+
+- Radford et al., "Robust Speech Recognition via Large-Scale Weak Supervision," ICML 2023 (https://arxiv.org/abs/2212.04356). Section 2.1 describes the data filtering, and section 4.5 the long-form heuristics.
+- Gandhi, von Platen, and Rush, "Distil-Whisper: Robust Knowledge Distillation via Large-Scale Pseudo Labelling," 2023 (https://arxiv.org/abs/2311.00430).
+- CMU 11-751/18-781, fall 2022, 7 November, "End-to-end ASR: Attention" (https://www.wavlab.org/activities/2022/11751-2022f/). The attention encoder-decoder that Whisper scales up. No lecture on that syllabus covers weakly supervised or multitask recognition.

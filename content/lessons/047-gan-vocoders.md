@@ -20,23 +20,23 @@ exercise: 047-gan-vocoders
 
 # GAN vocoders
 
-WaveNet sounds natural and runs one sample at a time, far slower than real time. A vocoder that generates every sample at once is easy to build: a stack of transposed convolutions that stretches each mel frame into 256 samples. The hard part is training it. Trained only to match the waveform or the spectrum, it produces muffled, buzzy audio. Why does a network that fits the training data so closely sound so dull?
+WaveNet sounds natural but runs one sample at a time, far slower than real time. A vocoder that generates every sample at once is easy to build: a stack of transposed convolutions that stretches each mel frame into 256 samples. The hard part is training it, because trained only to match the waveform or the spectrum, it sounds muffled and buzzy. Why does a network that fits the training data so closely sound so dull?
 
-The reason is that many waveforms fit one mel spectrogram, and a regression loss averages them. A *generative adversarial network* (GAN) fixes that with a second network, a *discriminator*, trained to tell real audio from generated audio. The generator is trained to fool it. The discriminator punishes exactly the artifacts that a spectral loss ignores, such as smeared phase and missing fine structure, so the generator learns to produce audio that sounds real instead of audio that is average.
+Many waveforms fit one mel spectrogram, and a regression loss averages them. A *generative adversarial network* (GAN) adds a second network, a *discriminator*, trained to tell real audio from generated audio, while the generator is trained to fool it. The discriminator punishes what a spectral loss ignores, such as smeared phase.
 
-HiFi-GAN, from 2020, made this approach standard. In its paper's listening test, the V1 model scored a mean opinion score of 4.36 against 4.45 for recordings, while running 168 times faster than real time on a V100 GPU. In this chapter you build its losses, its multi-period discriminator's reshape, and the Snake activation from BigVGAN, then train a small HiFi-GAN-style vocoder on one LibriSpeech speaker.
+HiFi-GAN, from 2020, made this approach standard. In its paper, the V1 model scored a mean opinion score of 4.36 against 4.45 for recordings, at 168 times faster than real time on a V100 GPU. You build its losses, its multi-period discriminator's reshape, and BigVGAN's Snake activation, then train a small HiFi-GAN-style vocoder on one LibriSpeech speaker.
 
 ## What you already know
 
-- A vocoder turns a mel spectrogram into samples, and WaveNet does it one sample at a time (see [WaveNet](/lessons/046-wavenet)).
-- Griffin-Lim recovers a waveform from a magnitude spectrogram by iterating phase estimates, and it sounds metallic (see [Phase and Griffin-Lim](/lessons/008-phase-and-griffin-lim)).
+- A vocoder turns a mel spectrogram into samples, as WaveNet does one sample at a time (see [WaveNet](/lessons/046-wavenet)).
+- Griffin-Lim recovers a waveform from a magnitude spectrogram by iterating phase estimates (see [Phase and Griffin-Lim](/lessons/008-phase-and-griffin-lim)).
 - An 80-band log-mel spectrogram at a hop of 256 samples is the input most vocoders take (see [Hearing and the mel scale](/lessons/012-hearing-and-the-mel-scale)).
 - An STFT frame's magnitude says how much of each frequency it holds, and its phase says where each sinusoid is in its cycle.
 - The Frobenius norm of a matrix is the square root of the sum of its squared entries.
 
 ## Why regression sounds muffled
 
-Take the simplest case: one tone. A sine wave and the same sine shifted by 120 degrees have the same magnitude spectrum, one unit-amplitude peak, so both are equally good answers for a mel spectrogram that shows that peak. A network trained with squared error can't pick one, because the training data contains both. The value that minimizes the squared error is their average, and Figure 1 shows that the average has amplitude $\cos(60^\circ) = 0.5$. It matches neither waveform and has half the right spectrum magnitude.
+Take one tone. A sine wave and the same sine shifted by 120 degrees have the same magnitude spectrum, one unit-amplitude peak, so both answer a mel spectrogram with that peak. Squared error can't pick one, because the training data contains both. The value that minimizes the squared error is their average, which Figure 1 shows has amplitude $\cos(60^\circ) = 0.5$. It matches neither.
 
 ```figure
 <svg viewBox="0 0 600 310" role="img" aria-label="Two sine waves with the same magnitude spectrum and their average, whose amplitude is only 0.5">
@@ -60,40 +60,40 @@ Take the simplest case: one tone. A sine wave and the same sine shifted by 120 d
 Figure 1. The two waveforms have the same spectrum magnitude, since each is one unit-amplitude tone, but their average has amplitude cos(60 degrees) = 0.5. Notice that the regression answer matches neither waveform and has half the right spectrum magnitude.
 ```
 
-Real speech has this problem at every frequency in every frame, which is why a regression vocoder sounds smeared. The fix is not a better regression loss. You need a judge that asks "does this look like a real waveform?" and doesn't care which real waveform it is.
+Real speech has this problem at every frequency in every frame, so a regression vocoder sounds smeared, and a better regression loss doesn't help. You need a judge that asks "does this look like a real waveform?" and doesn't care which one.
 
 ## A critic and a generator
 
-A GAN gives you that judge. HiFi-GAN uses the *least-squares GAN* (LSGAN) objective. The discriminator $D$ is a regressor trained to output 1 on real audio $x$ and 0 on generated audio $G(s)$ from the mel $s$. The generator is trained to make $D$ output 1 on its audio:
+A GAN is that judge. HiFi-GAN uses the *least-squares GAN* (LSGAN) objective. The discriminator $D$ is a regressor trained to output 1 on real audio $x$ and 0 on generated audio $G(s)$ from the mel $s$. The generator is trained to make $D$ output 1 on its audio:
 
 $$
 \mathcal{L}_{\text{adv}}(D; G) = \mathbb{E}\left[(D(x) - 1)^2 + D(G(s))^2\right], \qquad
 \mathcal{L}_{\text{adv}}(G; D) = \mathbb{E}\left[(D(G(s)) - 1)^2\right].
 $$
 
-Read it aloud: the discriminator pays the squared distance of its real score from 1 and of its fake score from 0. The generator pays the squared distance of the fake score from 1. Each sub-discriminator outputs a map of scores, the expectation is the mean over it, and the losses add over sub-discriminators. For one score, $D(x) = 0.9$ and $D(G(s)) = 0.3$ give $\mathcal{L}_D = 0.01 + 0.09 = 0.10$ and $\mathcal{L}_G = 0.49$. The generator's gradient with respect to that score is $2(0.3 - 1) = -1.4$, which says raise it.
+Read it aloud: the discriminator pays the squared distance of its real score from 1 and its fake score from 0, and the generator pays the squared distance of the fake score from 1. Each sub-discriminator outputs a map of scores, the expectation is the mean over it, and the losses add over sub-discriminators. For one score, $D(x) = 0.9$ and $D(G(s)) = 0.3$ give $\mathcal{L}_D = 0.01 + 0.09 = 0.10$ and $\mathcal{L}_G = 0.49$. The generator's gradient with respect to that score is $2(0.3 - 1) = -1.4$: raise the score.
 
-*Feature matching* adds a denser signal. Every layer of a discriminator computes features, and the generator is asked to produce the same features on its audio as on the real audio:
+*Feature matching* adds a denser signal: the generator must produce the same discriminator features on its audio as on the real audio, at every layer:
 
 $$
 \mathcal{L}_{\text{FM}}(G; D) = \mathbb{E}\left[\sum_{i} \frac{1}{N_i} \big\lVert D^i(x) - D^i(G(s)) \big\rVert_1\right].
 $$
 
-Read it aloud: at each layer $i$, take the mean absolute difference over its $N_i$ features, and add over the layers. Real features $[1, 2]$ against generated $[1.5, 1]$ give $(0.5 + 1)/2 = 0.75$ for that layer. HiFi-GAN's generator loss adds the adversarial term, feature matching with weight 2, and an L1 distance between the log-mel of the real and generated audio with weight 45. This chapter's run also adds the multi-resolution STFT loss with weight 2.5, described next.
+Read it aloud: at each layer $i$, take the mean absolute difference over its $N_i$ features, and add over the layers. Real features $[1, 2]$ against generated $[1.5, 1]$ give $(0.5 + 1)/2 = 0.75$ for that layer. HiFi-GAN's generator loss adds the adversarial term, feature matching with weight 2, and an L1 distance between the real and generated log-mel with weight 45. The run here also adds the STFT loss below with weight 2.5.
 
 > [!WARNING]
-> Detach $G(s)$ in the discriminator's step, or the discriminator's loss trains the generator to be caught. Don't detach it in the generator's step, or the generator gets no adversarial gradient at all.
+> Detach $G(s)$ in the discriminator's step, or the discriminator's loss trains the generator to be caught. Don't detach it in the generator's step, or the generator gets no adversarial gradient.
 
 ## Anchor the spectrum
 
-An adversarial loss alone trains slowly and wanders, so a vocoder also needs a reconstruction loss that says "the spectrum is right." One STFT resolution isn't enough, because a long window checks harmonics and misses the timing of a click, and a short window does the reverse. Parallel WaveGAN's *multi-resolution STFT loss* checks three resolutions at once. At each, it combines two terms:
+An adversarial loss alone trains slowly and wanders, so a vocoder also needs a loss that says "the spectrum is right." One STFT resolution isn't enough: a long window checks harmonics and misses the timing of a click, and a short window does the reverse. Parallel WaveGAN's *multi-resolution STFT loss* checks three resolutions, combining two terms at each:
 
 $$
 L_{\text{sc}} = \frac{\big\lVert\, |S| - |\hat S| \,\big\rVert_F}{\big\lVert\, |S| \,\big\rVert_F}, \qquad
 L_{\text{mag}} = \frac{1}{N} \big\lVert \log |S| - \log |\hat S| \big\rVert_1.
 $$
 
-Read it aloud: $|S|$ and $|\hat S|$ are the STFT magnitudes of the real and generated audio. *Spectral convergence* $L_{\text{sc}}$ is the size of the magnitude error relative to the size of the real magnitude, so loud bins dominate it. $L_{\text{mag}}$ is the mean absolute difference of log magnitudes over all $N$ entries, so a quiet bin counts as much as a loud one. The loss averages $L_{\text{sc}} + L_{\text{mag}}$ over the three resolutions, which use FFT sizes 1024, 2048, and 512, window lengths 600, 1200, and 240, and hops 120, 240, and 50, all with Hann windows. For one resolution in torch:
+Read it aloud: $|S|$ and $|\hat S|$ are the STFT magnitudes of the real and generated audio. *Spectral convergence* $L_{\text{sc}}$ is the magnitude error relative to the real magnitude, so loud bins dominate it. $L_{\text{mag}}$ is the mean absolute difference of log magnitudes over all $N$ entries, so a quiet bin counts as much as a loud one. The loss averages $L_{\text{sc}} + L_{\text{mag}}$ over the three resolutions, which use FFT sizes 1024, 2048, and 512, window lengths 600, 1200, and 240, and hops 120, 240, and 50, all with Hann windows. For one resolution in torch:
 
 ```python
 mag = torch.stft(x, n_fft, hop, win, window=torch.hann_window(win),
@@ -101,14 +101,14 @@ mag = torch.stft(x, n_fft, hop, win, window=torch.hann_window(win),
 sc = torch.linalg.norm(mag - mag_hat) / torch.linalg.norm(mag)
 ```
 
-Two small examples show the difference. If $|S|$ has Frobenius norm 10 and the error $|S| - |\hat S|$ has norm 2, then $L_{\text{sc}} = 0.2$. If every generated magnitude is $e^{0.1}$ times the real one, $L_{\text{mag}} = 0.1$, whether the bins are loud or quiet. Both terms are unchanged when you scale both signals by the same gain.
+Two small examples show the difference. If $|S|$ has Frobenius norm 10 and the error has norm 2, then $L_{\text{sc}} = 0.2$. If every generated magnitude is $e^{0.1}$ times the real one, $L_{\text{mag}} = 0.1$, loud or quiet. Both terms are unchanged when you scale both signals by the same gain.
 
 > [!KEY]
-> The adversarial and feature-matching losses make the audio sound real, and the multi-resolution STFT loss makes its spectrum right at a long, a medium, and a short window.
+> The adversarial and feature-matching losses make the audio sound real. The multi-resolution STFT loss makes its spectrum right at three window lengths.
 
 ## Judge the periodicity
 
-Voiced speech is periodic: a 200 Hz vowel at 16 kHz repeats every 80 samples. HiFi-GAN's *multi-period discriminator* (MPD) is built to judge that periodicity. Each of its five sub-discriminators takes a period $p$ and folds the waveform of length $T$ into a 2-D array of $\lceil T/p \rceil$ rows and $p$ columns (Figure 2). It then applies 2-D convolutions whose kernels are 1 wide along the columns:
+Voiced speech is periodic: a 200 Hz vowel at 16 kHz repeats every 80 samples. HiFi-GAN's *multi-period discriminator* (MPD) judges that periodicity. Each of its five sub-discriminators takes a period $p$ and folds the waveform of length $T$ into a 2-D array of $\lceil T/p \rceil$ rows and $p$ columns (Figure 2), then applies 2-D convolutions whose kernels are 1 wide along the columns:
 
 $$
 X^{(p)}_{r, c} = x_{r p + c}, \qquad r = 0, \ldots, \lceil T/p \rceil - 1, \quad c = 0, \ldots, p - 1.
@@ -202,25 +202,25 @@ $$
 Figure 2. Folding with period 4 puts samples one period apart in the same column. Notice that the padded cells in the last row repeat samples 8 and 7.
 ```
 
-Read it aloud: row $r$ holds samples $rp$ to $rp + p - 1$, so column $c$ holds every $p$-th sample starting at $c$. A kernel that is 1 wide sees one column at a time, so each column, a signal sampled at $1/p$ of the rate, is judged separately. If $T$ isn't a multiple of $p$, the end is padded by reflection first:
+Read it aloud: row $r$ holds samples $rp$ to $rp + p - 1$, so column $c$ holds every $p$-th sample starting at $c$. A kernel 1 wide sees one column at a time, so each column, a signal sampled at $1/p$ of the rate, is judged separately. If $T$ isn't a multiple of $p$, reflection pads the end first:
 
 ```python
 x = F.pad(x, (0, (-T) % p), mode="reflect")
 folded = x.reshape(B, C, -1, p)
 ```
 
-The periods are 2, 3, 5, 7, and 11. They are prime so that the sub-discriminators overlap as little as possible: a period of 4 would repeat much of what the period of 2 already sees. HiFi-GAN pairs the MPD with MelGAN's *multi-scale discriminator*, which judges the raw waveform and versions average-pooled by 2 and 4.
+The periods 2, 3, 5, 7, and 11 are prime so that the sub-discriminators overlap as little as possible: a period of 4 would repeat much of what the period of 2 already sees. HiFi-GAN pairs the MPD with MelGAN's *multi-scale discriminator*, which judges the raw waveform and copies pooled by 2 and 4.
 
 ## Give the generator a periodic bias
 
-The generator is a stack of upsampling stages. A convolution maps the 80 mel bands to $h_u$ channels. Four transposed convolutions then stretch time by 8, 8, 2, and 2, a total of 256, the hop length. After each one, a *multi-receptive-field fusion* block averages residual blocks with kernel sizes 3, 7, and 11, so every stage sees patterns at several time scales. A leaky ReLU is piecewise linear, so a generator built from it must assemble every oscillation from many kinks, and it extrapolates badly to pitches it didn't see in training. BigVGAN gives the generator a periodic activation, *Snake*:
+The generator maps the 80 mel bands to $h_u$ channels, then applies four transposed convolutions that stretch time by 8, 8, 2, and 2, a total of 256, the hop length. After each one, a *multi-receptive-field fusion* block averages residual blocks with kernel sizes 3, 7, and 11, A leaky ReLU is piecewise linear, so a generator built from it assembles every oscillation from many kinks and extrapolates badly to unseen pitches. BigVGAN gives the generator a periodic activation, *Snake*:
 
 $$
 f_\alpha(x) = x + \frac{1}{\alpha} \sin^2(\alpha x), \qquad
 \frac{\partial f_\alpha}{\partial x} = 1 + \sin(2 \alpha x).
 $$
 
-Read it aloud: Snake is the identity plus a periodic bump whose frequency is set by a learned $\alpha$, one per channel. Its slope never goes below 0, so the function never decreases, and the linear part lets gradients pass as in a residual network. At $x = 0.5$ with $\alpha = 1$, $f = 0.5 + \sin^2(0.5) = 0.7298$. With $\alpha = 5$, $f = 0.5 + 0.2 \sin^2(2.5) = 0.5716$. Figure 3 draws both curves.
+Read it aloud: Snake is the identity plus a periodic bump whose frequency a learned $\alpha$ sets, one per channel. Its slope never goes below 0, and the linear part lets gradients pass as in a residual network. At $x = 0.5$ with $\alpha = 1$, $f = 0.5 + \sin^2(0.5) = 0.7298$. With $\alpha = 5$, $f = 0.5 + 0.2 \sin^2(2.5) = 0.5716$. Figure 3 draws both curves.
 
 ```python
 a = alpha.reshape(1, -1, 1)
@@ -258,45 +258,45 @@ y = x + torch.sin(a * x) ** 2 / a
 Figure 3. Snake is the identity plus a bump that repeats. Notice that the curve never decreases, and that a larger alpha makes the bumps faster and smaller.
 ```
 
-BigVGAN scaled this design to 112 million parameters and trained a universal vocoder that works on unseen speakers, languages, and even music. A nonlinearity on a sampled signal creates harmonics above the Nyquist frequency that fold back as aliases, so BigVGAN upsamples before each Snake and filters after. The exercise's generator skips that filtering to stay small. Vocos takes a different route, predicting an STFT magnitude and phase at the frame rate and letting an inverse STFT do the upsampling. With 13.5 million parameters it ran about 13 times faster than HiFi-GAN in its paper.
+BigVGAN scaled this design to 112 million parameters for unseen speakers, languages, and music. Because Snake creates harmonics above the Nyquist frequency that fold back as aliases, BigVGAN upsamples before each Snake and filters after. The exercise's generator skips that filtering.
 
 > [!KEY]
-> A regression vocoder sounds dull because it averages the many waveforms that fit one mel spectrogram. A GAN vocoder swaps that average for a discriminator's judgment, keeps the spectrum honest with the multi-resolution STFT loss, and generates every sample in one parallel pass.
+> A regression vocoder sounds dull because it averages the many waveforms that fit one mel spectrogram. A GAN vocoder swaps that average for a discriminator's judgment, anchors the spectrum with the multi-resolution STFT loss, and generates every sample in one parallel pass.
 
 > [!RECAP]
-> - A regression loss averages many valid waveforms, and a discriminator asks only whether the audio looks real.
-> - LSGAN trains $D$ toward 1 on real and 0 on fake, and $G$ toward 1 on fake, summed over sub-discriminators.
-> - Feature matching sums the mean absolute feature difference over every layer of every sub-discriminator.
-> - The MR-STFT loss averages spectral convergence plus log-magnitude L1 over three STFT resolutions.
-> - The MPD folds a waveform into $p$ columns, with reflect padding, for $p \in \{2, 3, 5, 7, 11\}$, and Snake is $x + \sin^2(\alpha x)/\alpha$.
+> - A regression loss averages valid waveforms, and a discriminator asks only whether the audio looks real.
+> - LSGAN trains $D$ toward 1 on real and 0 on fake, and $G$ toward 1 on fake.
+> - Feature matching sums the mean absolute feature difference over every layer.
+> - The MR-STFT loss averages spectral convergence plus log-magnitude L1 over three resolutions.
+> - The MPD folds a waveform into $p$ columns, and Snake is $x + \sin^2(\alpha x)/\alpha$.
 
 ## Build it step by step
 
-Build the functions in the order the checks test them.
+Build the functions in the order the checks test them:
 
 1. **`snake(x, alpha)`** reshapes `alpha` to broadcast over the batch and time, and returns $x + \sin^2(\alpha x)/\alpha$. The common mistake is broadcasting `alpha` along time instead of channels.
 2. **`period_reshape(x, period)`** pads the end with `F.pad(..., mode="reflect")` and reshapes to `(B, C, T / p, p)`. The common mistake is a reshape to `(B, C, p, T / p)`, which puts consecutive samples in a column.
-3. **`stft_magnitude(x, n_fft, hop, win)`** calls `torch.stft` with a periodic Hann window of length `win`, `center=True`, and reflect padding, and clamps at $10^{-7}$ so the log is finite.
+3. **`stft_magnitude(x, n_fft, hop, win)`** calls `torch.stft` with a periodic Hann window of length `win`, `center=True`, and reflect padding, and clamps at $10^{-7}$.
 4. **`spectral_convergence(mag_true, mag_pred)`** and **`log_magnitude_loss(mag_true, mag_pred)`** are one line each. The common mistake is dividing by the norm of the prediction.
 5. **`multi_resolution_stft_loss(x, x_hat, resolutions)`** loops over the resolutions and returns the mean, not the sum.
-6. **`lsgan_discriminator_loss`**, **`lsgan_generator_loss`**, and **`feature_matching_loss`** add a `torch.mean` per sub-discriminator, and per layer for feature matching.
+6. **`lsgan_discriminator_loss`**, **`lsgan_generator_loss`**, and **`feature_matching_loss`** take one `torch.mean` per sub-discriminator, and per layer for feature matching.
 
 ## Cost and scaling
 
-Inference is one parallel pass, so its cost grows linearly with the length of the audio. Training is the expensive part. HiFi-GAN trained for 2.5 million steps on batches of 16 segments of 8,192 samples, which takes days on one GPU. The exercise's GPU run trains a V2-sized generator for a few minutes, so it shows early training, not a finished vocoder.
+Inference is one parallel pass, linear in the audio length. Training is the expensive part: HiFi-GAN ran 2.5 million steps on batches of 16 segments of 8,192 samples, which takes days on one GPU. The exercise's run lasts minutes, so it shows early training.
 
 ## Where this breaks
 
-**The mel settings differ.** The mel inside the loss must match the mel the generator is conditioned on, band for band. A vocoder trained on one mel range and run on another produces noise.
+**The mel settings differ.** The mel inside the loss must match the generator's input mel, band for band.
 
-**The discriminator wins.** If $D$ learns much faster than $G$, its scores saturate and the generator gets no useful gradient. Warm up with the reconstruction losses alone, as the run does, and watch that $D$'s loss doesn't collapse to 0.
+**The discriminator wins.** If $D$ learns much faster than $G$, its scores saturate and the generator gets no gradient. Warm up with the reconstruction losses alone, as the run does, and watch for $D$'s loss collapsing to 0.
 
-**Artifacts at the frame rate.** A transposed convolution whose kernel isn't a multiple of its stride overlaps unevenly and leaves a checkerboard pattern, which you hear as a tone at the frame rate. HiFi-GAN uses a kernel of twice the stride. Look for horizontal lines in the output's spectrogram.
+**Artifacts at the frame rate.** A transposed convolution whose kernel isn't a multiple of its stride overlaps unevenly, which you hear as a tone at the frame rate. HiFi-GAN uses a kernel of twice the stride. Horizontal lines in the spectrogram give it away.
 
-**The numbers disagree with your ears.** Mel L1 against the input mel doesn't measure phase. Griffin-Lim starts from a least-squares inverse of the mel filterbank and then only fixes phase, so its mel L1 is low even though it sounds metallic. A GAN vocoder early in training scores worse on mel L1 and can still sound more natural. Listen, and use a listening test, as [Evaluating synthetic speech](/lessons/049-evaluating-synthetic-speech) explains.
+**The numbers disagree with your ears.** Mel L1 doesn't measure phase, so Griffin-Lim scores a low mel L1 and still sounds metallic, while a GAN vocoder early in training scores worse and can sound more natural. Run a listening test, as [Evaluating synthetic speech](/lessons/049-evaluating-synthetic-speech) explains.
 
 ## The exercise
 
-You implement `snake`, `period_reshape`, `stft_magnitude`, `spectral_convergence`, `log_magnitude_loss`, `multi_resolution_stft_loss`, `lsgan_discriminator_loss`, `lsgan_generator_loss`, and `feature_matching_loss`. The checks run on the CPU with synthetic signals. They confirm Snake's hand-worked values and its gradient, the reshape for periods 2 to 11 with reflect padding, your STFT against a numpy one, the hand-worked 0.2 and 0.1, and that the MR-STFT loss is zero for a copy, unchanged by gain, and rising with noise. They check the LSGAN gradient against finite differences, and that a period-5 sub-discriminator built on your reshape changes only one column when one sample changes.
+You implement `snake`, `period_reshape`, `stft_magnitude`, `spectral_convergence`, `log_magnitude_loss`, `multi_resolution_stft_loss`, `lsgan_discriminator_loss`, `lsgan_generator_loss`, and `feature_matching_loss`. The checks run on the CPU with synthetic signals. They confirm Snake's hand-worked values and gradient, the reshape for periods 2 to 11 with reflect padding, your STFT against a numpy one, the hand-worked 0.2 and 0.1, and that the MR-STFT loss is zero for a copy, unchanged by gain, and rising with noise. They also check the LSGAN gradient against finite differences, and that a period-5 sub-discriminator built on your reshape changes only one column when one sample changes.
 
-Press **Run** to train. On a GPU, the run trains a V2-sized generator with Snake activations and a five-period MPD on four minutes of LibriSpeech speaker 1272, for at most seven minutes. On a CPU it trains a tiny version for 35 seconds, and says its output is still noisy. Then it vocodes a held-out clip from another chapter, prints mel L1 and the MR-STFT loss for your vocoder and for Griffin-Lim, and plays the original, your vocoder, and Griffin-Lim side by side.
+Press **Run** to train. On a GPU, the run trains a V2-sized generator with Snake activations and a five-period MPD on four minutes of LibriSpeech speaker 1272, for at most seven minutes. On a CPU it trains a tiny version for 35 seconds, and its output is still noisy. It then vocodes a held-out clip, prints mel L1 and the MR-STFT loss for your vocoder and Griffin-Lim, and plays the original and both.

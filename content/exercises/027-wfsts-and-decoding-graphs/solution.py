@@ -1,4 +1,4 @@
-"""Weighted transducers: composition, shortest paths, and a CTC topology."""
+"""Weighted transducers: composition, shortest paths, H and C, and a CTC topology."""
 
 import heapq
 import math
@@ -168,6 +168,62 @@ def total_weight(fst):
     return float(-np.logaddexp.reduce(-np.array(costs, dtype=float)))
 
 
+def context_transducer(phones, boundary="sil"):
+    """The transducer C: triphone labels in, plain phones out.
+
+    A triphone label is `left-phone+right`. Reading `a-b+c` writes `b`, and
+    the next triphone must be `b-c+...`, so the states remember the window:
+    state `(a, b)` expects `a-b+c` for some `c`. The first triphone has
+    `boundary` on its left, and the string ends at a triphone with
+    `boundary` on its right. Every arc costs 0.
+    """
+    phones = list(phones)
+    rights = phones + [boundary]
+
+    def after(centre, right):
+        return "end" if right == boundary else (centre, right)
+
+    arcs = [
+        ("start", after(b, c), f"{boundary}-{b}+{c}", b, 0.0)
+        for b in phones
+        for c in rights
+    ]
+    arcs += [
+        ((a, b), after(b, c), f"{a}-{b}+{c}", b, 0.0)
+        for a in phones
+        for b in phones
+        for c in rights
+    ]
+    return {"start": "start", "arcs": arcs, "finals": {"end": 0.0}}
+
+
+def hmm_transducer(senones):
+    """The transducer H: senone ids in, triphone labels out.
+
+    `senones` maps a triphone label to the tuple of senone ids of its HMM
+    states. Each triphone is a chain that reads its senones in order and
+    writes the label on its last arc. That arc returns to the start state,
+    so triphones can follow one another. Every arc costs 0. Self-loops are
+    left to the decoder.
+    """
+    arcs = []
+    next_state = 1
+    for label, ids in senones.items():
+        src = 0
+        for position, senone in enumerate(ids):
+            last = position == len(ids) - 1
+            dst = 0 if last else next_state
+            next_state += 0 if last else 1
+            arcs.append((src, dst, senone, label if last else EPS, 0.0))
+            src = dst
+    return {"start": 0, "arcs": arcs, "finals": {0: 0.0}}
+
+
+def hclg(h, c, l, g):
+    """Compose H, C, L, and G, in that order, into one graph."""
+    return compose(h, compose(c, compose(l, g)))
+
+
 def ctc_topology(target, blank=0):
     """The CTC graph for `target`: blank self-loops, label self-loops, and a
     blank between two copies of the same label.
@@ -246,5 +302,14 @@ if __name__ == "__main__":
         xlabel="Path index, cheapest first",
         ylabel="Cost",
     )
+    senones = {"sil-ah+sil": (0, 1), "sil-k+t": (2, 3), "k-t+sil": (4, 1)}
+    full = hclg(
+        hmm_transducer(senones),
+        context_transducer(["ah", "k", "t"]),
+        _lexicon(),
+        _grammar(),
+    )
+    for cost, inputs, outputs in n_best(full, 5):
+        print("senones", " ".join(map(str, inputs)), "->", " ".join(outputs), f"cost {cost:.1f}")
     topo = ctc_topology([1, 1], blank=0)
     print(f"CTC topology for [1, 1] has {len(topo['arcs'])} arcs")

@@ -1,6 +1,6 @@
 """Fit a diagonal mixture, tie triphone states, and scale posteriors.
 
-Fill in the six functions, then press Run. The log-likelihood curve of the
+Fill in the seven functions, then press Run. The log-likelihood curve of the
 six-frame example is what Run prints once the functions work.
 """
 
@@ -50,6 +50,19 @@ def best_question_split(
     raise NotImplementedError("best_question_split")
 
 
+def tie_senones(
+    labels: list[str], questions: list[tuple[str, set[str]]]
+) -> tuple[list[int], int]:
+    """Map triphone labels to senone ids through yes/no context questions.
+
+    Each question is `(side, phones)` with `side` equal to `"left"` or
+    `"right"`. Two labels share a senone when they have the same centre
+    phone and the same answer to every question. Ids count up from 0 in
+    order of first appearance. Returns the ids and the number of senones.
+    """
+    raise NotImplementedError("tie_senones")
+
+
 def scaled_likelihoods(posteriors: np.ndarray, priors: np.ndarray) -> np.ndarray:
     """Posterior divided by the prior.
 
@@ -76,6 +89,12 @@ if __name__ == "__main__":
     print("log-likelihood (nats):", np.array2string(log_likelihoods, precision=3))
     print("means:", means.ravel())
     print("triphones:", triphones(["k", "ae", "t"]))
+    stops, nasals = {"k", "p", "b", "t", "d", "g"}, {"m", "n", "ng"}
+    ids, count = tie_senones(
+        ["k-ae+t", "p-ae+t", "b-ae+n", "m-ae+n", "s-ae+n", "k-ih+t"],
+        [("left", stops), ("right", nasals)],
+    )
+    print("senone ids:", ids, "senones:", count)
     show_plot(
         log_likelihoods,
         label="EM log-likelihood of the six frames",

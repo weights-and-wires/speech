@@ -2,13 +2,14 @@
 title: Weighted finite-state transducers and decoding graphs
 slug: 027-wfsts-and-decoding-graphs
 part: "Part 3 — Classical recognition"
-summary: Compose a lexicon with a bigram, score every path in two semirings, and build the CTC blank topology.
+summary: Compose H, C, L, and G, score every path in two semirings, and build the CTC blank topology.
 minutes: 45
 gpu: false
 objectives:
   - Define a weighted transducer and say what the tropical and log semirings compute.
   - Compose two transducers, including an epsilon arc, and match the paths to an enumeration.
   - Find the cheapest path, the n best paths, and the log-semiring total of one graph.
+  - Build toy H and C transducers and compose them with L and G in the order H, C, L, G.
   - Build a CTC topology whose accepted strings match the collapse function.
 prereqs:
   - 022-hidden-markov-models
@@ -19,29 +20,28 @@ exercise: 027-wfsts-and-decoding-graphs
 
 # Weighted finite-state transducers and decoding graphs
 
-A recognizer has heard something like "cat", and three pieces of knowledge still have to agree. The acoustics score phones, the dictionary says which phones spell a word, and the language model says which words are likely. Separate searches can discard a good phone string before the dictionary votes.
+A recognizer has heard something like "cat", and three pieces of knowledge still have to agree. The acoustics score phones, the dictionary says which phones spell a word, and the language model says which words are likely. 
+Classical recognizers put each piece in a **weighted finite-state transducer** (WFST): a graph whose arrows read one symbol, write another, and carry a cost. Compose the graphs and a path reads phones and writes words. The transcript you want is the cheapest path. The full graph is called HCLG, after four transducers. This chapter builds all four on the two words `a` and `cat`: a lexicon $L$, a bigram $G$, and the two layers of acoustic detail $C$ and $H$ that sit in front of them.
 
-Classical recognizers put each piece in a **weighted finite-state transducer** (WFST): a graph whose arrows read one symbol, write another, and carry a cost. Compose the graphs and a path reads phones and writes words. The transcript you want is the cheapest path. The full graph is called HCLG, after four transducers. This chapter builds the middle of it, a lexicon $L$ composed with a bigram $G$, on the two words `a` and `cat`.
-
-The same kind of graph is the CTC alignment. The blank, and the extra blank a repeated label needs, are a transducer. Its strings are exactly the strings the collapse function maps to a target.
+The CTC alignment is the same kind of graph. Its strings are exactly the strings the collapse function maps to a target.
 
 ## What you already know
 
 - Viterbi keeps the path with the smallest sum of frame costs, from [Hidden Markov models](/lessons/022-hidden-markov-models).
 - A bigram scores the next word from the previous one, from [n-gram language models](/lessons/025-n-gram-language-models).
-- The full graph chains four transducers: H reads HMM states, C reads context-dependent phones (the triphones of [Hybrid acoustic models](/lessons/024-hybrid-acoustic-models)), L reads phones and writes words, and G is the language model.
+- The full graph chains four transducers: H reads senones, C reads triphones, L reads phones and writes words, and G is the language model. [Hybrid acoustic models](/lessons/024-hybrid-acoustic-models) defines senones and triphones.
 - A negative log probability turns a product of probabilities into a sum of costs.
-- A transducer maps an input string to an output string (Jurafsky and Martin, 2009, section 3.4).
+- A transducer maps an input string to an output string.
 
 ## A graph that reads one alphabet and writes another
 
-Picture a few circles joined by arrows. Each arrow is one step the recognizer might take: what it reads, what it writes, and what that step costs.
+Picture circles joined by arrows. Each arrow is one step: what it reads, what it writes, and what it costs.
 
-A transducer here is a dict with a start state, a list of arcs, and a dict of final costs. One arc is `(src, dst, ilabel, olabel, weight)`. The weight is a **cost**, a negative log probability, so a cheap arc is a likely one. These decimals are small so you can add them by hand. Stopping in a **final** state adds that state's final cost.
+A transducer here is a dict with a start state, a list of arcs, and a dict of final costs. One arc is `(src, dst, ilabel, olabel, weight)`. The weight is a **cost**, a negative log probability, so a cheap arc is a likely one. Stopping in a **final** state adds that state's final cost.
 
-The label `"<eps>"` is **epsilon**. It reads nothing or writes nothing. The phone `k` in `cat` does not itself write the word. The word is written on the last phone, and `k` writes epsilon. Epsilon is a string. Later, in the CTC graph, the integer `0` is the blank, which is a real symbol.
+The label `"<eps>"` is **epsilon**. It reads nothing or writes nothing. The word `cat` is written on its last phone, so `k` writes epsilon. Epsilon is a string. In the CTC graph, the integer `0` is the blank, which is a real symbol.
 
-A **semiring** is the pair of operations that combine costs (Mohri, Pereira, and Riley, 2002). $\otimes$ extends one path by one more arc. $\oplus$ combines alternative paths. Both semirings here use addition as $\otimes$, because a negative log turns a product into a sum. They differ in $\oplus$.
+A **semiring** is the pair of operations that combine costs (Mohri, Pereira, and Riley, 2002). $\otimes$ extends one path by one more arc. $\oplus$ combines alternative paths. Both semirings here add costs for $\otimes$ and differ in $\oplus$.
 
 The **tropical** semiring is Viterbi. Alternatives keep the smaller cost:
 
@@ -49,7 +49,7 @@ $$
 x \oplus y = \min(x, y), \qquad x \otimes y = x + y
 $$
 
-Read it aloud: the better of two costs is the minimum, and two steps in a row add. In Python the winner is `min(costs)`.
+Read it aloud: the better of two costs is the minimum, and two steps in a row add.
 
 The **log** semiring adds the probabilities back up, which is what the forward algorithm does. Costs stay negative log probabilities:
 
@@ -57,7 +57,7 @@ $$
 x \oplus_{\log} y = -\log(e^{-x} + e^{-y}), \qquad x \otimes y = x + y
 $$
 
-Read it aloud: turn each cost back into a probability, add those probabilities, and take the negative log again. One path is still a sum. Many paths combine with $\oplus_{\log}$. In numpy:
+Read it aloud: turn each cost back into a probability, add, and take the negative log again. In numpy:
 
 ```python
 total = -np.logaddexp.reduce(-np.array(costs))
@@ -66,29 +66,27 @@ total = -np.logaddexp.reduce(-np.array(costs))
 > [!KEY]
 > Tropical $\oplus$ is the minimum, so the winner is the cheapest path. Log $\oplus$ folds every path's probability into one cost. Both semirings add costs along a single path.
 
-k2 stores the opposite sign. Its scores are log probabilities, so tropical takes a max and the log semiring is $\log(e^{a} + e^{b})$ (k2 core concepts). Negate those scores and you get the costs in this chapter.
-
 ## Compose a lexicon with a bigram
 
-Composition joins two transducers on a shared alphabet. $L$ writes words and $G$ reads them. When an output of $L$ equals an input of $G$, and that symbol is not epsilon, you take both arcs. The composed arc reads what $L$ read, writes what $G$ wrote, and costs the sum (Mohri, Pereira, and Riley, 2002).
+Composition joins two transducers on a shared alphabet. $L$ writes words and $G$ reads them. When an output of $L$ equals an input of $G$, and that symbol is not epsilon, you take both arcs. The composed arc reads what $L$ read, writes what $G$ wrote, and costs the sum.
 
-Epsilon is the case a naive zipper drops. Delete every arc that touches `"<eps>"` and the phone `k` vanishes, so `cat` can no longer be written. The rule is three lines:
+Epsilon is the case a naive zipper drops. Delete every arc that touches `"<eps>"` and `k` vanishes, so `cat` can no longer be written. The rule is three lines:
 
 - An output epsilon on $L$ moves only $L$. $G$ stays put, and the composed arc writes epsilon.
 - An input epsilon on $G$ moves only $G$. $L$ stays put, and the composed arc reads epsilon.
-- Take each epsilon step once. Placing it inside the loop over the other transducer's arcs copies the path once per arc.
+- Take each epsilon step once, outside the loop over the other transducer's arcs.
 
 ### Work the composition by hand
 
 $L$ has two pronunciations. `ah` writes `a` at cost $0.2$. `k` writes epsilon at cost $0.1$, then `t` writes `cat` at cost $0.3$. State 2 is final at cost $0$.
 
-$G$ has a start state and one state per word. From the start, `a` costs $0.5$ and ends at final cost $0.4$. `cat` costs $0.8$ and ends at final cost $0.2$. One more arc, `cat` after `a`, costs $0.3$. This lexicon writes one word and stops, so that arc has no partner and never appears in the composition. A lexicon that returned to its start would walk it, and the graph would contain a cycle.
+$G$ has a start state and one state per word. From the start, `a` costs $0.5$ and ends at final cost $0.4$. `cat` costs $0.8$ and ends at final cost $0.2$. One more arc, `cat` after `a`, costs $0.3$. This lexicon writes one word and stops, so that arc never appears in the composition.
 
-Two paths survive. Figure 1 draws the costs composition produces.
+Two paths survive, and Figure 1 draws them.
 
-`ah` matches `a`. The arc costs $0.2 + 0.5 = 0.7$, the final cost is $0.4$, and the path costs $1.1$. It reads `ah` and writes `a`.
+`ah` matches `a`. The arc costs $0.2 + 0.5 = 0.7$ and the final cost is $0.4$, so the path costs $1.1$.
 
-`k t` takes the epsilon first. `k:eps` costs $0.1$ and leaves $G$ at the start. `t:cat` matches at $0.3 + 0.8 = 1.1$. The final cost is $0.2$. The path costs $0.1 + 1.1 + 0.2 = 1.4$. It reads `k t` and writes `cat`.
+`k t` takes the epsilon first. `k:eps` costs $0.1$ and leaves $G$ at the start. `t:cat` matches at $0.3 + 0.8 = 1.1$, and the final cost is $0.2$. The path costs $0.1 + 1.1 + 0.2 = 1.4$.
 
 ```figure
 <svg viewBox="0 0 640 320" role="img" aria-label="Composed lexicon and bigram. The path ah to a costs 1.1. The path k t to cat costs 1.4.">
@@ -124,7 +122,7 @@ Two paths survive. Figure 1 draws the costs composition produces.
 Figure 1. The lexicon composed with the bigram. Notice that k:eps writes nothing and leaves the bigram at its start, which is what makes cat reachable. The path that writes a costs 1.1, and the path that writes cat costs 1.4.
 ```
 
-State ids in the product can be anything. The checks compare paths, not ids. The match itself is one condition, and the epsilon steps sit outside that loop:
+The checks compare paths, not state ids. The match is one condition, and the epsilon steps sit outside that loop:
 
 ```python
 if out_a == in_b and out_a != "<eps>":
@@ -134,16 +132,13 @@ if out_a == in_b and out_a != "<eps>":
 A product state is final when both states are final, and the final cost is the sum.
 
 > [!WARNING]
-> If both transducers have an epsilon at the same pair of states, either order builds a path, and the two paths share labels and cost. The log semiring then counts that pronunciation twice. Mohri, Pereira, and Riley (2002) treat epsilon as a special case for this reason. k2's `compose` treats epsilon as special unless `treat_epsilons_specially` is false. $G$ here has no input epsilons, so each pronunciation is one path.
-
-> [!TIP]
-> Give $G$ no input epsilons on the first test, and compare `compose` with a listing of every path pair. A compose that drops epsilon arcs fails that test by losing `cat`.
+> If both transducers have an epsilon at the same pair of states, either order builds a path, and the two paths share labels and cost. The log semiring then counts that pronunciation twice. $G$ here has no input epsilons, so each pronunciation is one path.
 
 ## The cheapest path is Viterbi
 
 Figure 1 costs $1.1$ and $1.4$. Tropical search keeps $1.1$, the transcript `a`. That is Viterbi on a graph that already holds the dictionary and the language model.
 
-**n-best** asks for more than the winner. Sorted by cost, the paths are `a` at $1.1$, then `cat` at $1.4$. CMU 11-751's search lecture on November 21, 2022, is this list, and the lattice a beam keeps.
+**n-best** asks for more than the winner: `a` at $1.1$, then `cat` at $1.4$. CMU 11-751's search lecture on November 21, 2022, covers n-best and lattices.
 
 The log-semiring total puts both paths back together:
 
@@ -151,77 +146,97 @@ $$
 1.1 \oplus_{\log} 1.4 = -\log(e^{-1.1} + e^{-1.4}) = 0.5456
 $$
 
-The $0.5456$ is that expression to four decimal places. It is smaller than either path, because two ways to finish hold more probability than one. The forward algorithm is this total on paths of a fixed length.
+The total, $0.5456$, is smaller than either path because two ways to finish hold more probability than one. The forward algorithm is this total on paths of a fixed length.
 
 > [!WARNING]
-> Keeping the largest sum of arc weights treats costs as scores to pile up. Paths $0.2 + 0.2$ and $0.9$ then prefer $0.9$. The tropical path is the minimum sum, $0.4$. Forgetting the final cost fails the other way: a cheap arc into an expensive final state can beat a dearer arc into a cheap one.
+> Keeping the largest sum of arc weights treats costs as scores. Paths $0.2 + 0.2$ and $0.9$ then prefer $0.9$, but the tropical path costs $0.4$. Forgetting the final cost fails the other way: a cheap arc into an expensive final state can beat a dearer arc into a cheap one.
 
 > [!KEY]
 > `shortest_path` is the minimum sum, final cost included. `total_weight` is the log-semiring sum of every accepting path. `n_best` lists those paths, cheapest first.
+
+## Add context and HMM states with C and H
+
+A hybrid network scores a *senone* on every frame, the tied triphone HMM state from [Hybrid acoustic models](/lessons/024-hybrid-acoustic-models), not a phone. Two more transducers close the gap. **C** reads triphones and writes the plain phones $L$ reads. **H** reads senones and writes triphones. Mohri, Pereira, and Riley (section 3.1) define C as a map from context-dependent to context-independent phones. The whole graph is
+
+$$
+\mathrm{HCLG} = H \circ C \circ L \circ G
+$$
+
+Read it right to left: $G$ allows word sequences, $L$ spells words as phones, $C$ spells phones as triphones, and $H$ spells triphones as senones. Each output alphabet is the next input alphabet. Compose $C$ with $H$ and C's phone outputs never meet H's senone inputs, so no path survives.
+
+### C remembers a window of three phones
+
+A triphone `a-b+c` is phone `b` with left neighbor `a` and right neighbor `c`. Neighboring triphones overlap: after `sil-k+t` the next one starts `k-t+`. State $(a, b)$ in C means the next triphone is `a-b+c` for some $c$. Reading it writes `b` and moves to $(b, c)$. The first triphone has `sil` on its left, and the string ends when the right neighbor is `sil`.
+
+For the phones `k t`, the path reads `sil-k+t` and writes `k`, reaches state $(k, t)$, reads `k-t+sil` and writes `t`, and ends. The string `sil-k+t`, `ah-t+sil` has no path, because $(k, t)$ reads only `k-t+c`. A context-free C, one looping state that writes each triphone's middle phone, accepts that string. It also accepts a first triphone `ah-k+t`, which puts `ah` where silence stands. C sees the whole phone string, so a word's last phone takes the next word's first phone as its right neighbor.
+
+### H reads senones
+
+Give each triphone two HMM states with these senone ids:
+
+| Triphone | Senones |
+|---|---|
+| `sil-ah+sil` | 0, 1 |
+| `sil-k+t` | 2, 3 |
+| `k-t+sil` | 4, 1 |
+
+The two triphones with `sil` on the right share senone 1. H is one chain per triphone. The chain for `sil-k+t` reads 2 and writes epsilon, then reads 3 and writes `sil-k+t`, as `k` and `t` did in the lexicon. The last arc returns to the start, so triphones follow one another. Self-loops stay out of H, and the decoder simulates them (Mohri, Pereira, and Riley, section 3.1).
+
+### Read senones as words
+
+The senones $2, 3, 4, 1$ become `sil-k+t`, `k-t+sil` through H, `k`, `t` through C, and `cat` through L and G. The path costs $1.4$, as in Figure 1, because H and C arcs cost $0$ here. The senones $0, 1$ read `a` at $1.1$. The senones $2, 3, 0, 1$ have no path, because `sil-k+t` and `sil-ah+sil` do not overlap.
 
 ## Determinization and minimization shrink the search
 
 A transducer is **deterministic** when each state has at most one arc for a given input label, and no input epsilon (Mohri, Pereira, and Riley, 2002). The search then holds one hypothesis per symbol.
 
-From a start state, two arcs labeled `a` cost $0.4$ and $1.0$. The cheap arc is followed by `x` at $1.0$. The dear arc is followed by `y` at $0.2$. Path costs are $1.4$ for `ax` and $1.2$ for `ay`.
+Two arcs labeled `a` cost $0.4$ and $1.0$. The cheap one is followed by `x` at $1.0$, and the dear one by `y` at $0.2$. Determinization keeps one `a` arc at $0.4$ and pushes the leftover $0.6$ onto `y`, which costs $0.8$. The paths `ax` at $1.4$ and `ay` at $1.2$ cost the same as before. **Minimization** merges states with the same future.
 
-Determinization keeps one `a` arc at the minimum, $0.4$, and stores the leftover $1.0 - 0.4 = 0.6$ on the state the dear arc reached. The following `y` pays that leftover, so it costs $0.2 + 0.6 = 0.8$. The `x` arc stays $1.0$. The path costs do not change:
-
-| Path | Before | After determinization |
-|---|---|---|
-| `ax` | $0.4 + 1.0 = 1.4$ | $0.4 + 1.0 = 1.4$ |
-| `ay` | $1.0 + 0.2 = 1.2$ | $0.4 + 0.8 = 1.2$ |
-
-**Minimization** merges states with the same future. If `p` at cost $0.5$ and `q` at cost $0.4$ each reach a state whose only arc is `z` at $0.2$, those states become one. Path costs stay $0.7$ and $0.6$.
-
-Some transducers do not determinize. Homophones, and a pronunciation that is a prefix of another word, can leave the output waiting with no bound. Mohri, Pereira, and Riley mark the end of a pronunciation with an auxiliary symbol so the word is fixed when the phones end. Kaldi's decoding-graph notes use symbols such as `#1` and `#2` for that, and determinize and minimize after each composition. The University of Edinburgh's ASR course teaches the construction as lecture 9, "ASR with WFSTs."
+Homophones, and a pronunciation that is a prefix of another word, do not determinize. Mohri, Pereira, and Riley end each pronunciation with an auxiliary symbol, and Kaldi uses `#1` and `#2`.
 
 ## A CTC topology is a transducer
 
-The CTC loss is derived in [CTC: many paths, one label](/lessons/029-ctc-many-paths-one-label). The collapse rule is enough to see that the alignment graph is a transducer.
+[CTC: many paths, one label](/lessons/029-ctc-many-paths-one-label) derives the loss. Its collapse rule is enough to see that the alignment graph is a transducer.
 
-**Collapse** walks integer symbols and keeps a symbol when it differs from the previous one and is not the blank. Runs become one symbol, then blanks drop. With blank `0`, `(1, 1)` collapses to `[1]` and `(1, 0, 1)` collapses to `[1, 1]`. The check calls that chapter's `collapse`. Dropping blanks before merging runs turns `(1, 0, 1)` into `[1]`, which is a different rule.
+**Collapse** merges each run of equal symbols into one, then drops the blank. With blank `0`, `(1, 1)` collapses to `[1]` and `(1, 0, 1)` to `[1, 1]`. The check calls that chapter's `collapse`.
 
 The **CTC topology** for a target accepts a string exactly when collapse sends it to that target. Every arc costs $0$, and the input equals the output, so it is an acceptor drawn as a transducer. For `[1, 1]` the states are a leading blank, the first `1`, a blank between the copies, the second `1`, and a trailing blank. Each symbol has a self-loop, because a label or a blank can last more than one frame. There is no arc from the first `1` to the second `1`, so `(1, 1)` is rejected.
 
 When neighbors differ, as in `[1, 2]`, both routes are legal: a direct step, and a blank between them. Both strings collapse to `[1, 2]`.
-
-k2 builds this filter with `k2.ctc_topo` and composes it with a token string. The exercise lists every short string on its own.
-
-> [!KEY]
-> The CTC blank-and-repeat graph is a transducer. A string is accepted exactly when collapse, merge runs and then drop blanks, returns the target. A repeated label has a blank state between its copies.
-
 > [!RECAP]
 > - An arc reads a label, writes a label, and adds a cost. Epsilon is the string `"<eps>"`.
-> - Tropical $\oplus$ is $\min$ and $\otimes$ is $+$. Log $\oplus$ is $-\log(e^{-x}+e^{-y})$, and $\otimes$ is still $+$.
+> - Tropical $\oplus$ is $\min$, log $\oplus$ is $-\log(e^{-x}+e^{-y})$, and $\otimes$ is $+$.
 > - Composition pairs equal non-epsilon labels and steps over an epsilon on one side.
-> - `shortest_path` is the minimum sum, `n_best` lists the paths, and `total_weight` is the log-semiring total.
+> - C reads triphones and writes phones through an overlapping window, H reads senones and writes triphones, and HCLG composes $H \circ C \circ L \circ G$.
 > - The CTC topology accepts a string exactly when the CTC chapter's `collapse` returns the target.
 
 ## Build it step by step
 
 The checks call the functions in this order. The first check only calls `compose`.
 
-1. **`compose(a, b)`.** Pair arcs whose labels match and are not `"<eps>"`, and add the costs. Step an output epsilon of `a`, and an input epsilon of `b`, once each, outside the other loop. A product state is final when both states are. The usual mistake is dropping epsilon arcs, which loses `k t` → `cat`, or emitting the epsilon step once per arc of the other transducer.
-2. **`shortest_path(fst)`.** Return `(cost, inputs, outputs)` for the least cost. `heapq` settles each state once when arc costs are non-negative. Add the final cost, and drop `"<eps>"` from the tuples. The usual mistake is keeping the maximum sum, or forgetting the final cost. No path returns `(math.inf, (), ())`.
+1. **`compose(a, b)`.** Pair arcs whose labels match and are not `"<eps>"`, and add the costs. Step an output epsilon of `a`, and an input epsilon of `b`, once each, outside the other loop. A product state is final when both states are. The usual mistake is dropping epsilon arcs, which loses `k t` → `cat`.
+2. **`shortest_path(fst)`.** Return `(cost, inputs, outputs)` for the least cost. Add the final cost, and drop `"<eps>"` from the tuples. The usual mistake is keeping the maximum sum, or forgetting the final cost. No path returns `(math.inf, (), ())`.
 3. **`n_best(fst, n)`.** List the accepting paths of an acyclic graph, sort by increasing cost, and keep `n`. The usual mistake is the right paths in the wrong order.
-4. **`total_weight(fst)`.** Return `-np.logaddexp.reduce(-costs)`. The usual mistake is adding the costs, or calling `logaddexp` on the costs themselves, which treats them as log probabilities. No path returns `math.inf`.
-5. **`ctc_topology(target, blank=0)`.** Alternate blank states and label states. Self-loops repeat a symbol. Skip the blank between two labels only when the labels differ. Every arc costs $0$ and carries one symbol on both sides. The usual mistake is an arc between two copies of the same label, which accepts `(1, 1)` for `[1, 1]`.
-
-## Cost and scaling
-
-A naive $L \circ G$ can hold a state for every pair of states, and determinization can grow further before minimization merges them. Kaldi determinizes and minimizes after each stage so the graph stays near the size of the language model. The exercise lists paths because its graphs are tiny and acyclic. A decoder runs a beam, Viterbi with a cap on live states.
+4. **`total_weight(fst)`.** Return `-np.logaddexp.reduce(-costs)`. The usual mistake is calling `logaddexp` on the costs themselves. No path returns `math.inf`.
+5. **`context_transducer(phones, boundary="sil")`.** Build C. The start state reads `sil-b+c` for each phone `b`. State `(a, b)` reads `a-b+c`, writes `b`, and goes to `(b, c)`, or to a final end state when `c` is the boundary. The usual mistake is one looping state that ignores the window.
+6. **`hmm_transducer(senones)`.** Build H from a dict of triphone to senone ids. Each triphone is a chain of arcs. The last arc writes the triphone and returns to state 0, and the earlier arcs write epsilon. The usual mistake is one state per senone, which merges the shared senone 1.
+7. **`hclg(h, c, l, g)`.** Compose the four, `h` first. The usual mistake is the reverse order, which leaves no path.
+8. **`ctc_topology(target, blank=0)`.** Alternate blank states and label states. Self-loops repeat a symbol. Skip the blank between two labels only when the labels differ. Every arc costs $0$ and carries one symbol on both sides. The usual mistake is an arc between two copies of the same label, which accepts `(1, 1)` for `[1, 1]`.
 
 ## Where this breaks
 
-**Epsilons on both tapes.** The one-sided rule fits this $L \circ G$ because $G$ has no input epsilons. When both sides are epsilon at once, both orders appear and the log semiring double-counts. A production filter keeps one order. These checks leave that filter out.
+**Graph size.** A naive $L \circ G$ can hold a state for every pair of states, so Kaldi determinizes and minimizes after each composition.
 
-**Graphs that do not determinize.** Homophones, and a pronunciation that is a prefix of another word, need a disambiguation symbol. Kaldi also marks backoff arcs. Without them the HCLG recipe stops midway.
-
-**Cycles.** `n_best` and `total_weight` list paths, so the graph is acyclic. The CTC topology has zero-cost self-loops, so you test it by which finite strings it accepts.
+**Cycles.** `n_best` and `total_weight` list paths, so the graph is acyclic. The CTC topology has self-loops, so you test it by which strings it accepts.
 
 ## The exercise
 
-You build `compose`, `shortest_path`, `n_best`, `total_weight`, and `ctc_topology`. Press **Run** to compose the lexicon with the bigram, print both paths, and plot their tropical costs. The log-semiring total is $0.5456$.
+You build `compose`, `shortest_path`, `n_best`, `total_weight`, `context_transducer`, `hmm_transducer`, `hclg`, and `ctc_topology`. Press **Run** to compose the lexicon with the bigram, print both paths, and plot their costs. It also reads the senones $2, 3, 4, 1$ through HCLG.
 
-The checks enumerate path pairs for an epsilon-free pair and for the lexicon, including the epsilon on `k`. They compare `shortest_path` with the minimum sum, including a final cost that changes the winner, and `total_weight` with the log-semiring sum of those paths. `ctc_topology` is checked on every short string by the CTC chapter's `collapse`.
+The checks enumerate path pairs for an epsilon-free pair and for the lexicon, including the epsilon on `k`. They compare `shortest_path` with the minimum sum, including a final cost that changes the winner, and `total_weight` with the log-semiring sum of those paths. `context_transducer` must reject triphone strings whose windows do not overlap, and `hclg` must read senones $2, 3, 4, 1$ as `cat` at $1.4$. `ctc_topology` is checked on every short string by the CTC chapter's `collapse`.
+
+## Further reading
+
+- [Weighted Finite-State Transducers in Speech Recognition](https://cs.nyu.edu/~mohri/pub/csl01.pdf), Mehryar Mohri, Fernando Pereira, and Michael Riley, Computer Speech and Language. Section 3.1 builds $H \circ C \circ L \circ G$.
+- [ASR with WFSTs](https://opencourse.inf.ed.ac.uk/asr/lectures), Peter Bell, ASR lecture 9, University of Edinburgh, 9 February 2026.
+- [Speech Recognition and Understanding (11-751)](https://www.wavlab.org/activities/2022/11751-2022f/), Shinji Watanabe, Carnegie Mellon University, 2022. The 21 November lecture is "Search."

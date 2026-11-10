@@ -1,6 +1,6 @@
 """Checks for the hybrid acoustic model exercise.
 
-Two plausible wrong implementations fail checks here:
+Three plausible wrong implementations fail checks here:
 
 - `gmm_em_hard_assign` replaces the soft responsibilities with a one-hot
   argmax before the M-step. On `overlap_frames()` its log-likelihood falls
@@ -9,6 +9,10 @@ Two plausible wrong implementations fail checks here:
 - `scaled_likelihoods_times_prior` multiplies the posterior by the prior.
   For posteriors [0.6, 0.4] and priors [0.8, 0.2] it returns [0.48, 0.08].
   `test_scaled_likelihoods_divide_by_the_prior` expects [0.75, 2.0].
+- `tie_senones_without_centre` leaves the centre phone out of the key, so
+  `k-ih+t` shares senone 0 with `k-ae+t` and the inventory is 3, not 4.
+  `test_tie_senones` expects ids [0, 0, 1, 2, 2, 3]. Giving every label its
+  own id also fails there, with an inventory of 6.
 """
 
 import numpy as np
@@ -198,6 +202,27 @@ def test_best_question(sub):
     if not np.isfinite(gain):
         fail(f"gain is {gain}, expected 20.756560")
     close(gain, 20.756560209454037, atol=1e-6, label="vowel-question gain")
+
+
+@check("tie_senones gives tied triphones one id, keeps centre phones apart, and counts the inventory")
+def test_tie_senones(sub):
+    # tie_senones_without_centre ties k-ih+t to k-ae+t, giving 3 senones, not 4.
+    tie_senones = has(sub, "tie_senones")
+    stops = {"k", "p", "b", "t", "d", "g"}
+    nasals = {"m", "n", "ng"}
+    questions = [("left", stops), ("right", nasals)]
+    labels = ["k-ae+t", "p-ae+t", "b-ae+n", "m-ae+n", "s-ae+n", "k-ih+t"]
+    ids, count = tie_senones(labels, questions)
+    equal([int(i) for i in ids], [0, 0, 1, 2, 2, 3], label="senone ids of the six triphones")
+    equal(int(count), 4, label="senone inventory of the six triphones")
+    # An unseen triphone answers the same questions, so it lands on an existing senone.
+    ids, count = tie_senones(labels + ["g-ae+t"], questions)
+    equal(int(ids[-1]), 0, label="senone of the unseen g-ae+t")
+    equal(int(count), 4, label="inventory after the unseen triphone")
+    # With no questions, only the centre phone separates senones.
+    ids, count = tie_senones(labels, [])
+    equal([int(i) for i in ids], [0, 0, 0, 0, 0, 1], label="ids with no questions")
+    equal(int(count), 2, label="inventory with no questions")
 
 
 @check("scaled_likelihoods divides by the prior")

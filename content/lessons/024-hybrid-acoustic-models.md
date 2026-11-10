@@ -2,12 +2,13 @@
 title: Hybrid acoustic models
 slug: 024-hybrid-acoustic-models
 part: "Part 3 — Classical recognition"
-summary: Fit a diagonal Gaussian mixture, tie triphone states, and turn posteriors into HMM likelihoods.
+summary: Fit a diagonal Gaussian mixture, tie triphone states into senones, and turn posteriors into HMM likelihoods.
 minutes: 40
 gpu: false
 objectives:
   - Fit a diagonal Gaussian mixture with EM and read a log-likelihood that does not fall.
   - Build triphone labels and pick the context question with the largest likelihood gain.
+  - Tie triphones into senones with context questions, and count the senone inventory a network predicts.
   - Divide frame posteriors by the state priors and decode the scaled likelihoods with Viterbi.
 prereqs:
   - 022-hidden-markov-models
@@ -32,7 +33,7 @@ This chapter gives that state three things one bell does not have. A mixture of 
 
 Picture the frames of one vowel as dots on a line. Some sit near 0 and some near 6, because the following consonant pulled them apart. One Gaussian puts its mean in the gap and stretches until the bell covers both piles. The center of that bell is a sound that never occurred.
 
-A *Gaussian mixture model* picks a component $k$ with probability $\pi_k$, then draws the frame from that component's own Gaussian. You never see $k$. That is the same expectation-maximization idea as Baum-Welch, with a simpler hidden variable: the component, not the state. Peter Bell's ASR lecture 6 at Edinburgh (29 January 2026) fits the mixture this way. CMU 11-751 taught it on 28 September 2022, after the single Gaussian.
+A *Gaussian mixture model* picks a component $k$ with probability $\pi_k$, then draws the frame from that component's own Gaussian. You never see $k$. That is the same expectation-maximization idea as Baum-Welch, with a simpler hidden variable: the component, not the state. Peter Bell's ASR lecture 6 at Edinburgh (29 January 2026) fits the mixture this way.
 
 The log density, with one variance per feature and no correlation between features, is a weighted sum of those bells:
 
@@ -40,7 +41,7 @@ $$
 \log p(x) = \log \sum_{k=1}^{K} \pi_k \, \mathcal{N}(x; \mu_k, \mathrm{diag}(\sigma_k^2))
 $$
 
-Read it aloud: weight each bell by $\pi_k$, add them, and take the log. In code the sum is `logsumexp`.
+Read it aloud: weight each bell by $\pi_k$, add them, and take the log. In code that is `logsumexp`.
 
 ## Fit the mixture
 
@@ -66,9 +67,9 @@ $\pi_k$ is the soft count divided by $N$, $\mu_k$ is the weighted mean, and the 
 
 The frames are $-1, 0, 1, 5, 6, 7$. The exercise starts a component on the lowest frame and one on the highest, so the means begin at $-1$ and $7$. Both variances begin at the population variance of all six frames, $29/3 \approx 9.667$, and both weights at $1/2$.
 
-One Gaussian on these frames scores $-15.320$ nats. The mixture starts worse, at $-16.414$, because the means sit on the outer frames while the variances are still the wide pooled variance.
+One Gaussian scores $-15.320$ nats on these frames. The mixture starts worse, at $-16.414$, because the variances are still the wide pooled variance.
 
-For $x = -1$ the log densities are $-2.053$ under the mean at $-1$ and $-5.364$ under the mean at $7$. Add $\log 1/2 = -0.693$ and the components contribute $-2.746$ and $-6.057$. The responsibilities are $0.965$ and $0.035$. The six frames are symmetric around $3$, so each soft count is $3$, the weights stay $1/2$, the means move to $0.462$ and $5.538$, and both variances fall to $3.225$. The log-likelihood rises to $-13.898$.
+For $x = -1$ the log densities are $-2.053$ under the mean at $-1$ and $-5.364$ under the mean at $7$. Add $\log 1/2 = -0.693$ and the components contribute $-2.746$ and $-6.057$. The responsibilities are $0.965$ and $0.035$. The frames are symmetric around $3$, so each soft count is $3$, the weights stay $1/2$, the means move to $0.462$ and $5.538$, and both variances fall to $3.225$. The log-likelihood rises to $-13.898$.
 
 Figure 1 is the rest of that run. By step 3 the log-likelihood is $-11.456$ nats, and further steps leave it there. The means sit at $0$ and $6$, and each variance is $2/3$, the variance of $\{-1, 0, 1\}$. One bell's best score on these frames remains $-15.320$.
 
@@ -103,8 +104,6 @@ Figure 1 is the rest of that run. By step 3 the log-likelihood is $-11.456$ nats
 Figure 1. Log-likelihood, in nats, of the six frames. It rises from -16.41 to -11.46 and then stays level. The last five steps land on the same point.
 ```
 
-Entry 0 of the curve the exercise returns is this start, before any update.
-
 ```python
 log_joint = np.log(weights) + log_gauss  # (N, K)
 responsibilities = np.exp(log_joint - logsumexp(log_joint, axis=1)[:, None])
@@ -113,14 +112,11 @@ responsibilities = np.exp(log_joint - logsumexp(log_joint, axis=1)[:, None])
 > [!KEY]
 > A Gaussian mixture is a weighted sum of bells. EM refits each bell from the responsibilities, and the log-likelihood does not fall.
 
-> [!TIP]
-> Floor each variance, at $10^{-3}$ in this exercise. A component that collapses onto one frame otherwise sends the next log-likelihood to NaN.
-
 ## Name the neighbors
 
 A mixture gives one state several shapes. It does not say which shape belongs to which neighbor. A *triphone* label is `left-phone+right`. For `k ae t`, with silence where the string has no neighbor, the labels are `sil-k+ae`, `k-ae+t`, and `ae-t+sil`. The vowel is `ae` as said between `k` and `t`, not a bare `ae`.
 
-Bell's ASR lecture 7 (3 February 2025) gives the count. Forty phones give $40^3 = 64{,}000$ triphones, and a training set misses most of them. A triphone with no frames has no mean, so a new sentence that uses it has nothing to score. Tying is how those unseen labels borrow a Gaussian. The same label function covers a neighbor across a word boundary once that phone is in the string you pass.
+Bell's ASR lecture 7 (3 February 2025) gives the count. Forty phones give $40^3 = 64{,}000$ triphones, and a training set misses most of them. A triphone with no frames has no mean, so a new sentence that uses it has nothing to score. Tying is how those unseen labels borrow a Gaussian.
 
 ## Split on likelihood gain
 
@@ -146,6 +142,24 @@ Eight frames show the gap. The values $0.0, 0.2, -0.2, 0.1$ had a vowel on the l
 gain = loglik(frames[yes]) + loglik(frames[~yes]) - loglik(frames)
 ```
 
+## Name the tied states senones
+
+Each leaf of the tree is one tied state. A *senone* is a context-dependent HMM state that many triphones share. A hybrid network has one output unit per senone, so its softmax is a posterior over the senone inventory, not over phones. [Weighted finite-state transducers and decoding graphs](/lessons/027-wfsts-and-decoding-graphs) builds the transducer H that reads senones.
+
+Two questions tie six triphones. "Is the left phone a stop?" asks about `k`, `p`, `b`, `t`, `d`, `g`. "Is the right phone a nasal?" asks about `m`, `n`, `ng`.
+
+| Triphone | Left a stop? | Right a nasal? | Senone |
+|---|---|---|---|
+| `k-ae+t` | yes | no | 0 |
+| `p-ae+t` | yes | no | 0 |
+| `b-ae+n` | yes | yes | 1 |
+| `m-ae+n` | no | yes | 2 |
+| `s-ae+n` | no | yes | 2 |
+| `k-ih+t` | yes | no | 3 |
+
+Six triphones share four senones. Triphones with the same centre phone and the same answers get the same id. The centre phone is part of the key because a tied state belongs to one phone's HMM: `k-ih+t` answers like `k-ae+t` but is a different vowel, so it keeps senone 3.
+
+The unseen `g-ae+t` answers yes and no, so it maps to senone 0 with no frames of its own. That is how tying covers the labels `count_unseen` finds. A real triphone has three emitting states, each tied on its own; this toy ties one.
 ## Divide by the prior
 
 A frame classifier outputs $P(q_t = j \mid o_t)$. Viterbi wants $p(o_t \mid q_t = j)$. Bayes' rule connects them:
@@ -160,9 +174,9 @@ $$
 \tilde{b}_j(o_t) = \frac{P(q_t = j \mid o_t)}{P(q_t = j)}
 $$
 
-CS224S lecture 10 (2025) writes $P(x \mid s) = P(s \mid x)\, P(x) / P(s)$ and drops $P(x)$. Hinton and colleagues, in the November 2012 IEEE Signal Processing Magazine, divide network posteriors by the state frequencies in the alignment. The division matters when labels are unbalanced. Silence is most frames, so a moderate silence posterior is weak evidence.
+CS224S lecture 10 (2025) drops $P(x)$ too. Hinton and colleagues, in the November 2012 IEEE Signal Processing Magazine, divide network posteriors by the state frequencies in the alignment. The division matters when labels are unbalanced.
 
-Priors $0.8$ and $0.2$, and posteriors $0.6$ and $0.4$, prefer state 0 before the division and state 1 after it: $0.6/0.8 = 0.75$ and $0.4/0.2 = 2.0$. Multiplying by the prior pushes the other way.
+Priors $0.8$ and $0.2$, and posteriors $0.6$ and $0.4$, prefer state 0 before the division and state 1 after it: $0.6/0.8 = 0.75$ and $0.4/0.2 = 2.0$. Multiplying by the prior pushes the other way, and on the four frames below it turns the path $0, 1, 1, 1$ into $0, 0, 0, 0$.
 
 Four frames with those priors make it a path. The posteriors are $(0.90, 0.10)$, $(0.62, 0.38)$, $(0.62, 0.38)$, $(0.90, 0.10)$, so the scaled likelihoods are $(1.125, 0.5)$, $(0.775, 1.9)$, $(0.775, 1.9)$, $(1.125, 0.5)$. With $\pi = (0.6, 0.4)$ and
 
@@ -174,17 +188,14 @@ Viterbi on the scaled likelihoods returns $0, 1, 1, 1$, log probability $-1.720$
 
 Pass $\log \tilde{b}_j(o_t)$ to the `viterbi` from [Hidden Markov models](/lessons/022-hidden-markov-models). Do not transpose `log_A`.
 
-> [!WARNING]
-> Divide the posterior by the prior. Multiplying by it rewards the common state, and on these four frames the path becomes $0, 0, 0, 0$ instead of $0, 1, 1, 1$.
-
 > [!KEY]
 > A network posterior is not an emission likelihood. Divide by the state prior, then decode with the same Viterbi as the single-Gaussian model.
 
 ## When the hybrid wins, and when CTC does
 
-The hybrid fits better when a pronunciation dictionary exists and words share phones. A tied state pools every context on the same branch, so a rare triphone borrows frames. Hinton and colleagues report that decoding scaled likelihoods from a network beat the Gaussian system on the tasks they measured, sometimes by a large margin. Their Google Voice Input model scores 7,969 tied states.
+The hybrid fits better when a pronunciation dictionary exists and words share phones. A senone pools every context on the same branch, so a rare triphone borrows frames. Hinton and colleagues report that decoding scaled likelihoods from a network beat the Gaussian system on the tasks they measured, sometimes by a large margin. Their Google Voice Input model scores 7,969 tied states.
 
-The hybrid loses when the dictionary misses a name, because that name has no path. It also loses when the alignment behind the network is wrong: the network learns those labels and cannot grow a state the tree never split off. [CTC: many paths, one label](/lessons/029-ctc-many-paths-one-label) trains from the transcript alone, with no dictionary in the sum. CS224S lecture 10 names the dictionary and the alignment recipe as the reason to leave the hybrid. [Neural acoustic models](/lessons/028-neural-acoustic-models) builds the network. This chapter says what to do with its probabilities.
+The hybrid loses when the dictionary misses a name, because that name has no path. It also loses when the alignment behind the network is wrong: the network learns those labels and cannot grow a state the tree never split off. [CTC: many paths, one label](/lessons/029-ctc-many-paths-one-label) trains from the transcript alone, with no dictionary in the sum. [Neural acoustic models](/lessons/028-neural-acoustic-models) builds the network. This chapter says what to do with its probabilities.
 
 > [!KEY]
 > A mixture covers two shapes, a tied triphone covers a context you have barely seen, and dividing by the prior keeps a rare state audible. CTC drops the dictionary and the alignment when those are the part that fails.
@@ -193,11 +204,12 @@ The hybrid loses when the dictionary misses a name, because that name has no pat
 > - Start mixture means at evenly spaced ranks of the first feature, and divide variances by the soft count $N_k$.
 > - A triphone label is `left-phone+right`. A missing neighbor is the boundary phone.
 > - Pick the question whose two Gaussians beat the shared one by the most nats. An empty side scores 0.
+> - A senone is a tied state. Triphones with the same centre phone and the same answers share one.
 > - Scaled likelihoods are posteriors divided by priors. `viterbi` keeps the HMM chapter's `log_A`.
 
 ## Build it step by step
 
-1. **`gmm_em(X, n_components, n_steps, variance_floor=1e-3)`** takes `X` of shape `(N, D)` and returns weights `(K,)`, means `(K, D)`, variances `(K, D)`, and log-likelihoods `(n_steps + 1,)`. Entry 0 is the start, before any update. Place component $k$ on the row at rank `round(linspace(0, N - 1, K))` after `np.argsort(X[:, 0], kind="mergesort")`. Copy the floored population variance `X.var(axis=0)` onto every component, and start the weights equal. The usual mistakes are the divisor $N - 1$, and a hard argmax in place of the responsibilities.
+1. **`gmm_em(X, n_components, n_steps, variance_floor=1e-3)`** takes `X` of shape `(N, D)` and returns weights `(K,)`, means `(K, D)`, variances `(K, D)`, and log-likelihoods `(n_steps + 1,)`. Entry 0 is the start, before any update. Place component $k$ on the row at rank `round(linspace(0, N - 1, K))` after `np.argsort(X[:, 0], kind="mergesort")`. Copy the floored population variance `X.var(axis=0)` (floor each variance, because a component that collapses onto one frame sends the next log-likelihood to NaN) onto every component, and start the weights equal. The usual mistakes are the divisor $N - 1$, and a hard argmax in place of the responsibilities.
 
 2. **`triphones(phones, boundary="sil")`** returns one `f"{left}-{phone}+{right}"` per phone. The missing neighbor on either end is `boundary`. The usual mistake is to use the phone as its own left context.
 
@@ -205,21 +217,19 @@ The hybrid loses when the dictionary misses a name, because that name has no pat
 
 4. **`best_question_split(X, masks, variance_floor=1e-6)`** takes masks of shape `(N,)` and returns the index of the largest gain, and the gain. Ties go to the smaller index. Use the floored population variance and the sum of log densities, so a floor does not pretend the $+D$ term still holds. An empty side scores 0. Forgetting to subtract $L(S)$ keeps the winning index and gets the gain wrong.
 
-5. **`scaled_likelihoods(posteriors, priors)`** returns `posteriors / priors`, shapes `(T, N)` and `(N,)`. The usual mistake is to multiply.
+5. **`tie_senones(labels, questions)`** takes triphone labels and a list of `(side, phones)` questions, where `side` is `"left"` or `"right"`. It returns one integer id per label and the count of senones. Number ids in order of first appearance. The usual mistakes are to leave the centre phone out of the key, which ties `k-ih+t` to `k-ae+t`, and to give every label its own id.
 
-6. **`viterbi(log_pi, log_A, log_B)`** matches the HMM chapter. Shapes are `(N,)`, `(N, N)`, and `(T, N)`, with `log_A[i, j] = log P(next = j | current = i)`. Return the path `(T,)` and its log probability. Pass `np.log` of the scaled likelihoods as `log_B`.
+6. **`scaled_likelihoods(posteriors, priors)`** returns `posteriors / priors`, shapes `(T, N)` and `(N,)`. The usual mistake is to multiply.
 
-## Cost and scaling
-
-One EM update grows as frames times components times features. Before tying, 40 phones want on the order of 64,000 triphones, most of them empty. Decoding costs the same Viterbi as the single-Gaussian model. Only the emission table changed.
+7. **`viterbi(log_pi, log_A, log_B)`** matches the HMM chapter. Shapes are `(N,)`, `(N, N)`, and `(T, N)`, with `log_A[i, j] = log P(next = j | current = i)`. Return the path `(T,)` and its log probability. Pass `np.log` of the scaled likelihoods as `log_B`.
 
 ## Where this breaks
 
-EM can raise the likelihood while both components sit on one cluster. The start here separates them along the first feature, which fails when the clusters differ only in another feature. A rising curve is not proof that every mode was found. The tree can only ask questions you wrote down. A prior of 0 is not a divisor: a state missing from the alignment cannot be scored this way.
+EM can raise the likelihood while both components sit on one cluster. The start here separates them along the first feature, which fails when the clusters differ only in another feature. The tree can only ask questions you wrote down. A prior of 0 is not a divisor: a state missing from the alignment cannot be scored this way.
 
 ## The exercise
 
-You write `gmm_em`, `triphones`, `count_unseen`, `best_question_split`, `scaled_likelihoods`, and `viterbi`. The checks match one EM step on the six frames, require the log-likelihood not to fall, and recover two known bells. They check the "cat" triphones, the unseen count, and the vowel question. Viterbi on the scaled likelihoods must match the HMM chapter's Viterbi, and the posterior-only path must differ.
+You write `gmm_em`, `triphones`, `count_unseen`, `best_question_split`, `tie_senones`, `scaled_likelihoods`, and `viterbi`. The checks match one EM step on the six frames, require the log-likelihood not to fall, and recover two known bells. They check the "cat" triphones, the unseen count, and the vowel question. `tie_senones` must give the six triphones above ids 0, 0, 1, 2, 2, 3, and send an unseen triphone to an existing senone. Viterbi on the scaled likelihoods must match the HMM chapter's Viterbi, and the posterior-only path must differ.
 
 ## Further reading
 

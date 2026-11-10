@@ -253,3 +253,66 @@ def test_wer(sub):
         almost(got, want, 1e-12, label=f"corpus WER of random trial {trial}")
     # Averaging per-utterance WERs would give 0.625 here; the corpus rate is 2 / 5.
     almost(float(wer(["a", "a b c d"], ["b", "a b c e"])), 2 / 5, 1e-12, label="corpus WER weights long utterances more")
+
+
+LANGS = {"en": 50259, "zh": 50260, "de": 50261, "es": 50262, "fr": 50265, "ja": 50266}
+
+
+def _language_logits(seed, top_code, top_id=None):
+    """Logits for a decoder step after <|startoftranscript|>.
+
+    The language tokens get small random logits, with `top_code` clearly ahead.
+    A text token, id 11, gets the largest logit of all, as an unsure decoder
+    might give a word it would write if it were allowed to.
+    """
+    rng = np.random.default_rng(seed)
+    z = rng.normal(size=V)
+    for code, idx in LANGS.items():
+        z[idx] = rng.normal() - 1.0
+    z[LANGS[top_code]] = 2.0
+    z[11 if top_id is None else top_id] = 9.0
+    return z
+
+
+def same(got, want, label):
+    if got != want:
+        fail(f"{label}: expected {want!r}, got {got!r}")
+
+
+@check("detect_language takes the softmax over the language tokens only and returns the likeliest language")
+def test_detect_language(sub):
+    detect = has(sub, "detect_language")
+    # A wrong implementation takes the softmax over the whole vocabulary of 51,865
+    # logits. Its language probabilities then sum to far less than 1, and an
+    # argmax over every token picks the text token (id 11) instead of a language.
+    for seed, top in [(0, "de"), (1, "ja"), (2, "en")]:
+        z = _language_logits(seed, top)
+        code, probs = detect(z, dict(LANGS))
+        same(code, top, f"detected language for seed {seed}")
+        if set(probs) != set(LANGS):
+            fail(f"probs should have the keys {sorted(LANGS)}, got {sorted(probs)}")
+        total = sum(probs.values())
+        almost(total, 1.0, 1e-9, label=f"language probabilities sum for seed {seed}")
+        want = np.exp(log_softmax([z[i] for i in LANGS.values()]))
+        got = np.array([probs[c] for c in LANGS])
+        almost(np.max(np.abs(got - want)), 0.0, 1e-9, label=f"largest probability error for seed {seed}")
+    # Language order and the subset passed in must not matter: only these ids compete.
+    subset = {"fr": LANGS["fr"], "es": LANGS["es"]}
+    z = _language_logits(3, "fr")
+    z[LANGS["es"]] = 1.0
+    code, probs = detect(z, subset)
+    same(code, "fr", "detected language among two candidates")
+    almost(sum(probs.values()), 1.0, 1e-9, label="probabilities sum over two candidates")
+    almost(probs["fr"], 1 / (1 + np.exp(-1.0)), 1e-9, label="P(fr) among two candidates, logits 2.0 and 1.0")
+
+
+@check("build_prompt uses the detected language when language is None, and an explicit language wins")
+def test_prompt_detected(sub):
+    prompt = has(sub, "build_prompt")
+    detect = has(sub, "detect_language")
+    equal(list(prompt(None, "transcribe", False, detected="fr")), [50258, 50265, 50359, 50363], label="prompt for detected French")
+    equal(list(prompt("de", "transcribe", True, detected="fr")), [50258, 50261, 50359], label="explicit German beats detected French")
+    z = _language_logits(4, "ja")
+    code, _ = detect(z, dict(LANGS))
+    equal(list(prompt(None, "translate", False, detected=code)), [50258, 50266, 50358, 50363], label="prompt from detect_language's output")
+    equal(list(prompt()), [50258, 50259, 50359, 50363], label="the default prompt is still English")

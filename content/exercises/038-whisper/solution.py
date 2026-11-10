@@ -31,12 +31,21 @@ EOT = SPECIAL["<|endoftext|>"]
 TIMESTAMP_BEGIN = SPECIAL["<|0.00|>"]
 
 
-def build_prompt(language: str = "en", task: str = "transcribe", timestamps: bool = False) -> list[int]:
+def build_prompt(
+    language: str | None = "en", task: str = "transcribe", timestamps: bool = False, detected: str | None = None
+) -> list[int]:
     """The forced start of every Whisper decode, as token ids.
 
     <|startoftranscript|>, the language token from LANGUAGES, <|transcribe|>
     or <|translate|>, and <|notimestamps|> unless `timestamps` is true.
+
+    When `language` is None, use `detected`, a code such as the one
+    `detect_language` returns. Raise ValueError if both are None.
     """
+    if language is None:
+        if detected is None:
+            raise ValueError("build_prompt needs a language or a detected language")
+        language = detected
     prompt = [SPECIAL["<|startoftranscript|>"], LANGUAGES[language], SPECIAL[f"<|{task}|>"]]
     if not timestamps:
         prompt.append(SPECIAL["<|notimestamps|>"])
@@ -47,6 +56,25 @@ def _log_softmax(z: np.ndarray) -> np.ndarray:
     finite = np.max(z)
     shifted = z - finite
     return shifted - np.log(np.sum(np.exp(shifted)))
+
+
+def detect_language(logits_at_lang_position, language_token_ids: dict[str, int]) -> tuple[str, dict[str, float]]:
+    """Whisper's language ID: a softmax over the language tokens only.
+
+    Whisper runs the decoder one step after <|startoftranscript|> and reads the
+    logits at that position. Keep only the entries at `language_token_ids`
+    (a dict from code to token id, such as LANGUAGES), take the softmax over
+    those entries alone, and return the likeliest code.
+
+    Returns:
+        (code, probs): the winning language code, and a dict from every code in
+        `language_token_ids` to its probability. The probabilities sum to 1.
+    """
+    codes = list(language_token_ids)
+    z = np.array([logits_at_lang_position[language_token_ids[c]] for c in codes], dtype=np.float64)
+    p = np.exp(_log_softmax(z))
+    probs = {c: float(v) for c, v in zip(codes, p)}
+    return codes[int(np.argmax(p))], probs
 
 
 def greedy_decode(step_fn, prompt: list[int], eot: int, max_new_tokens: int, logit_filter=None) -> tuple[list[int], float]:
@@ -397,6 +425,8 @@ if __name__ == "__main__":
                     show_spectrogram(mel[0, :, : int(len(audio) / 160)].cpu().numpy(), 16000, 160,
                                      label="Its Whisper log-mel input", db=False, y_axis="mel",
                                      fmax=8000.0, value_label="(log10 + 4) / 4")
+                    lang, lang_probs = detect_language(step_fn([SPECIAL["<|startoftranscript|>"]]), LANGUAGES)
+                    print(f"Detected language: {lang} ({lang_probs[lang]:.1%} among the {len(LANGUAGES)} tokens in LANGUAGES)")
                     reference = model.generate(mel, language="en", task="transcribe", num_beams=1, do_sample=False)
                     ref_ids = [t for t in reference[0].tolist() if t < EOT]
                     print(f"Your greedy tokens match model.generate: {[t for t in g_tokens if t < EOT] == ref_ids}")

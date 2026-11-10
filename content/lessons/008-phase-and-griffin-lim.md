@@ -121,7 +121,7 @@ The first iteration does the most. After that the gains shrink, because the algo
 > [!KEY]
 > Griffin-Lim keeps the phase of the nearest real signal's STFT and puts the target magnitude back under it, again and again. With the least-squares inverse, the spectral convergence never gets worse.
 
-In [Flow matching for speech](/lessons/059-flow-matching-for-speech), a model generates mel spectrograms of spoken digits, and this chapter's `griffin_lim` turns them into sound. Its signature is `griffin_lim(magnitude, n_fft, hop_length, n_iter=32, momentum=0.0, seed=0)`, and it returns a 1-D signal of `hop_length * (frames - 1)` samples.
+In [Flow matching for speech](/lessons/060-flow-matching-for-speech), a model generates mel spectrograms of spoken digits, and this chapter's `griffin_lim` turns them into sound. Its signature is `griffin_lim(magnitude, n_fft, hop_length, n_iter=32, momentum=0.0, seed=0)`, and it returns a 1-D signal of `hop_length * (frames - 1)` samples.
 
 ## Fast Griffin-Lim
 

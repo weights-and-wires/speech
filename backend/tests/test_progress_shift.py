@@ -61,6 +61,20 @@ class ProgressShiftTest(unittest.TestCase):
         self.assertEqual(progress["003-beta"]["status"], "started")
         self.assertNotIn("old-course-lesson", progress)
 
+    def test_split_lesson_carries_progress_to_every_new_slug(self) -> None:
+        db.set_progress("ada", "040-old", "solved")
+        db.set_progress("bo", "040-old", "started")
+        db.set_progress("bo", "041-second-half", "solved")
+        carried = db.carry_progress({"040-old": ["040-first-half", "041-second-half"]})
+        self.assertEqual(carried, 2)
+        ada, bo = db.get_progress("ada"), db.get_progress("bo")
+        self.assertEqual(ada["040-first-half"]["status"], "solved")
+        self.assertEqual(ada["041-second-half"]["status"], "solved")
+        self.assertEqual(bo["040-first-half"]["status"], "started")
+        self.assertEqual(bo["041-second-half"]["status"], "solved")
+        self.assertNotIn("040-old", ada)
+        self.assertNotIn("040-old", bo)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,17 @@
+{
+  "id": "063-source-separation",
+  "title": "Separate two voices with PIT",
+  "brief": "Write the permutation-invariant loss and a small Conv-TasNet, then train it to pull a chirp and a vowel train out of a mixture.",
+  "needs_gpu": false,
+  "timeout": 90,
+  "packages": [
+    "numpy",
+    "scipy",
+    "torch"
+  ],
+  "hints": [
+    "pit_loss: compute the C x C matrix of -SI-SDR between every output and every reference once, with broadcasting, then score each permutation from itertools.permutations by indexing that matrix.",
+    "tcn_receptive_field: each dilated conv adds (kernel - 1) * dilation frames, and the dilations 1, 2, ..., 2**(X - 1) sum to 2**X - 1.",
+    "TinyConvTasNet.forward: the encoder with kernel L and stride L/2 covers length + stride * (frames - 1) samples, so pad the input up to that and trim the decoder's output back to T."
+  ]
+}

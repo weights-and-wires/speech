@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     data_dir: Path = REPO_ROOT / "data"
     content_dir: Path = REPO_ROOT / "content"
     frontend_dist: Path = REPO_ROOT / "frontend" / "dist"
-    # The PDF book and its manifest, written by frontend/scripts/build-book.mjs
-    # on the deploying machine and mounted into the container.
+    # The PDF book and its manifest, written by frontend/scripts/build-book.mjs.
+    # The image build prints them into this folder.
     book_dir: Path = REPO_ROOT / "book"
     # Models and clips a lab loads through `speechlab.asset_path`, exposed to
     # the runner as SPEECH_ASSETS. The GPU worker bakes them in at /assets;

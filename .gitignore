@@ -5,7 +5,7 @@ node_modules/
 dist/
 dist-book/
 
-# The PDF book, built by frontend/scripts/build-book.mjs at deploy time.
+# The PDF book, built by frontend/scripts/build-book.mjs. The image builds its own.
 /book/
 .env*
 !.env.example

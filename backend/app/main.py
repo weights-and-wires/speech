@@ -109,9 +109,9 @@ def solution(exercise_id: str, user: str = Depends(current_user)) -> dict[str, A
 def book_info(settings: Settings) -> dict[str, Any] | None:
     """The PDF book on disk, as the book build's manifest describes it.
 
-    The PDF is built on the deploying machine and copied beside the app, so a
-    fresh checkout has none. Then this is None and the header shows no download
-    button, rather than one that leads to a 404.
+    The image build prints the PDF into the book folder, so a fresh checkout
+    that hasn't run the book build has none. Then this is None and the header
+    shows no download button, rather than one that leads to a 404.
     """
     try:
         manifest = json.loads((settings.book_dir / "manifest.json").read_text(encoding="utf-8"))

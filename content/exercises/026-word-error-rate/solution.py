@@ -1,10 +1,12 @@
 """Word error rate from a Levenshtein alignment.
 
-The worked solution fills in the three functions below, then press Run to align a hypothesis against a
-reference, see the edit-distance table, and compare word and character error
-rates. Press Check to test your code.
+The worked solution fills in the five functions below, then press Run to align a hypothesis against a
+reference, see the edit-distance table, compare word and character error
+rates, normalize two transcripts, and test whether one system beats another.
+Press Check to test your code.
 """
 
+import re
 from collections import Counter
 
 import numpy as np
@@ -58,6 +60,35 @@ def cer(ref: str, hyp: str) -> float:
     return (s + d + i) / len(ref)
 
 
+NUMBER_WORDS = {w: str(i) for i, w in enumerate(
+    ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"])}
+
+
+def normalize(text: str) -> str:
+    """Lowercase, drop apostrophes, turn other punctuation into spaces, and write 0 to 10 as digits."""
+    text = re.sub(r"[^\w\s]", " ", text.lower().replace("'", "").replace("\u2019", ""))
+    return " ".join(NUMBER_WORDS.get(word, word) for word in text.split())
+
+
+def paired_bootstrap(errors_a, errors_b, ref_lengths, n_resamples=1000, seed=0):
+    """Paired bootstrap over utterances: does system B beat system A?
+
+    Each resample draws len(ref_lengths) utterance indices with replacement, uses the same
+    indices for both systems, and recomputes corpus WER as summed edits over summed reference
+    words. The difference is WER(A) - WER(B), so a positive value means B is better.
+    Returns (p_b_better, ci_low, ci_high): the fraction of resamples with a strictly positive
+    difference, and the 2.5th and 97.5th percentiles of the difference.
+    """
+    errors_a = np.asarray(errors_a, dtype=float)
+    errors_b = np.asarray(errors_b, dtype=float)
+    ref_lengths = np.asarray(ref_lengths, dtype=float)
+    rng = np.random.default_rng(seed)
+    picks = rng.integers(0, len(ref_lengths), size=(n_resamples, len(ref_lengths)))
+    diff = (errors_a[picks].sum(axis=1) - errors_b[picks].sum(axis=1)) / ref_lengths[picks].sum(axis=1)
+    low, high = np.percentile(diff, [2.5, 97.5])
+    return float(np.mean(diff > 0)), float(low), float(high)
+
+
 if __name__ == "__main__":
     ref = "set a timer for two minutes".split()
     hyp = "set the timer four to minutes please".split()
@@ -82,3 +113,20 @@ if __name__ == "__main__":
     per_sentence = [wer([r], [h]) for r, h in zip(refs, hyps)]
     print(f"Per-sentence WER {[f'{w:.1%}' for w in per_sentence]}, their mean {np.mean(per_sentence):.1%}, "
           f"corpus WER {wer(refs, hyps):.1%}")
+
+    # Normalization decides the score: the same three pairs, scored three ways.
+    refs = ["Set a timer for 10 minutes, please.", "Call Mom at 6 o'clock.", "Thanks, that's all."]
+    hyps = ["set a timer for ten minutes please", "call mom at six o'clock", "thanks that's all"]
+    lower_only = lambda text: " ".join(text.lower().split())
+    for name, fn in [("raw", str), ("lowercase only", lower_only), ("lowercase, punctuation, numbers", normalize)]:
+        print(f"{name:>32}: WER {wer([fn(r) for r in refs], [fn(h) for h in hyps]):.1%}")
+
+    # Is system B really better than system A? Four utterances cannot say; 400 can.
+    errors_a, errors_b, lengths = [2, 1, 3, 1], [1, 2, 2, 0], [6, 2, 8, 4]
+    for copies in (1, 100):
+        p, low, high = paired_bootstrap(errors_a * copies, errors_b * copies, lengths * copies, 10000, 0)
+        print(f"{4 * copies} utterances: WER A {sum(errors_a) / sum(lengths):.1%}, WER B {sum(errors_b) / sum(lengths):.1%}, "
+              f"P(B better) {p:.3f}, 95% interval of A - B [{low:+.1%}, {high:+.1%}]")
+
+    # Without spaces, WER sees one word. CER sees the one wrong character.
+    print(f"Mandarin: WER {wer(['我想订一张机票'], ['我想定一张机票']):.1%}, CER {cer('我想订一张机票', '我想定一张机票'):.1%}")

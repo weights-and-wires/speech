@@ -89,3 +89,102 @@ def test_cer(sub):
     cer = has(sub, "cer")
     almost(cer("kitten", "sitting"), 0.5, 1e-12, label="cer('kitten', 'sitting')")
     almost(cer("a b", "ab"), 1 / 3, 1e-12, label="cer('a b', 'ab'), where the space counts")
+
+
+@check("paired_bootstrap on degenerate cases: one utterance, identical systems, B better everywhere")
+def test_bootstrap_degenerate(sub):
+    boot = has(sub, "paired_bootstrap")
+    # One utterance has one possible resample: A makes 3 errors, B makes 1, over 4 words, so A - B = 0.5.
+    got = boot([3], [1], [4], 50, 0)
+    for value, want, label in zip(got, (1.0, 0.5, 0.5), ("p_b_better", "ci_low", "ci_high")):
+        almost(value, want, 1e-12, label=f"one utterance, {label}")
+    # Identical systems never differ, and a tie is not "B is better".
+    got = boot([2, 0, 5], [2, 0, 5], [6, 3, 9], 200, 0)
+    for value, label in zip(got, ("p_b_better", "ci_low", "ci_high")):
+        almost(value, 0.0, 1e-12, label=f"identical systems, {label}")
+    # B makes one error fewer than A on every utterance, so every resample favors B.
+    lengths = [4, 9, 2, 7, 12, 5]
+    errors_a = [2, 3, 1, 2, 4, 2]
+    p, low, high = boot(errors_a, [e - 1 for e in errors_a], lengths, 300, 0)
+    almost(p, 1.0, 1e-12, label="p_b_better when B wins on every utterance")
+    if low <= 0:
+        fail(f"B wins on every utterance, so the whole interval must be above 0; got ci_low = {low:.4f}")
+
+
+@check("paired_bootstrap reports WER(A) - WER(B): swapping the systems flips the interval")
+def test_bootstrap_sign(sub):
+    boot = has(sub, "paired_bootstrap")
+    errors_a, errors_b, lengths = [2, 1, 3, 1], [1, 2, 2, 0], [6, 2, 8, 4]
+    p, low, high = boot(errors_a, errors_b, lengths, 2000, 3)
+    p_swap, low_swap, high_swap = boot(errors_b, errors_a, lengths, 2000, 3)
+    almost(low_swap, -high, 1e-9, label="swapped ci_low, which should be -ci_high")
+    almost(high_swap, -low, 1e-9, label="swapped ci_high, which should be -ci_low")
+    if p + p_swap > 1 + 1e-12:
+        fail(f"p_b_better is {p:.4f} and {p_swap:.4f} after swapping; the two cannot add to more than 1")
+    again = boot(errors_a, errors_b, lengths, 2000, 3)
+    if again != (p, low, high):
+        fail(f"the same seed gave {(p, low, high)} and then {again}; a seeded bootstrap must repeat")
+
+
+def reference_bootstrap(errors_a, errors_b, lengths, n, seed):
+    """The definition, drawn with a different generator: utterance indices, pooled edits."""
+    rng = np.random.default_rng(seed)
+    picks = rng.integers(0, len(lengths), size=(n, len(lengths)))
+    diff = np.array([(errors_a[row].sum() - errors_b[row].sum()) / lengths[row].sum() for row in picks])
+    return float(np.mean(diff > 0)), *np.percentile(diff, [2.5, 97.5])
+
+
+@check("paired_bootstrap matches a reference bootstrap over utterances")
+def test_bootstrap_reference(sub):
+    boot = has(sub, "paired_bootstrap")
+    # Wrong implementations this check catches, on this data (40 utterances, three of them short):
+    #   - Resampling words instead of utterances: P(B better) 0.911 and ci_high 0.046, against 0.764 and 0.071.
+    #   - Averaging per-utterance WERs instead of summing edits over summed lengths: P(B better) 0.970
+    #     and ci_high 0.201, because the short utterances count as much as the long ones.
+    rng = np.random.default_rng(6)
+    lengths = rng.integers(1, 31, size=40)
+    lengths[:3] = [1, 2, 1]
+    errors_a = rng.binomial(lengths, 0.24)
+    errors_b = rng.binomial(lengths, 0.20)
+    errors_a[:3], errors_b[:3] = [1, 2, 1], [0, 0, 0]
+    want_p, want_low, want_high = reference_bootstrap(errors_a, errors_b, lengths, 40000, 99)
+    p, low, high = boot(errors_a, errors_b, lengths, 4000, 1)
+    almost(p, want_p, 0.03, label="p_b_better against the reference bootstrap")
+    almost(low, want_low, 0.01, label="ci_low against the reference bootstrap")
+    almost(high, want_high, 0.01, label="ci_high against the reference bootstrap")
+
+
+@check("normalize lowercases, strips punctuation, and writes number words as digits")
+def test_normalize(sub):
+    normalize = has(sub, "normalize")
+    cases = [("Set a timer for 10 minutes, please.", "set a timer for 10 minutes please"),
+             ("Call Mom at six o'clock!", "call mom at 6 oclock"),
+             ("  Thanks,   that's ALL. ", "thanks thats all"),
+             ("Ten, two; ZERO", "10 2 0"),
+             ("", "")]
+    for text, want in cases:
+        got = normalize(text)
+        if got != want:
+            fail(f"normalize({text!r}): expected {want!r}, got {got!r}")
+
+
+@check("Normalizing both sides moves corpus WER from 66.7% to 13.3% to 0%")
+def test_normalize_effect(sub):
+    wer, normalize = has(sub, "wer"), has(sub, "normalize")
+    refs = ["Set a timer for 10 minutes, please.", "Call Mom at 6 o'clock.", "Thanks, that's all."]
+    hyps = ["set a timer for ten minutes please", "call mom at six o'clock", "thanks that's all"]
+    almost(wer(refs, hyps), 10 / 15, 1e-12, label="raw corpus WER, 10 edits over 15 words")
+    lower = lambda text: " ".join(text.lower().replace(",", "").replace(".", "").split())
+    almost(wer([lower(r) for r in refs], [lower(h) for h in hyps]), 2 / 15, 1e-12,
+           label="WER after lowercasing and stripping punctuation, 2 edits over 15 words")
+    almost(wer([normalize(r) for r in refs], [normalize(h) for h in hyps]), 0.0, 1e-12,
+           label="WER after normalize, 0 edits over 15 words")
+
+
+@check("cer scores text with no spaces: one wrong Chinese character is 1/7, while wer sees one word")
+def test_cer_unsegmented(sub):
+    wer, cer = has(sub, "wer"), has(sub, "cer")
+    ref, hyp = "我想订一张机票", "我想定一张机票"
+    almost(cer(ref, hyp), 1 / 7, 1e-12, label="cer of one substituted character in seven")
+    almost(wer([ref], [hyp]), 1.0, 1e-12, label="wer when the whole string is one word")
+    almost(cer(ref, ref + "了"), 1 / 7, 1e-12, label="cer with one inserted character")

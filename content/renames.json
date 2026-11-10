@@ -76,74 +76,74 @@
   "038-self-supervised-speech"
  ],
  "22-whisper-and-large-scale-recognition": [
-  "039-whisper"
+  "040-whisper"
  ],
  "23-speaker-recognition-and-diarization": [
-  "040-speaker-verification",
-  "041-diarization",
-  "042-forced-alignment-and-word-timestamps"
+  "041-speaker-verification",
+  "042-diarization",
+  "043-forced-alignment-and-word-timestamps"
  ],
  "24-text-to-speech-and-tacotron": [
-  "045-text-to-speech-and-tacotron"
+  "046-text-to-speech-and-tacotron"
  ],
  "25-durations-and-alignment-search": [
-  "046-durations-and-alignment-search"
+  "047-durations-and-alignment-search"
  ],
  "26-wavenet-and-autoregressive-vocoders": [
-  "047-wavenet"
+  "048-wavenet"
  ],
  "27-gan-vocoders": [
-  "048-gan-vocoders"
+  "049-gan-vocoders"
  ],
  "28-normalizing-flows-and-vits": [
-  "049-normalizing-flows-and-vits"
+  "050-normalizing-flows-and-vits"
  ],
  "29-evaluating-synthetic-speech": [
-  "050-evaluating-synthetic-speech"
+  "051-evaluating-synthetic-speech"
  ],
  "30-vector-quantization": [
-  "051-vector-quantization",
-  "052-residual-and-scalar-quantization"
+  "052-vector-quantization",
+  "053-residual-and-scalar-quantization"
  ],
  "31-neural-audio-codecs": [
-  "053-neural-audio-codecs"
+  "054-neural-audio-codecs"
  ],
  "32-codec-language-models": [
-  "054-codec-language-models"
+  "055-codec-language-models"
  ],
  "33-diffusion-from-scratch": [
-  "055-diffusion-from-scratch"
+  "056-diffusion-from-scratch"
  ],
  "34-samplers-scores-and-guidance": [
-  "056-fast-samplers",
-  "057-classifier-free-guidance"
+  "057-fast-samplers",
+  "058-classifier-free-guidance"
  ],
  "35-diffusion-for-audio": [
-  "058-diffusion-for-audio"
+  "059-diffusion-for-audio"
  ],
  "36-flow-matching": [
-  "059-flow-matching",
-  "060-straighter-paths-and-better-solvers"
+  "060-flow-matching",
+  "061-straighter-paths-and-better-solvers"
  ],
  "37-flow-matching-for-speech": [
-  "061-flow-matching-for-speech"
+  "062-flow-matching-for-speech"
  ],
  "38-few-step-generation-and-audio-metrics": [
-  "062-few-step-generation-and-audio-metrics"
+  "063-few-step-generation-and-audio-metrics"
  ],
  "39-enhancement-and-separation": [
-  "063-speech-enhancement",
-  "064-source-separation"
+  "064-speech-enhancement",
+  "065-source-separation"
  ],
  "40-classification-and-voice-conversion": [
-  "065-audio-classification-and-clap",
-  "066-voice-conversion-and-spoofing"
+  "066-audio-classification-and-clap",
+  "067-voice-conversion-and-spoofing"
  ],
  "41-spoken-language-models": [
-  "068-spoken-language-models"
+  "069-spoken-language-models"
  ],
  "42-full-duplex-and-voice-agents": [
-  "069-full-duplex-and-voice-agents"
+  "070-full-duplex-and-voice-agents"
  ],
  "025-neural-acoustic-models": [
   "028-neural-acoustic-models"
@@ -176,84 +176,84 @@
   "038-self-supervised-speech"
  ],
  "035-whisper": [
-  "039-whisper"
+  "040-whisper"
  ],
  "036-speaker-verification": [
-  "040-speaker-verification"
+  "041-speaker-verification"
  ],
  "037-diarization-and-forced-alignment": [
-  "041-diarization",
-  "042-forced-alignment-and-word-timestamps"
+  "042-diarization",
+  "043-forced-alignment-and-word-timestamps"
  ],
  "038-text-to-speech-and-tacotron": [
-  "045-text-to-speech-and-tacotron"
+  "046-text-to-speech-and-tacotron"
  ],
  "039-durations-and-alignment-search": [
-  "046-durations-and-alignment-search"
+  "047-durations-and-alignment-search"
  ],
  "040-wavenet": [
-  "047-wavenet"
+  "048-wavenet"
  ],
  "041-gan-vocoders": [
-  "048-gan-vocoders"
+  "049-gan-vocoders"
  ],
  "042-normalizing-flows-and-vits": [
-  "049-normalizing-flows-and-vits"
+  "050-normalizing-flows-and-vits"
  ],
  "043-evaluating-synthetic-speech": [
-  "050-evaluating-synthetic-speech"
+  "051-evaluating-synthetic-speech"
  ],
  "044-vector-quantization": [
-  "051-vector-quantization"
+  "052-vector-quantization"
  ],
  "045-residual-and-scalar-quantization": [
-  "052-residual-and-scalar-quantization"
+  "053-residual-and-scalar-quantization"
  ],
  "046-neural-audio-codecs": [
-  "053-neural-audio-codecs"
+  "054-neural-audio-codecs"
  ],
  "047-codec-language-models": [
-  "054-codec-language-models"
+  "055-codec-language-models"
  ],
  "048-diffusion-from-scratch": [
-  "055-diffusion-from-scratch"
+  "056-diffusion-from-scratch"
  ],
  "049-fast-samplers": [
-  "056-fast-samplers"
+  "057-fast-samplers"
  ],
  "050-classifier-free-guidance": [
-  "057-classifier-free-guidance"
+  "058-classifier-free-guidance"
  ],
  "051-diffusion-for-audio": [
-  "058-diffusion-for-audio"
+  "059-diffusion-for-audio"
  ],
  "052-flow-matching": [
-  "059-flow-matching"
+  "060-flow-matching"
  ],
  "053-straighter-paths-and-better-solvers": [
-  "060-straighter-paths-and-better-solvers"
+  "061-straighter-paths-and-better-solvers"
  ],
  "054-flow-matching-for-speech": [
-  "061-flow-matching-for-speech"
+  "062-flow-matching-for-speech"
  ],
  "055-few-step-generation-and-audio-metrics": [
-  "062-few-step-generation-and-audio-metrics"
+  "063-few-step-generation-and-audio-metrics"
  ],
  "056-speech-enhancement": [
-  "063-speech-enhancement"
+  "064-speech-enhancement"
  ],
  "057-source-separation": [
-  "064-source-separation"
+  "065-source-separation"
  ],
  "058-classification-and-voice-conversion": [
-  "065-audio-classification-and-clap",
-  "066-voice-conversion-and-spoofing"
+  "066-audio-classification-and-clap",
+  "067-voice-conversion-and-spoofing"
  ],
  "059-spoken-language-models": [
-  "068-spoken-language-models"
+  "069-spoken-language-models"
  ],
  "060-full-duplex-and-voice-agents": [
-  "069-full-duplex-and-voice-agents"
+  "070-full-duplex-and-voice-agents"
  ],
  "023-n-gram-language-models": [
   "025-n-gram-language-models"
@@ -295,230 +295,230 @@
   "038-self-supervised-speech"
  ],
  "036-whisper": [
-  "039-whisper"
+  "040-whisper"
  ],
  "037-speaker-verification": [
-  "040-speaker-verification"
+  "041-speaker-verification"
  ],
  "038-diarization-and-forced-alignment": [
-  "041-diarization",
-  "042-forced-alignment-and-word-timestamps"
+  "042-diarization",
+  "043-forced-alignment-and-word-timestamps"
  ],
  "039-text-to-speech-and-tacotron": [
-  "045-text-to-speech-and-tacotron"
+  "046-text-to-speech-and-tacotron"
  ],
  "040-durations-and-alignment-search": [
-  "046-durations-and-alignment-search"
+  "047-durations-and-alignment-search"
  ],
  "041-wavenet": [
-  "047-wavenet"
+  "048-wavenet"
  ],
  "042-gan-vocoders": [
-  "048-gan-vocoders"
+  "049-gan-vocoders"
  ],
  "043-normalizing-flows-and-vits": [
-  "049-normalizing-flows-and-vits"
+  "050-normalizing-flows-and-vits"
  ],
  "044-evaluating-synthetic-speech": [
-  "050-evaluating-synthetic-speech"
+  "051-evaluating-synthetic-speech"
  ],
  "045-vector-quantization": [
-  "051-vector-quantization"
+  "052-vector-quantization"
  ],
  "046-residual-and-scalar-quantization": [
-  "052-residual-and-scalar-quantization"
+  "053-residual-and-scalar-quantization"
  ],
  "047-neural-audio-codecs": [
-  "053-neural-audio-codecs"
+  "054-neural-audio-codecs"
  ],
  "048-codec-language-models": [
-  "054-codec-language-models"
+  "055-codec-language-models"
  ],
  "049-diffusion-from-scratch": [
-  "055-diffusion-from-scratch"
+  "056-diffusion-from-scratch"
  ],
  "050-fast-samplers": [
-  "056-fast-samplers"
+  "057-fast-samplers"
  ],
  "051-classifier-free-guidance": [
-  "057-classifier-free-guidance"
+  "058-classifier-free-guidance"
  ],
  "052-diffusion-for-audio": [
-  "058-diffusion-for-audio"
+  "059-diffusion-for-audio"
  ],
  "053-flow-matching": [
-  "059-flow-matching"
+  "060-flow-matching"
  ],
  "054-straighter-paths-and-better-solvers": [
-  "060-straighter-paths-and-better-solvers"
+  "061-straighter-paths-and-better-solvers"
  ],
  "055-flow-matching-for-speech": [
-  "061-flow-matching-for-speech"
+  "062-flow-matching-for-speech"
  ],
  "056-few-step-generation-and-audio-metrics": [
-  "062-few-step-generation-and-audio-metrics"
+  "063-few-step-generation-and-audio-metrics"
  ],
  "057-speech-enhancement": [
-  "063-speech-enhancement"
+  "064-speech-enhancement"
  ],
  "058-source-separation": [
-  "064-source-separation"
+  "065-source-separation"
  ],
  "059-classification-and-voice-conversion": [
-  "065-audio-classification-and-clap",
-  "066-voice-conversion-and-spoofing"
+  "066-audio-classification-and-clap",
+  "067-voice-conversion-and-spoofing"
  ],
  "060-spoken-language-models": [
-  "068-spoken-language-models"
+  "069-spoken-language-models"
  ],
  "061-full-duplex-and-voice-agents": [
-  "069-full-duplex-and-voice-agents"
+  "070-full-duplex-and-voice-agents"
  ],
  "040-text-to-speech-and-tacotron": [
-  "045-text-to-speech-and-tacotron"
+  "046-text-to-speech-and-tacotron"
  ],
  "041-durations-and-alignment-search": [
-  "046-durations-and-alignment-search"
+  "047-durations-and-alignment-search"
  ],
  "042-wavenet": [
-  "047-wavenet"
+  "048-wavenet"
  ],
  "043-gan-vocoders": [
-  "048-gan-vocoders"
+  "049-gan-vocoders"
  ],
  "044-normalizing-flows-and-vits": [
-  "049-normalizing-flows-and-vits"
+  "050-normalizing-flows-and-vits"
  ],
  "045-evaluating-synthetic-speech": [
-  "050-evaluating-synthetic-speech"
+  "051-evaluating-synthetic-speech"
  ],
  "046-vector-quantization": [
-  "051-vector-quantization"
+  "052-vector-quantization"
  ],
  "047-residual-and-scalar-quantization": [
-  "052-residual-and-scalar-quantization"
+  "053-residual-and-scalar-quantization"
  ],
  "048-neural-audio-codecs": [
-  "053-neural-audio-codecs"
+  "054-neural-audio-codecs"
  ],
  "049-codec-language-models": [
-  "054-codec-language-models"
+  "055-codec-language-models"
  ],
  "050-diffusion-from-scratch": [
-  "055-diffusion-from-scratch"
+  "056-diffusion-from-scratch"
  ],
  "051-fast-samplers": [
-  "056-fast-samplers"
+  "057-fast-samplers"
  ],
  "052-classifier-free-guidance": [
-  "057-classifier-free-guidance"
+  "058-classifier-free-guidance"
  ],
  "053-diffusion-for-audio": [
-  "058-diffusion-for-audio"
+  "059-diffusion-for-audio"
  ],
  "054-flow-matching": [
-  "059-flow-matching"
+  "060-flow-matching"
  ],
  "055-straighter-paths-and-better-solvers": [
-  "060-straighter-paths-and-better-solvers"
+  "061-straighter-paths-and-better-solvers"
  ],
  "056-flow-matching-for-speech": [
-  "061-flow-matching-for-speech"
+  "062-flow-matching-for-speech"
  ],
  "057-few-step-generation-and-audio-metrics": [
-  "062-few-step-generation-and-audio-metrics"
+  "063-few-step-generation-and-audio-metrics"
  ],
  "058-speech-enhancement": [
-  "063-speech-enhancement"
+  "064-speech-enhancement"
  ],
  "059-source-separation": [
-  "064-source-separation"
+  "065-source-separation"
  ],
  "060-classification-and-voice-conversion": [
-  "065-audio-classification-and-clap",
-  "066-voice-conversion-and-spoofing"
+  "066-audio-classification-and-clap",
+  "067-voice-conversion-and-spoofing"
  ],
  "061-spoken-language-models": [
-  "068-spoken-language-models"
+  "069-spoken-language-models"
  ],
  "062-full-duplex-and-voice-agents": [
-  "069-full-duplex-and-voice-agents"
+  "070-full-duplex-and-voice-agents"
  ],
  "041-text-to-speech-and-tacotron": [
-  "045-text-to-speech-and-tacotron"
+  "046-text-to-speech-and-tacotron"
  ],
  "042-durations-and-alignment-search": [
-  "046-durations-and-alignment-search"
+  "047-durations-and-alignment-search"
  ],
  "043-wavenet": [
-  "047-wavenet"
+  "048-wavenet"
  ],
  "044-gan-vocoders": [
-  "048-gan-vocoders"
+  "049-gan-vocoders"
  ],
  "045-normalizing-flows-and-vits": [
-  "049-normalizing-flows-and-vits"
+  "050-normalizing-flows-and-vits"
  ],
  "046-evaluating-synthetic-speech": [
-  "050-evaluating-synthetic-speech"
+  "051-evaluating-synthetic-speech"
  ],
  "047-vector-quantization": [
-  "051-vector-quantization"
+  "052-vector-quantization"
  ],
  "048-residual-and-scalar-quantization": [
-  "052-residual-and-scalar-quantization"
+  "053-residual-and-scalar-quantization"
  ],
  "049-neural-audio-codecs": [
-  "053-neural-audio-codecs"
+  "054-neural-audio-codecs"
  ],
  "050-codec-language-models": [
-  "054-codec-language-models"
+  "055-codec-language-models"
  ],
  "051-diffusion-from-scratch": [
-  "055-diffusion-from-scratch"
+  "056-diffusion-from-scratch"
  ],
  "052-fast-samplers": [
-  "056-fast-samplers"
+  "057-fast-samplers"
  ],
  "053-classifier-free-guidance": [
-  "057-classifier-free-guidance"
+  "058-classifier-free-guidance"
  ],
  "054-diffusion-for-audio": [
-  "058-diffusion-for-audio"
+  "059-diffusion-for-audio"
  ],
  "055-flow-matching": [
-  "059-flow-matching"
+  "060-flow-matching"
  ],
  "056-straighter-paths-and-better-solvers": [
-  "060-straighter-paths-and-better-solvers"
+  "061-straighter-paths-and-better-solvers"
  ],
  "057-flow-matching-for-speech": [
-  "061-flow-matching-for-speech"
+  "062-flow-matching-for-speech"
  ],
  "058-few-step-generation-and-audio-metrics": [
-  "062-few-step-generation-and-audio-metrics"
+  "063-few-step-generation-and-audio-metrics"
  ],
  "059-speech-enhancement": [
-  "063-speech-enhancement"
+  "064-speech-enhancement"
  ],
  "060-source-separation": [
-  "064-source-separation"
+  "065-source-separation"
  ],
  "061-classification-and-voice-conversion": [
-  "065-audio-classification-and-clap",
-  "066-voice-conversion-and-spoofing"
+  "066-audio-classification-and-clap",
+  "067-voice-conversion-and-spoofing"
  ],
  "062-spoken-language-models": [
-  "068-spoken-language-models"
+  "069-spoken-language-models"
  ],
  "063-full-duplex-and-voice-agents": [
-  "069-full-duplex-and-voice-agents"
+  "070-full-duplex-and-voice-agents"
  ],
  "063-spoken-language-models": [
-  "068-spoken-language-models"
+  "069-spoken-language-models"
  ],
  "064-full-duplex-and-voice-agents": [
-  "069-full-duplex-and-voice-agents"
+  "070-full-duplex-and-voice-agents"
  ],
  "011-hearing-and-the-mel-scale": [
   "012-hearing-and-the-mel-scale"
@@ -599,284 +599,381 @@
   "038-self-supervised-speech"
  ],
  "037-whisper": [
-  "039-whisper"
+  "040-whisper"
  ],
  "038-speaker-verification": [
-  "040-speaker-verification"
+  "041-speaker-verification"
  ],
  "039-diarization-and-forced-alignment": [
-  "041-diarization",
-  "042-forced-alignment-and-word-timestamps"
+  "042-diarization",
+  "043-forced-alignment-and-word-timestamps"
  ],
  "040-asr-recipe": [
-  "043-asr-recipe"
+  "044-asr-recipe"
  ],
  "041-fine-tuning-speech-models": [
-  "044-fine-tuning-speech-models"
+  "045-fine-tuning-speech-models"
  ],
  "042-text-to-speech-and-tacotron": [
-  "045-text-to-speech-and-tacotron"
+  "046-text-to-speech-and-tacotron"
  ],
  "043-durations-and-alignment-search": [
-  "046-durations-and-alignment-search"
+  "047-durations-and-alignment-search"
  ],
  "044-wavenet": [
-  "047-wavenet"
+  "048-wavenet"
  ],
  "045-gan-vocoders": [
-  "048-gan-vocoders"
+  "049-gan-vocoders"
  ],
  "046-normalizing-flows-and-vits": [
-  "049-normalizing-flows-and-vits"
+  "050-normalizing-flows-and-vits"
  ],
  "047-evaluating-synthetic-speech": [
-  "050-evaluating-synthetic-speech"
+  "051-evaluating-synthetic-speech"
  ],
  "048-vector-quantization": [
-  "051-vector-quantization"
+  "052-vector-quantization"
  ],
  "049-residual-and-scalar-quantization": [
-  "052-residual-and-scalar-quantization"
+  "053-residual-and-scalar-quantization"
  ],
  "050-neural-audio-codecs": [
-  "053-neural-audio-codecs"
+  "054-neural-audio-codecs"
  ],
  "051-codec-language-models": [
-  "054-codec-language-models"
+  "055-codec-language-models"
  ],
  "052-diffusion-from-scratch": [
-  "055-diffusion-from-scratch"
+  "056-diffusion-from-scratch"
  ],
  "053-fast-samplers": [
-  "056-fast-samplers"
+  "057-fast-samplers"
  ],
  "054-classifier-free-guidance": [
-  "057-classifier-free-guidance"
+  "058-classifier-free-guidance"
  ],
  "055-diffusion-for-audio": [
-  "058-diffusion-for-audio"
+  "059-diffusion-for-audio"
  ],
  "056-flow-matching": [
-  "059-flow-matching"
+  "060-flow-matching"
  ],
  "057-straighter-paths-and-better-solvers": [
-  "060-straighter-paths-and-better-solvers"
+  "061-straighter-paths-and-better-solvers"
  ],
  "058-flow-matching-for-speech": [
-  "061-flow-matching-for-speech"
+  "062-flow-matching-for-speech"
  ],
  "059-few-step-generation-and-audio-metrics": [
-  "062-few-step-generation-and-audio-metrics"
+  "063-few-step-generation-and-audio-metrics"
  ],
  "060-speech-enhancement": [
-  "063-speech-enhancement"
+  "064-speech-enhancement"
  ],
  "061-source-separation": [
-  "064-source-separation"
+  "065-source-separation"
  ],
  "062-classification-and-voice-conversion": [
-  "065-audio-classification-and-clap",
-  "066-voice-conversion-and-spoofing"
+  "066-audio-classification-and-clap",
+  "067-voice-conversion-and-spoofing"
  ],
  "063-spoken-language-understanding": [
-  "067-spoken-language-understanding"
+  "068-spoken-language-understanding"
  ],
  "064-spoken-language-models": [
-  "068-spoken-language-models"
+  "069-spoken-language-models"
  ],
  "065-full-duplex-and-voice-agents": [
-  "069-full-duplex-and-voice-agents"
+  "070-full-duplex-and-voice-agents"
  ],
  "041-asr-recipe": [
-  "043-asr-recipe"
+  "044-asr-recipe"
  ],
  "042-fine-tuning-speech-models": [
-  "044-fine-tuning-speech-models"
+  "045-fine-tuning-speech-models"
  ],
  "043-text-to-speech-and-tacotron": [
-  "045-text-to-speech-and-tacotron"
+  "046-text-to-speech-and-tacotron"
  ],
  "044-durations-and-alignment-search": [
-  "046-durations-and-alignment-search"
+  "047-durations-and-alignment-search"
  ],
  "045-wavenet": [
-  "047-wavenet"
+  "048-wavenet"
  ],
  "046-gan-vocoders": [
-  "048-gan-vocoders"
+  "049-gan-vocoders"
  ],
  "047-normalizing-flows-and-vits": [
-  "049-normalizing-flows-and-vits"
+  "050-normalizing-flows-and-vits"
  ],
  "048-evaluating-synthetic-speech": [
-  "050-evaluating-synthetic-speech"
+  "051-evaluating-synthetic-speech"
  ],
  "049-vector-quantization": [
-  "051-vector-quantization"
+  "052-vector-quantization"
  ],
  "050-residual-and-scalar-quantization": [
-  "052-residual-and-scalar-quantization"
+  "053-residual-and-scalar-quantization"
  ],
  "051-neural-audio-codecs": [
-  "053-neural-audio-codecs"
+  "054-neural-audio-codecs"
  ],
  "052-codec-language-models": [
-  "054-codec-language-models"
+  "055-codec-language-models"
  ],
  "053-diffusion-from-scratch": [
-  "055-diffusion-from-scratch"
+  "056-diffusion-from-scratch"
  ],
  "054-fast-samplers": [
-  "056-fast-samplers"
+  "057-fast-samplers"
  ],
  "055-classifier-free-guidance": [
-  "057-classifier-free-guidance"
+  "058-classifier-free-guidance"
  ],
  "056-diffusion-for-audio": [
-  "058-diffusion-for-audio"
+  "059-diffusion-for-audio"
  ],
  "057-flow-matching": [
-  "059-flow-matching"
+  "060-flow-matching"
  ],
  "058-straighter-paths-and-better-solvers": [
-  "060-straighter-paths-and-better-solvers"
+  "061-straighter-paths-and-better-solvers"
  ],
  "059-flow-matching-for-speech": [
-  "061-flow-matching-for-speech"
+  "062-flow-matching-for-speech"
  ],
  "060-few-step-generation-and-audio-metrics": [
-  "062-few-step-generation-and-audio-metrics"
+  "063-few-step-generation-and-audio-metrics"
  ],
  "061-speech-enhancement": [
-  "063-speech-enhancement"
+  "064-speech-enhancement"
  ],
  "062-source-separation": [
-  "064-source-separation"
+  "065-source-separation"
  ],
  "063-classification-and-voice-conversion": [
-  "065-audio-classification-and-clap",
-  "066-voice-conversion-and-spoofing"
+  "066-audio-classification-and-clap",
+  "067-voice-conversion-and-spoofing"
  ],
  "064-spoken-language-understanding": [
-  "067-spoken-language-understanding"
+  "068-spoken-language-understanding"
  ],
  "065-spoken-language-models": [
-  "068-spoken-language-models"
+  "069-spoken-language-models"
  ],
  "066-full-duplex-and-voice-agents": [
-  "069-full-duplex-and-voice-agents"
+  "070-full-duplex-and-voice-agents"
  ],
  "040-diarization-and-forced-alignment": [
-  "041-diarization",
-  "042-forced-alignment-and-word-timestamps"
+  "042-diarization",
+  "043-forced-alignment-and-word-timestamps"
  ],
  "065-spoken-language-understanding": [
-  "067-spoken-language-understanding"
+  "068-spoken-language-understanding"
  ],
  "066-spoken-language-models": [
-  "068-spoken-language-models"
+  "069-spoken-language-models"
  ],
  "067-full-duplex-and-voice-agents": [
-  "069-full-duplex-and-voice-agents"
+  "070-full-duplex-and-voice-agents"
  ],
  "064-classification-and-voice-conversion": [
-  "065-audio-classification-and-clap",
-  "066-voice-conversion-and-spoofing"
+  "066-audio-classification-and-clap",
+  "067-voice-conversion-and-spoofing"
  ],
  "037-self-supervised-speech": [
   "038-self-supervised-speech"
  ],
  "038-whisper": [
-  "039-whisper"
+  "040-whisper"
  ],
  "039-speaker-verification": [
-  "040-speaker-verification"
+  "041-speaker-verification"
  ],
  "040-diarization": [
-  "041-diarization"
+  "042-diarization"
  ],
  "041-forced-alignment-and-word-timestamps": [
-  "042-forced-alignment-and-word-timestamps"
+  "043-forced-alignment-and-word-timestamps"
  ],
  "042-asr-recipe": [
-  "043-asr-recipe"
+  "044-asr-recipe"
  ],
  "043-fine-tuning-speech-models": [
-  "044-fine-tuning-speech-models"
+  "045-fine-tuning-speech-models"
  ],
  "044-text-to-speech-and-tacotron": [
-  "045-text-to-speech-and-tacotron"
+  "046-text-to-speech-and-tacotron"
  ],
  "045-durations-and-alignment-search": [
-  "046-durations-and-alignment-search"
+  "047-durations-and-alignment-search"
  ],
  "046-wavenet": [
-  "047-wavenet"
+  "048-wavenet"
  ],
  "047-gan-vocoders": [
-  "048-gan-vocoders"
+  "049-gan-vocoders"
  ],
  "048-normalizing-flows-and-vits": [
-  "049-normalizing-flows-and-vits"
+  "050-normalizing-flows-and-vits"
  ],
  "049-evaluating-synthetic-speech": [
-  "050-evaluating-synthetic-speech"
+  "051-evaluating-synthetic-speech"
  ],
  "050-vector-quantization": [
-  "051-vector-quantization"
+  "052-vector-quantization"
  ],
  "051-residual-and-scalar-quantization": [
-  "052-residual-and-scalar-quantization"
+  "053-residual-and-scalar-quantization"
  ],
  "052-neural-audio-codecs": [
-  "053-neural-audio-codecs"
+  "054-neural-audio-codecs"
  ],
  "053-codec-language-models": [
-  "054-codec-language-models"
+  "055-codec-language-models"
  ],
  "054-diffusion-from-scratch": [
-  "055-diffusion-from-scratch"
+  "056-diffusion-from-scratch"
  ],
  "055-fast-samplers": [
-  "056-fast-samplers"
+  "057-fast-samplers"
  ],
  "056-classifier-free-guidance": [
-  "057-classifier-free-guidance"
+  "058-classifier-free-guidance"
  ],
  "057-diffusion-for-audio": [
-  "058-diffusion-for-audio"
+  "059-diffusion-for-audio"
  ],
  "058-flow-matching": [
-  "059-flow-matching"
+  "060-flow-matching"
  ],
  "059-straighter-paths-and-better-solvers": [
-  "060-straighter-paths-and-better-solvers"
+  "061-straighter-paths-and-better-solvers"
  ],
  "060-flow-matching-for-speech": [
-  "061-flow-matching-for-speech"
+  "062-flow-matching-for-speech"
  ],
  "061-few-step-generation-and-audio-metrics": [
-  "062-few-step-generation-and-audio-metrics"
+  "063-few-step-generation-and-audio-metrics"
  ],
  "062-speech-enhancement": [
-  "063-speech-enhancement"
+  "064-speech-enhancement"
  ],
  "063-source-separation": [
-  "064-source-separation"
+  "065-source-separation"
  ],
  "064-audio-classification-and-clap": [
-  "065-audio-classification-and-clap"
+  "066-audio-classification-and-clap"
  ],
  "065-voice-conversion-and-spoofing": [
-  "066-voice-conversion-and-spoofing"
+  "067-voice-conversion-and-spoofing"
  ],
  "066-spoken-language-understanding": [
-  "067-spoken-language-understanding"
+  "068-spoken-language-understanding"
  ],
  "067-spoken-language-models": [
-  "068-spoken-language-models"
+  "069-spoken-language-models"
  ],
  "068-full-duplex-and-voice-agents": [
-  "069-full-duplex-and-voice-agents"
+  "070-full-duplex-and-voice-agents"
+ ],
+ "039-whisper": [
+  "040-whisper"
+ ],
+ "040-speaker-verification": [
+  "041-speaker-verification"
+ ],
+ "041-diarization": [
+  "042-diarization"
+ ],
+ "042-forced-alignment-and-word-timestamps": [
+  "043-forced-alignment-and-word-timestamps"
+ ],
+ "043-asr-recipe": [
+  "044-asr-recipe"
+ ],
+ "044-fine-tuning-speech-models": [
+  "045-fine-tuning-speech-models"
+ ],
+ "045-text-to-speech-and-tacotron": [
+  "046-text-to-speech-and-tacotron"
+ ],
+ "046-durations-and-alignment-search": [
+  "047-durations-and-alignment-search"
+ ],
+ "047-wavenet": [
+  "048-wavenet"
+ ],
+ "048-gan-vocoders": [
+  "049-gan-vocoders"
+ ],
+ "049-normalizing-flows-and-vits": [
+  "050-normalizing-flows-and-vits"
+ ],
+ "050-evaluating-synthetic-speech": [
+  "051-evaluating-synthetic-speech"
+ ],
+ "051-vector-quantization": [
+  "052-vector-quantization"
+ ],
+ "052-residual-and-scalar-quantization": [
+  "053-residual-and-scalar-quantization"
+ ],
+ "053-neural-audio-codecs": [
+  "054-neural-audio-codecs"
+ ],
+ "054-codec-language-models": [
+  "055-codec-language-models"
+ ],
+ "055-diffusion-from-scratch": [
+  "056-diffusion-from-scratch"
+ ],
+ "056-fast-samplers": [
+  "057-fast-samplers"
+ ],
+ "057-classifier-free-guidance": [
+  "058-classifier-free-guidance"
+ ],
+ "058-diffusion-for-audio": [
+  "059-diffusion-for-audio"
+ ],
+ "059-flow-matching": [
+  "060-flow-matching"
+ ],
+ "060-straighter-paths-and-better-solvers": [
+  "061-straighter-paths-and-better-solvers"
+ ],
+ "061-flow-matching-for-speech": [
+  "062-flow-matching-for-speech"
+ ],
+ "062-few-step-generation-and-audio-metrics": [
+  "063-few-step-generation-and-audio-metrics"
+ ],
+ "063-speech-enhancement": [
+  "064-speech-enhancement"
+ ],
+ "064-source-separation": [
+  "065-source-separation"
+ ],
+ "065-audio-classification-and-clap": [
+  "066-audio-classification-and-clap"
+ ],
+ "066-voice-conversion-and-spoofing": [
+  "067-voice-conversion-and-spoofing"
+ ],
+ "067-spoken-language-understanding": [
+  "068-spoken-language-understanding"
+ ],
+ "068-spoken-language-models": [
+  "069-spoken-language-models"
+ ],
+ "069-full-duplex-and-voice-agents": [
+  "070-full-duplex-and-voice-agents"
+ ],
+ "038-self-supervised-speech": [
+  "038-self-supervised-speech",
+  "039-wavlm-and-ssl-benchmarks"
  ]
 }

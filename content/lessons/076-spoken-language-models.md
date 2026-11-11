@@ -1,6 +1,6 @@
 ---
 title: Spoken language models
-slug: 075-spoken-language-models
+slug: 076-spoken-language-models
 part: "Part 8 — Beyond recognition and synthesis"
 summary: Turn speech into units a language model can read, then connect a frozen speech encoder to a frozen text LLM with a trained projector.
 minutes: 80
@@ -14,7 +14,7 @@ prereqs:
   - 025-n-gram-language-models
   - 039-self-supervised-speech
   - 041-whisper
-exercise: 075-spoken-language-models
+exercise: 076-spoken-language-models
 ---
 
 # Spoken language models

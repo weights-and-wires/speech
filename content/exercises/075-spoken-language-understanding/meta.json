@@ -1,5 +1,5 @@
 {
-  "id": "074-spoken-language-understanding",
+  "id": "075-spoken-language-understanding",
   "title": "Score an intent, a translation, and a dialogue state",
   "brief": "Compute intent accuracy and micro slot F1, pick an intent from an n-best list, score a sentence with BLEU and chrF, and merge a dialogue state across two turns.",
   "needs_gpu": false,

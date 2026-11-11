@@ -1,6 +1,6 @@
 ---
 title: Voice conversion and spoofing
-slug: 073-voice-conversion-and-spoofing
+slug: 074-voice-conversion-and-spoofing
 part: "Part 8 — Beyond recognition and synthesis"
 summary: Convert a voice by matching self-supervised frames to a target speaker, then score spoof detectors by their error rates and equal error rate.
 minutes: 55
@@ -15,7 +15,7 @@ prereqs:
   - 008-phase-and-griffin-lim
   - 039-self-supervised-speech
   - 042-speaker-verification
-exercise: 073-voice-conversion-and-spoofing
+exercise: 074-voice-conversion-and-spoofing
 ---
 
 # Voice conversion and spoofing

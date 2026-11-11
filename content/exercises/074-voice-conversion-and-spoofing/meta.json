@@ -1,5 +1,5 @@
 {
-  "id": "073-voice-conversion-and-spoofing",
+  "id": "074-voice-conversion-and-spoofing",
   "title": "Nearest-neighbor voice conversion and spoof error rates",
   "brief": "Convert a voice by averaging each source frame's nearest neighbors in a target speaker's frames, then score a spoofing countermeasure with its false rejection and false acceptance rates and the equal error rate where they cross.",
   "needs_gpu": false,

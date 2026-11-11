@@ -1,0 +1,16 @@
+{
+  "id": "067-speech-enhancement",
+  "title": "Clean up noisy speech",
+  "brief": "Score audio with SI-SDR, mix noise at an exact SNR, and enhance noisy vowels with spectral subtraction, a decision-directed Wiener filter, and ideal masks.",
+  "needs_gpu": false,
+  "timeout": 40,
+  "packages": [
+    "numpy",
+    "scipy",
+    "torch"
+  ],
+  "hints": [
+    "si_sdr: subtract the mean of both signals first, then the target is (<est, ref> / <ref, ref>) * ref, and the error is est minus the target.",
+    "mix_at_snr: SNR = 10 log10(P_clean / P_noise), so the noise gain is sqrt(P_clean / (P_noise * 10 ** (snr_db / 10)))."
+  ]
+}

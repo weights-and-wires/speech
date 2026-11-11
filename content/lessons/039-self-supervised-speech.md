@@ -21,7 +21,7 @@ exercise: 039-self-supervised-speech
 
 A transcribed hour of speech costs hours of careful listening and typing. An untranscribed hour costs almost nothing, and broadcasts supply millions of them. How can a model learn from the cheap kind?
 
-Self-supervised learning trains an encoder on audio alone: hide some frames, and ask the model to recognize them from the context. To do that, it must learn what speech sounds are and how they follow each other. [Fine-tuning speech models](/lessons/047-fine-tuning-speech-models) turns such an encoder into a recognizer. Here you build the pretraining losses and targets and probe what the layers learn. [WavLM and benchmarking self-supervised models](/lessons/040-wavlm-and-ssl-benchmarks) then adds noise to the input and ranks the encoders.
+Self-supervised learning trains an encoder on audio alone: hide some frames, and ask the model to recognize them from the context. To do that, it must learn what speech sounds are and how they follow each other. [Fine-tuning speech models](/lessons/048-fine-tuning-speech-models) turns such an encoder into a recognizer. Here you build the pretraining losses and targets and probe what the layers learn. [WavLM and benchmarking self-supervised models](/lessons/040-wavlm-and-ssl-benchmarks) then adds noise to the input and ranks the encoders.
 
 ## What you already know
 

@@ -1,0 +1,15 @@
+{
+  "id": "051-tts-front-end-and-prosody",
+  "title": "Build a TTS front end and its prosody controls",
+  "brief": "Pick homograph pronunciations from context, mix style tokens by attention, and add log-binned pitch and linear-binned energy embeddings before length regulation, with rate and pitch controls.",
+  "needs_gpu": false,
+  "timeout": 60,
+  "packages": ["numpy", "torch"],
+  "hints": [
+    "scale_durations: np.maximum(1, np.round(d / rate)). With d = [4, 1, 6] and rate 2 the raw values are [2, 0.5, 3], so the middle phone rounds to 0 and the clamp restores it to 1.",
+    "choose_pronunciation: loop over entry[\"rules\"]; skip a rule as soon as one cue it names fails (a cue fails when the neighbor is None or its lower-case form is not in the set); return the first rule that survives.",
+    "style_attention: logits = torch.tanh(tokens) @ ref / D**0.5, then torch.softmax(logits, dim=0). For tokens 3 * I and ref [0, 0, 4, 0] the logit of token 2 is 4 * tanh(3) / 2 = 1.990, and the weights are [0.097, 0.097, 0.709, 0.097].",
+    "variance_adaptor: edges = exp(linspace(log v_min, log v_max, K - 1)); bins = torch.bucketize(pitch * pitch_scale, edges). Add pitch_table[bins] and energy_table[energy_bins] to h while it still has shape (B, L, D), then call length_regulate.",
+    "Hand example: phones with pitch [210, 300, 450] Hz and 8 log bins from 100 to 800 Hz land in bins [3, 4, 5], and phone 1 of h = [1, 0] becomes [1 + 3, 0 + 1] = [4, 1] when its energy bin is 1."
+  ]
+}

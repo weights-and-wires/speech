@@ -334,7 +334,7 @@ For pitch from 71 Hz to 795 Hz with 256 bins, the ratio between neighboring edge
 
 ## Monotonic alignment search
 
-Glow-TTS learns durations with no aligner and no teacher. Its decoder is a normalizing flow (see [Normalizing flows and VITS](/lessons/053-normalizing-flows-and-vits)) that maps each mel frame to a latent vector $z_j$, and its text encoder predicts a Gaussian, a mean $\mu_i$ and a scale $\sigma_i$, for each phone $i$. Given the alignment, the log-likelihood of the frames is a sum of Gaussian log-densities. So training alternates two steps, like hard EM: with the model fixed, find the alignment that makes the frames most likely, then with that alignment fixed, take a gradient step.
+Glow-TTS learns durations with no aligner and no teacher. Its decoder is a normalizing flow (see [Normalizing flows and VITS](/lessons/054-normalizing-flows-and-vits)) that maps each mel frame to a latent vector $z_j$, and its text encoder predicts a Gaussian, a mean $\mu_i$ and a scale $\sigma_i$, for each phone $i$. Given the alignment, the log-likelihood of the frames is a sum of Gaussian log-densities. So training alternates two steps, like hard EM: with the model fixed, find the alignment that makes the frames most likely, then with that alignment fixed, take a gradient step.
 
 The first step is a search over *monotonic* alignments. The first frame goes to the first phone, the last frame to the last phone, and from one frame to the next the phone either stays or moves forward by one. Every phone gets at least one frame, and none is skipped. Let $P_{ij} = \log \mathcal{N}(z_j; \mu_i, \sigma_i)$ be the log-likelihood of frame $j$ under phone $i$. Let $Q_{ij}$ be the best total log-likelihood of any alignment of frames $1..j$ that ends on phone $i$:
 

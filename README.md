@@ -43,7 +43,7 @@ The repository is laid out as follows.
 
 ## The curriculum
 
-The course has 73 short chapters in eight parts, and 21 interactive demos. Each
+The course has 74 short chapters in eight parts, and 21 interactive demos. Each
 chapter teaches one idea. Readers of the earlier 42-lesson course keep their
 progress: `content/renames.json` maps each old slug to the chapters that
 replaced it.
@@ -70,8 +70,8 @@ and trustworthy recognition, an ASR training recipe, and fine-tuning a
 pretrained encoder.
 
 **Part 5 — Speech synthesis.** Tacotron and attention, durations and monotonic
-alignment search, WaveNet, GAN vocoders, normalizing flows and VITS, and how to
-evaluate synthetic speech.
+alignment search, the TTS front end and prosody control, WaveNet, GAN vocoders,
+normalizing flows and VITS, and how to evaluate synthetic speech.
 
 **Part 6 — Codecs and token models.** Vector and residual vector quantization,
 neural audio codecs such as EnCodec and Mimi, and codec language models such

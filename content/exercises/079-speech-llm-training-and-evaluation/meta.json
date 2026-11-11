@@ -1,0 +1,17 @@
+{
+  "id": "079-speech-llm-training-and-evaluation",
+  "title": "Build audio instruction data and judge spoken answers",
+  "brief": "Build an audio instruction sample with a loss mask that trains only the response, interleave text and speech at word boundaries, and measure a modality gap and a win rate with bootstrap confidence intervals.",
+  "needs_gpu": false,
+  "timeout": 20,
+  "packages": [
+    "numpy"
+  ],
+  "hints": [
+    "Build the head first: [TASK_TAGS[task]] + [AUDIO_ID] * audio_len + list(prompt_ids). With task asr, audio_len 3, and prompt [7, 8], the head is [10, 1, 1, 1, 7, 8], which is 6 tokens. The mask is False for those 6 positions and True for the rest.",
+    "make_schedule draws one coin flip for the first word, then one rng.random() per later word. Switch when the draw is below p_switch. With p_switch 1.0 the modalities alternate.",
+    "interleave emits a marker only when the modality differs from the previous word's. With the schedule text, text, speech, speech the stream is [TEXT], the, cat, [SPEECH], then the units of sat and down.",
+    "modality_gap: gaps = text - speech. Draw picks = rng.integers(0, n, size=(n_boot, n)) once, then gaps[picks].mean(axis=1). Indexing the gaps, not the two score lists apart, is what keeps the pairing. For gaps 0.12, 0.03, 0.12, 0.16 the mean is 0.1075.",
+    "win_rate: map win to 1, tie to 0.5, and loss to 0, and keep every judgment. With 9 wins, 6 ties, and 5 losses the rate is (9 + 3) / 20 = 0.6. Dropping the ties would give 9 / 14 = 0.643."
+  ]
+}

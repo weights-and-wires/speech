@@ -1,6 +1,6 @@
 # Curriculum
 
-The course runs from a sampled waveform to a speech language model in 79
+The course runs from a sampled waveform to a speech language model in 80
 chapters and eight parts. Each chapter teaches one idea. It is one Markdown
 file in `content/lessons/` and one exercise in `content/exercises/`, with the
 same slug, and a sitting of about 30 to 45 minutes. The research notes behind
@@ -151,4 +151,5 @@ Research: `05-speech-llms-tasks-and-pedagogy.md`, half A.
 | `076-spoken-language-understanding` | Spoken language understanding | Intent accuracy, micro slot F1, an n-best intent, sentence BLEU with smoothing and the brevity penalty, character F1, and a two-turn dialogue-state merge. | none |
 | `077-pronunciation-assessment` | Pronunciation assessment | Goodness of pronunciation as a per-frame mean of log posterior minus the best phone's, checked on a planted replaced phone and on a stretched phone, mispronunciation flags with precision, recall, and F1, Pearson and tie-averaged Spearman against human ratings, and a phone confusion matrix. | none |
 | `078-spoken-language-models` | Spoken language models | **GPU.** Deduplicated k-means units with a bigram unit LM, then Whisper frame stacking, a projector into a frozen language model, and loss masking. The run trains the projector to transcribe digits from `fsdd` with frozen `whisper-tiny` and `smollm2-135m`. | none |
-| `079-full-duplex-and-voice-agents` | Full-duplex models and voice agents | Moshi-style parallel streams with delays, text-speech interleaving, an RQ-Transformer's depth step, a chunked causal convolution that matches the full one, and a turn-taking state machine against a latency budget, a backchannel-versus-barge-in rule, echo as a self-interruption cause, and turn metrics (gaps, overlaps, turn-change rate, takeover rate) from a two-channel timeline. | `latency-timeline`, `delay-pattern` |
+| `079-speech-llm-training-and-evaluation` | Speech LLM training and evaluation | An audio instruction sample whose loss mask trains only the response and the end token, word-level text-speech interleaving checked at word boundaries, a modality gap with a paired bootstrap interval, and a win rate with ties counted as half and a seeded bootstrap interval. | none |
+| `080-full-duplex-and-voice-agents` | Full-duplex models and voice agents | Moshi-style parallel streams with delays, text-speech interleaving, an RQ-Transformer's depth step, a chunked causal convolution that matches the full one, and a turn-taking state machine against a latency budget, a backchannel-versus-barge-in rule, echo as a self-interruption cause, and turn metrics (gaps, overlaps, turn-change rate, takeover rate) from a two-channel timeline. | `latency-timeline`, `delay-pattern` |

@@ -1,0 +1,15 @@
+{
+  "id": "051-durations-and-alignment-search",
+  "title": "Find durations and expand phones to frames",
+  "brief": "Build FastSpeech's batched length regulator, per-phone pitch and energy targets, and Glow-TTS's monotonic alignment search, checked against brute force.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "torch"],
+  "hints": [
+    "length_regulate: ends = cumsum(durations, dim=1) and starts = ends - durations. Frame n belongs to phone i when starts[i] <= n < ends[i]; that comparison, broadcast over a frame index, is the alignment matrix A, and einsum('bln,bld->bnd', A, h) applies it.",
+    "phone_average: np.repeat(np.arange(L), durations) gives each frame's phone. np.bincount with weights sums values per phone.",
+    "quantize: build the edges with np.linspace (or its log), then np.searchsorted(edges, values, side='left') counts the edges strictly below each value.",
+    "gaussian_log_likelihood: expand (z - mu)^2 / sigma^2 into z^2 / sigma^2 - 2 z mu / sigma^2 + mu^2 / sigma^2; each term is one matrix product.",
+    "monotonic_alignment_search: fill Q column by column with Q[:, j] = max(Q[:, j-1], Q shifted down by one) + P[:, j], starting from Q[0, 0] = P[0, 0] and -inf elsewhere. Then walk back from phone L - 1 at the last frame, stepping down a phone whenever Q[i - 1, j - 1] beats Q[i, j - 1]."
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "050-text-to-speech-and-tacotron",
+  "title": "Teach attention to read text in order",
+  "brief": "Implement one step of location-sensitive attention, the stop-token loss, the guided attention loss, and a diagonality score, then train a toy Tacotron that reads strings of made-up phones aloud.",
+  "needs_gpu": false,
+  "timeout": 60,
+  "packages": ["numpy", "torch"],
+  "hints": [
+    "guided_attention_weights: build t = arange(n_frames)[:, None] / n_frames and n = arange(n_text)[None, :] / n_text, and broadcasting gives the whole grid in one expression.",
+    "guided_attention_loss: build a boolean mask of valid cells from the two length vectors with arange(...) < lengths[:, None, None], fill a weight tensor utterance by utterance, and divide the masked sum by mask.sum().",
+    "stop_token_loss: the target row is (arange(T)[None, :] == lengths[:, None] - 1). F.binary_cross_entropy_with_logits(..., pos_weight=..., reduction='none') gives per-frame values you can mask.",
+    "location_sensitive_attention: F.conv1d(cumulative[:, None, :], kernel, padding=(K - 1) // 2) gives (B, F, N); transpose it to (B, N, F) before multiplying by W_location.T.",
+    "Fill the masked energies with float('-inf') before torch.softmax, so padded positions get exactly zero weight. torch.bmm(weights[:, None, :], memory) gives the context."
+  ]
+}

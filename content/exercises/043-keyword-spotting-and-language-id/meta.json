@@ -1,0 +1,21 @@
+{
+  "id": "043-keyword-spotting-and-language-id",
+  "title": "Build a wake-word detector and score it per hour",
+  "brief": "Smooth keyword posteriors and fire detections with a hold-off, count false accepts per hour and missed keywords on a planted stream, list DET points, endpoint an utterance with a timeout and an end-of-query probability, and compute the NIST Cavg for language trials.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": [
+    "numpy",
+    "scipy"
+  ],
+  "hints": [
+    "smooth_posteriors: with c = np.concatenate([[0.0], np.cumsum(p)]) and start = max(0, t - window + 1), output t is (c[t + 1] - c[start]) / (t + 1 - start). For [0.1, 0.2, 0.9] and window 3 the outputs are 0.1, 0.15, 0.4.",
+    "detect: loop over np.flatnonzero(scores >= threshold). Keep blocked_until, start it at -1, fire when t > blocked_until, and then set blocked_until = t + holdoff. With scores above the threshold at frames 1, 2, 3, 5 and holdoff 3, the detections are 1 and 5.",
+    "evaluate_stream: for each detection, look for a span with start <= d < end. If there is one, mark that span as hit. If not, add one false accept. Divide false accepts by n_frames * hop_seconds / 3600, the whole stream in hours.",
+    "det_points: thresholds = np.append(np.unique(np.concatenate([target, other])), np.inf). Then p_miss = mean(target < x) and p_fa = mean(other >= x) for each x. With target [0.9, 0.7, 0.5, 0.3] and other [0.6, 0.4, 0.2, 0.1], the threshold 0.4 gives p_miss 0.25 and p_fa 0.5.",
+    "endpoint: keep started and quiet. A speech frame sets started and resets quiet to 0. A non-speech frame after that adds 1 to quiet, picks limit = short_timeout if eoq[t] >= threshold else long_timeout, and returns t when quiet > limit.",
+    "endpoint_metrics: cut = decisions < last_speech marks the cut-off utterances. The latency of the others is (decisions - last_speech) * hop_ms. A decision at frame 13 after speech that ends at frame 11 at a 100 ms hop is 200 ms.",
+    "language_llr: for column i, np.delete(loglik, i, axis=1) leaves the other languages. The score is loglik[:, i] - (logsumexp(rest, axis=1) - np.log(n - 1)). For the scores [2, 0, 0] the first LLR is 2.",
+    "cavg: accept = language_llr(loglik) >= np.log(beta). P_miss of language i is 1 - accept[labels == i, i].mean(). P_fa(i, j) is accept[labels == j, i].mean() for j != i. Then Cavg = (sum of P_miss + beta / (n - 1) * sum of P_fa) / n."
+  ]
+}

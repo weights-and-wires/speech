@@ -1,0 +1,14 @@
+{
+  "id": "047-fine-tuning-speech-models",
+  "title": "Build a low-rank update and a tiny fine-tune",
+  "brief": "Match a LoRA forward and merge to a dense product, freeze the feature encoder, and beat a from-scratch CTC loss on seeded tones.",
+  "needs_gpu": false,
+  "timeout": 60,
+  "packages": ["numpy", "torch"],
+  "hints": [
+    "forward is x @ weight.T + (alpha / A.shape[0]) * (x @ A.T) @ B.T. merge adds that scaled B @ A onto weight.",
+    "trainable_count is A.size + B.size. The frozen weight is not in the count.",
+    "freeze_feature_encoder is false when the name contains feature_encoder or feature_extractor. ctc_head_only is true only for ctc_head or lm_head.",
+    "Call torch.manual_seed(seed) immediately before each fresh TinyCTC. Cycle labels with labels % 3 + 1, then score the original labels. SGD learning rate 0.5, 60 pretrain steps, 10 adaptation steps."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "069-voice-conversion-and-spoofing",
+  "title": "Nearest-neighbor voice conversion and spoof error rates",
+  "brief": "Convert a voice by averaging each source frame's nearest neighbors in a target speaker's frames, then score a spoofing countermeasure with its false rejection and false acceptance rates and the equal error rate where they cross.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "scipy"],
+  "hints": [
+    "cosine_knn: normalize both sides to unit length, and one matrix product gives every cosine similarity; np.argpartition finds the top k without sorting all of them, then sort only those k.",
+    "knn_vc is one line once cosine_knn works: index the matching set with the (T, k) indices and average over the k axis. The query is the source and the keys are the matching set, never the other way around.",
+    "error_rates: np.searchsorted(np.sort(scores), thresholds, side=\"left\") counts how many scores fall strictly below each threshold, which gives both error rates for every threshold at once.",
+    "equal_error_rate: take every distinct score plus one value above the largest as thresholds, call error_rates, find the first index where frr >= far, and interpolate linearly between it and the index before it."
+  ]
+}

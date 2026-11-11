@@ -1,0 +1,18 @@
+{
+  "id": "055-vector-quantization",
+  "title": "Quantize vectors with a codebook",
+  "brief": "Build nearest-codeword lookup, the straight-through estimator and VQ losses, an EMA codebook with dead-code restart, and the perplexity that detects collapse.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": [
+    "numpy",
+    "scipy",
+    "torch"
+  ],
+  "hints": [
+    "Squared distances without an (N, K, D) array: (z**2).sum(1, keepdims=True) - 2 * z @ C.T + (C**2).sum(1)[None, :].",
+    "The straight-through estimator is one line: z_e + (z_q - z_e).detach(). Its value is z_q and its gradient is the identity.",
+    "In vq_losses the two losses have the same value and differ only in where .detach() goes: the codebook loss detaches z_e, the commitment loss detaches the codeword.",
+    "For ema_update, np.bincount(indices, minlength=K) counts assignments and np.add.at(batch_sums, indices, z) sums the assigned vectors."
+  ]
+}

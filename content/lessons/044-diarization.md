@@ -358,6 +358,6 @@ The checks confirm the eigengap on block matrices, exact recovery of four synthe
 
 - Wang et al., "Speaker Diarization with LSTM," ICASSP 2018 (https://arxiv.org/abs/1710.10468). Spectral clustering of embeddings with the eigengap speaker count.
 - Landini et al., "Bayesian HMM clustering of x-vector sequences (VBx) in speaker diarization: theory, implementation and analysis on standard tasks," Computer Speech & Language, 2022 (https://arxiv.org/abs/2012.14952).
-- Fujita et al., "End-to-End Neural Speaker Diarization with Permutation-Free Objectives," Interspeech 2019 (https://arxiv.org/abs/1909.06247).
+- Fujita et al., "End-to-End Neural Speaker Diarization with Permutation-Free Objectives," Interspeech 2019 (https://arxiv.org/abs/1909.05952).
 - Horiguchi et al., "End-to-End Speaker Diarization for an Unknown Number of Speakers with Encoder-Decoder Based Attractors," Interspeech 2020 (https://arxiv.org/abs/2005.09921).
 - Park et al., "Auto-Tuning Spectral Clustering for Speaker Diarization Using Normalized Maximum Eigengap," IEEE Signal Processing Letters, 2020 (https://arxiv.org/abs/2003.02405).

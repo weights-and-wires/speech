@@ -1,0 +1,17 @@
+{
+  "id": "047-long-form-and-trustworthy-asr",
+  "title": "Stitch, time, and audit a long transcript",
+  "brief": "Stitch overlapping window transcripts by their longest common run, read word times from cross-attention with DTW, measure calibration with ECE, flag repetition loops, and report WER with bootstrap intervals per group.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": [
+    "numpy"
+  ],
+  "hints": [
+    "stitch_chunks: for each seam, tail = merged[-overlap:] and head = chunk[:overlap]. For tail 'these truths to be self evident' and head 'to be self evident that all', the longest common run is 'to be self evident' (4 words). Keep merged up to its end in the tail and continue with chunk after its end in the head.",
+    "word_timestamps: z = (attn - attn.mean(0)) / (attn.std(0) + 1e-6), then path = dtw_path(-z). The first column where the path is in row r is token r's jump frame. A word ends where the next word starts, and the last word ends at n_frames * hop.",
+    "ece: bins = np.searchsorted(np.linspace(0, 1, n_bins + 1)[1:-1], conf, side='left'). For confidences 0.9, 0.8, 0.7, 0.2 and correctness 1, 0, 1, 0 with 2 bins: 3/4 * |2/3 - 0.8| + 1/4 * |0 - 0.2| = 0.15.",
+    "repetition_score: for each block length n and start i, count r while words[i + r*n : i + (r+1)*n] == words[i : i + n]. When r >= min_repeats, mark words[i : i + r*n]. 'see you see you see you' marks 6 words.",
+    "subgroup_wer_with_ci: one rng = np.random.default_rng(seed). For each sorted group, picks = rng.integers(0, n_g, size=(n_boot, n_g)), wers = e[picks].sum(1) / n[picks].sum(1), then np.percentile(wers, [100*alpha/2, 100*(1-alpha/2)])."
+  ]
+}

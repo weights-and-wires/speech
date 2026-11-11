@@ -1,6 +1,6 @@
 # Curriculum
 
-The course runs from a sampled waveform to a speech language model in 75
+The course runs from a sampled waveform to a speech language model in 76
 chapters and eight parts. Each chapter teaches one idea. It is one Markdown
 file in `content/lessons/` and one exercise in `content/exercises/`, with the
 same slug, and a sitting of about 30 to 45 minutes. The research notes behind
@@ -89,11 +89,12 @@ Research: `02-asr-and-ssl.md`.
 | `042-speaker-verification` | Speaker embeddings and verification | Statistics and attentive pooling (x-vector, ECAPA-TDNN), additive angular margin softmax, cosine trial scores, multi-clip enrollment, AS-norm, EER, minDCF, VoxCeleb protocols, and embeddings trained for unseen synthetic voices. | none |
 | `043-keyword-spotting-and-language-id` | Keyword spotting, endpointing, and language ID | A causal posterior smoother and a hold-off detector scored in false accepts per hour and false-reject rate on a planted stream, DET points checked exactly, an endpointer with a short timeout from an end-of-query probability scored by cut-off rate and mean latency, and the NIST Cavg for multi-language trials. | none |
 | `044-diarization` | Diarization | Spectral clustering with an eigengap speaker count, diarization error rate under the best speaker mapping, and a DER for overlapped speech with a reference-boundary collar. | none |
-| `045-forced-alignment-and-word-timestamps` | Forced alignment and word timestamps | The CTC Viterbi trellis with its blank-skip rule checked cell by cell, the best path for a known transcript, and token spans and word start and end times in seconds from the frame hop. | none |
-| `046-long-form-and-trustworthy-asr` | Long-form and trustworthy ASR | Stitching overlapping window transcripts by their longest common run, word start and end times from cross-attention with DTW, expected calibration error, a repetition-loop score, and WER with a seeded bootstrap interval for each subgroup. | none |
-| `047-asr-recipe` | An ASR training recipe | Byte-pair merges checked against a worked table, speed perturbation by resampling, noise mixed at a chosen SNR, length-bucketed batches under a padding-waste bound, a warmup learning rate, and the mean of checkpoints. | none |
-| `048-fine-tuning-speech-models` | Fine-tuning speech models | A LoRA forward and merge checked against a dense product, a freeze mask for the feature encoder and the CTC head, a seeded few-shot CTC loss that beats training from scratch, and a forgetting score on a planted rise. | none |
-| `049-streaming-latency-and-on-device` | Streaming latency and on-device speech | Real-time factor, the algorithmic delay of each position in a chunk plus compute, first-partial, finalization, and endpoint-to-final latency read from a scripted timeline, the unstable-prefix rate of partial results, and a weights-plus-activations memory budget with an RTF check. | none |
+| `045-neural-diarization` | Neural diarization | Permutation-invariant BCE over per-speaker activity checked against a brute-force search, with its gradient by finite differences. Overlap frames, a miss, false alarm, and confusion breakdown per speaker-frame, an attractor speaker count and attractor activity, and a cosine target-speaker mask. | none |
+| `046-forced-alignment-and-word-timestamps` | Forced alignment and word timestamps | The CTC Viterbi trellis with its blank-skip rule checked cell by cell, the best path for a known transcript, and token spans and word start and end times in seconds from the frame hop. | none |
+| `047-long-form-and-trustworthy-asr` | Long-form and trustworthy ASR | Stitching overlapping window transcripts by their longest common run, word start and end times from cross-attention with DTW, expected calibration error, a repetition-loop score, and WER with a seeded bootstrap interval for each subgroup. | none |
+| `048-asr-recipe` | An ASR training recipe | Byte-pair merges checked against a worked table, speed perturbation by resampling, noise mixed at a chosen SNR, length-bucketed batches under a padding-waste bound, a warmup learning rate, and the mean of checkpoints. | none |
+| `049-fine-tuning-speech-models` | Fine-tuning speech models | A LoRA forward and merge checked against a dense product, a freeze mask for the feature encoder and the CTC head, a seeded few-shot CTC loss that beats training from scratch, and a forgetting score on a planted rise. | none |
+| `050-streaming-latency-and-on-device` | Streaming latency and on-device speech | Real-time factor, the algorithmic delay of each position in a chunk plus compute, first-partial, finalization, and endpoint-to-final latency read from a scripted timeline, the unstable-prefix rate of partial results, and a weights-plus-activations memory budget with an RTF check. | none |
 
 ## Part 5 — Speech synthesis
 
@@ -101,13 +102,13 @@ Research: `03-tts-vocoders-codecs.md`, and `04-flows-diffusion-generative.md` fo
 
 | Slug | Title | The exercise | Demos |
 |---|---|---|---|
-| `050-text-to-speech-and-tacotron` | Text to speech and Tacotron | One location-sensitive attention step, the stop-token loss, the guided attention loss, a diagonality score, and a toy Tacotron that reads made-up phones aloud. | `attention-alignment` |
-| `051-durations-and-alignment-search` | Durations and alignment search | FastSpeech's batched length regulator, per-phone pitch and energy targets, and monotonic alignment search checked against brute force. | none |
-| `052-tts-front-end-and-prosody` | The TTS front end and prosody | A homograph rule layer over a lexicon, FastSpeech 2's variance adaptor with log-spaced pitch bins added before length regulation, rate and semitone controls, global-style-token attention, and a gradient check against finite differences. | none |
-| `053-wavenet` | WaveNet | Mu-law coding, a dilated causal convolution stack with its receptive field checked by an impulse test, the gated residual stack, and cached sample-by-sample generation that matches the parallel pass. | `wavenet-receptive-field` |
-| `054-gan-vocoders` | GAN vocoders | **GPU.** The Snake activation, the multi-period discriminator's reshape, the multi-resolution STFT loss, and the LSGAN and feature-matching losses. The run trains a small HiFi-GAN-style generator on one `librispeech-dev-clean` speaker and plays what it makes. | none |
-| `055-normalizing-flows-and-vits` | Normalizing flows and VITS | Affine coupling, ActNorm, and an invertible 1x1 convolution with log-determinants checked against autograd, a RealNVP trained on 2-D data, and the VITS KL term. | none |
-| `056-evaluating-synthetic-speech` | Evaluating synthetic speech | Mel cepstral distortion with DTW alignment, F0 RMSE and voicing error, cosine speaker similarity, bootstrap confidence intervals for MOS, the ASR WER gap against real recordings, MOS predictors judged by LCC and SRCC at utterance and system level, MUSHRA screening, CMOS, and the Wilcoxon signed-rank test. | none |
+| `051-text-to-speech-and-tacotron` | Text to speech and Tacotron | One location-sensitive attention step, the stop-token loss, the guided attention loss, a diagonality score, and a toy Tacotron that reads made-up phones aloud. | `attention-alignment` |
+| `052-durations-and-alignment-search` | Durations and alignment search | FastSpeech's batched length regulator, per-phone pitch and energy targets, and monotonic alignment search checked against brute force. | none |
+| `053-tts-front-end-and-prosody` | The TTS front end and prosody | A homograph rule layer over a lexicon, FastSpeech 2's variance adaptor with log-spaced pitch bins added before length regulation, rate and semitone controls, global-style-token attention, and a gradient check against finite differences. | none |
+| `054-wavenet` | WaveNet | Mu-law coding, a dilated causal convolution stack with its receptive field checked by an impulse test, the gated residual stack, and cached sample-by-sample generation that matches the parallel pass. | `wavenet-receptive-field` |
+| `055-gan-vocoders` | GAN vocoders | **GPU.** The Snake activation, the multi-period discriminator's reshape, the multi-resolution STFT loss, and the LSGAN and feature-matching losses. The run trains a small HiFi-GAN-style generator on one `librispeech-dev-clean` speaker and plays what it makes. | none |
+| `056-normalizing-flows-and-vits` | Normalizing flows and VITS | Affine coupling, ActNorm, and an invertible 1x1 convolution with log-determinants checked against autograd, a RealNVP trained on 2-D data, and the VITS KL term. | none |
+| `057-evaluating-synthetic-speech` | Evaluating synthetic speech | Mel cepstral distortion with DTW alignment, F0 RMSE and voicing error, cosine speaker similarity, bootstrap confidence intervals for MOS, the ASR WER gap against real recordings, MOS predictors judged by LCC and SRCC at utterance and system level, MUSHRA screening, CMOS, and the Wilcoxon signed-rank test. | none |
 
 ## Part 6 — Codecs and token models
 
@@ -115,10 +116,10 @@ Research: `03-tts-vocoders-codecs.md`.
 
 | Slug | Title | The exercise | Demos |
 |---|---|---|---|
-| `057-vector-quantization` | Vector quantization | Nearest-codeword lookup, the straight-through estimator, the codebook and commitment losses, EMA codebook updates with dead-code restart, and the perplexity that detects collapse. | none |
-| `058-residual-and-scalar-quantization` | Residual and scalar quantization | Residual vector quantization with falling residual norms and prefix decoding, and finite scalar quantization with its mixed-radix index. | `rvq-2d` |
-| `059-neural-audio-codecs` | Neural audio codecs | **GPU.** Bitrate from frame rate, codebook count, and codebook size, quantizer dropout, a toy convolutional codec with RVQ, and SI-SDR and mel distance. The run measures bitrate against quality for `encodec-24khz` and `mimi` on real speech. | `codec-bitrate` |
-| `060-codec-language-models` | Codec language models | The MusicGen delay pattern and its inverse, VALL-E's autoregressive and non-autoregressive inputs, MaskGIT-style parallel decoding with a cosine schedule, and a small autoregressive model over synthetic RVQ codes whose loss reaches the known entropy. | `delay-pattern` |
+| `058-vector-quantization` | Vector quantization | Nearest-codeword lookup, the straight-through estimator, the codebook and commitment losses, EMA codebook updates with dead-code restart, and the perplexity that detects collapse. | none |
+| `059-residual-and-scalar-quantization` | Residual and scalar quantization | Residual vector quantization with falling residual norms and prefix decoding, and finite scalar quantization with its mixed-radix index. | `rvq-2d` |
+| `060-neural-audio-codecs` | Neural audio codecs | **GPU.** Bitrate from frame rate, codebook count, and codebook size, quantizer dropout, a toy convolutional codec with RVQ, and SI-SDR and mel distance. The run measures bitrate against quality for `encodec-24khz` and `mimi` on real speech. | `codec-bitrate` |
+| `061-codec-language-models` | Codec language models | The MusicGen delay pattern and its inverse, VALL-E's autoregressive and non-autoregressive inputs, MaskGIT-style parallel decoding with a cosine schedule, and a small autoregressive model over synthetic RVQ codes whose loss reaches the known entropy. | `delay-pattern` |
 
 ## Part 7 — Diffusion and flow matching
 
@@ -126,14 +127,14 @@ Research: `04-flows-diffusion-generative.md`.
 
 | Slug | Title | The exercise | Demos |
 |---|---|---|---|
-| `061-diffusion-from-scratch` | Diffusion from scratch | Linear and cosine schedules, the closed-form forward process, conversions between noise, data, velocity, and score, the DDPM posterior, the loss, ancestral sampling, and a DDPM trained on 2-D data. | `diffusion-1d` |
-| `062-fast-samplers` | Sampling faster: DDIM and the probability-flow ODE | DDIM's deterministic and stochastic updates, the VP probability-flow ODE, EDM's noise levels, and the Heun sampler, all checked against closed-form Gaussian answers. | none |
-| `063-classifier-free-guidance` | Classifier-free guidance | Condition dropout in training, guidance in both conventions, and guidance moving and narrowing a distribution of notes. | none |
-| `064-diffusion-for-audio` | Diffusion for audio | **GPU.** DiffWave's step embedding and gated residual block, alignment of a 6-step fast schedule to the training schedule, Grad-TTS's forward statistics, the loss, and a fast sampler. The run trains a small DiffWave-style vocoder on spoken digits and plays its samples. | none |
-| `065-flow-matching` | Flow matching | The optimal-transport path and its loss, the closed-form Gaussian velocity field, an Euler sampler that shows why one step gives the data mean, and the bridge to the diffusion convention. | `flow-trajectories` |
-| `066-straighter-paths-and-better-solvers` | Straighter paths and better solvers | Euler, midpoint, and RK4 solvers with their convergence orders, minibatch OT pairing, and a straightness measure that shows what one round of reflow does. | `flow-trajectories` |
-| `067-flow-matching-for-speech` | Flow matching for speech | **GPU.** Sway sampling, the masked infilling loss of Voicebox and F5-TTS, classifier-free guidance for a flow, CosyVoice's chunk-causal mask, and a mel pseudo-inverse. The run trains a small conditional flow-matching model on `fsdd` and plays the digits it generates. | none |
-| `068-few-step-generation-and-audio-metrics` | Few-step generation and audio metrics | The shortcut-model loss and the MeanFlow target for one-step generation, the Fréchet audio distance with its FAD-infinity correction, and the CLAP score. | none |
+| `062-diffusion-from-scratch` | Diffusion from scratch | Linear and cosine schedules, the closed-form forward process, conversions between noise, data, velocity, and score, the DDPM posterior, the loss, ancestral sampling, and a DDPM trained on 2-D data. | `diffusion-1d` |
+| `063-fast-samplers` | Sampling faster: DDIM and the probability-flow ODE | DDIM's deterministic and stochastic updates, the VP probability-flow ODE, EDM's noise levels, and the Heun sampler, all checked against closed-form Gaussian answers. | none |
+| `064-classifier-free-guidance` | Classifier-free guidance | Condition dropout in training, guidance in both conventions, and guidance moving and narrowing a distribution of notes. | none |
+| `065-diffusion-for-audio` | Diffusion for audio | **GPU.** DiffWave's step embedding and gated residual block, alignment of a 6-step fast schedule to the training schedule, Grad-TTS's forward statistics, the loss, and a fast sampler. The run trains a small DiffWave-style vocoder on spoken digits and plays its samples. | none |
+| `066-flow-matching` | Flow matching | The optimal-transport path and its loss, the closed-form Gaussian velocity field, an Euler sampler that shows why one step gives the data mean, and the bridge to the diffusion convention. | `flow-trajectories` |
+| `067-straighter-paths-and-better-solvers` | Straighter paths and better solvers | Euler, midpoint, and RK4 solvers with their convergence orders, minibatch OT pairing, and a straightness measure that shows what one round of reflow does. | `flow-trajectories` |
+| `068-flow-matching-for-speech` | Flow matching for speech | **GPU.** Sway sampling, the masked infilling loss of Voicebox and F5-TTS, classifier-free guidance for a flow, CosyVoice's chunk-causal mask, and a mel pseudo-inverse. The run trains a small conditional flow-matching model on `fsdd` and plays the digits it generates. | none |
+| `069-few-step-generation-and-audio-metrics` | Few-step generation and audio metrics | The shortcut-model loss and the MeanFlow target for one-step generation, the Fréchet audio distance with its FAD-infinity correction, and the CLAP score. | none |
 
 ## Part 8 — Beyond recognition and synthesis
 
@@ -141,10 +142,10 @@ Research: `05-speech-llms-tasks-and-pedagogy.md`, half A.
 
 | Slug | Title | The exercise | Demos |
 |---|---|---|---|
-| `069-speech-enhancement` | Speech enhancement | SI-SDR, mixing noise at an exact SNR, spectral subtraction, a decision-directed Wiener filter, and ideal masks. | none |
-| `070-source-separation` | Separating voices | The permutation-invariant loss and a small Conv-TasNet trained to separate a chirp and a vowel train from a mixture. | `separation-pit` |
-| `071-audio-classification-and-clap` | Audio classification and CLAP | AST's spectrogram patch count, a stable sigmoid cross-entropy for multi-label tagging, average precision and mAP, CLAP's symmetric contrastive loss, and zero-shot classification by cosine similarity. | none |
-| `072-voice-conversion-and-spoofing` | Voice conversion and spoofing | kNN voice conversion by averaging the nearest target frames, how k trades content against smoothing, and a spoofing countermeasure's false rejection and false acceptance rates, with an interpolated equal error rate. | none |
-| `073-spoken-language-understanding` | Spoken language understanding | Intent accuracy, micro slot F1, an n-best intent, sentence BLEU with smoothing and the brevity penalty, character F1, and a two-turn dialogue-state merge. | none |
-| `074-spoken-language-models` | Spoken language models | **GPU.** Deduplicated k-means units with a bigram unit LM, then Whisper frame stacking, a projector into a frozen language model, and loss masking. The run trains the projector to transcribe digits from `fsdd` with frozen `whisper-tiny` and `smollm2-135m`. | none |
-| `075-full-duplex-and-voice-agents` | Full-duplex models and voice agents | Moshi-style parallel streams with delays, text-speech interleaving, an RQ-Transformer's depth step, a chunked causal convolution that matches the full one, and a turn-taking state machine against a latency budget, a backchannel-versus-barge-in rule, echo as a self-interruption cause, and turn metrics (gaps, overlaps, turn-change rate, takeover rate) from a two-channel timeline. | `latency-timeline`, `delay-pattern` |
+| `070-speech-enhancement` | Speech enhancement | SI-SDR, mixing noise at an exact SNR, spectral subtraction, a decision-directed Wiener filter, and ideal masks. | none |
+| `071-source-separation` | Separating voices | The permutation-invariant loss and a small Conv-TasNet trained to separate a chirp and a vowel train from a mixture. | `separation-pit` |
+| `072-audio-classification-and-clap` | Audio classification and CLAP | AST's spectrogram patch count, a stable sigmoid cross-entropy for multi-label tagging, average precision and mAP, CLAP's symmetric contrastive loss, and zero-shot classification by cosine similarity. | none |
+| `073-voice-conversion-and-spoofing` | Voice conversion and spoofing | kNN voice conversion by averaging the nearest target frames, how k trades content against smoothing, and a spoofing countermeasure's false rejection and false acceptance rates, with an interpolated equal error rate. | none |
+| `074-spoken-language-understanding` | Spoken language understanding | Intent accuracy, micro slot F1, an n-best intent, sentence BLEU with smoothing and the brevity penalty, character F1, and a two-turn dialogue-state merge. | none |
+| `075-spoken-language-models` | Spoken language models | **GPU.** Deduplicated k-means units with a bigram unit LM, then Whisper frame stacking, a projector into a frozen language model, and loss masking. The run trains the projector to transcribe digits from `fsdd` with frozen `whisper-tiny` and `smollm2-135m`. | none |
+| `076-full-duplex-and-voice-agents` | Full-duplex models and voice agents | Moshi-style parallel streams with delays, text-speech interleaving, an RQ-Transformer's depth step, a chunked causal convolution that matches the full one, and a turn-taking state machine against a latency budget, a backchannel-versus-barge-in rule, echo as a self-interruption cause, and turn metrics (gaps, overlaps, turn-change rate, takeover rate) from a two-channel timeline. | `latency-timeline`, `delay-pattern` |

@@ -1,0 +1,18 @@
+{
+  "id": "045-neural-diarization",
+  "title": "Score neural diarization",
+  "brief": "Build the permutation-invariant BCE loss and its gradient, the overlap-aware DER components, an attractor speaker count, and a cosine target-speaker mask.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": [
+    "numpy",
+    "scipy"
+  ],
+  "hints": [
+    "pit_bce_loss: itertools.permutations(range(C)) lists every order; score each as bce_with_logits(logits, labels[:, list(perm)]) and keep the smallest. On the planted example the identity order costs 1.590 and the swapped order costs 0.125.",
+    "pit_bce_grad: reuse the best permutation from pit_bce_loss, then differentiate that one BCE: the gradient of the mean BCE is (sigmoid(z) - y) divided by the number of elements T * C.",
+    "der_components: build the table ref.astype(int) @ hyp.T.astype(int), use linear_sum_assignment(-table) for the mapping, then count per frame with n_ref = ref.sum(0) and n_hyp = hyp.sum(0). The planted timeline gives miss 3, false alarm 2, confusion 2, and total 15.",
+    "attractor_count: np.flatnonzero(probs < threshold) lists the low entries, and the first one is the count. If the list is empty, every attractor counts.",
+    "target_speaker_mask: divide each frame by its norm and the enrollment by its norm before the dot product. For frames [3, 0], [2, 2], [0, 5] and enrollment [1, 0], the cosines are 1.0, 0.707, and 0.0."
+  ]
+}

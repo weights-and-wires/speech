@@ -1,6 +1,6 @@
 ---
 title: Full-duplex models and voice agents
-slug: 078-full-duplex-and-voice-agents
+slug: 079-full-duplex-and-voice-agents
 part: "Part 8 — Beyond recognition and synthesis"
 summary: Build a voice agent's streams, depth step, streaming convolution, and turn-taking, then score its backchannels, echo, gaps, overlaps, and latency budget.
 minutes: 80
@@ -16,8 +16,8 @@ prereqs:
   - 011-microphone-arrays
   - 036-streaming-encoders
   - 061-codec-language-models
-  - 077-spoken-language-models
-exercise: 078-full-duplex-and-voice-agents
+  - 078-spoken-language-models
+exercise: 079-full-duplex-and-voice-agents
 ---
 
 # Full-duplex models and voice agents

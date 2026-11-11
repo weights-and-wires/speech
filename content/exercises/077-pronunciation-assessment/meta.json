@@ -1,0 +1,14 @@
+{
+  "id": "077-pronunciation-assessment",
+  "title": "Score pronunciation with goodness of pronunciation",
+  "brief": "Compute GOP per aligned phone, flag mispronunciations with a threshold, correlate scores with human ratings, and count phone confusions.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy"],
+  "hints": [
+    "For a segment [phone, start, end), take block = np.log(posteriors[start:end]). gop_log_posterior is block[:, phone].mean().",
+    "gop subtracts the per-frame best before averaging: (block[:, phone] - block.max(axis=1)).mean(). With frame posteriors of the canonical phone 0.2 and 0.3 against best 0.7 and 0.5, that is mean(ln 0.2 - ln 0.7, ln 0.3 - ln 0.5) = -0.8818.",
+    "average_ranks: give every value its sorted position from 1, then replace each group of equal values by the group's mean rank. The values [3, 5, 5, 8, 9] get ranks [1, 2.5, 2.5, 4, 5].",
+    "phone_confusion: np.add.at(matrix, (canonical, recognized), 1) counts every pair, repeats included."
+  ]
+}

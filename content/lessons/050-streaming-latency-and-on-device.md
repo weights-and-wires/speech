@@ -145,7 +145,7 @@ Three numbers come from this log:
 - **Finalization latency** is the time of the final minus the end of the last word: $1900 - 1240 = 660$ ms.
 - **Endpoint-to-final latency** is the time of the final minus the time the endpointer fired: $1900 - 1640 = 260$ ms.
 
-The last two are linked. Finalization is the endpoint wait, $1640 - 1240 = 400$ ms, plus endpoint-to-final, 260 ms. The endpoint wait belongs to the endpointer: it is the hangover from [Voice activity detection](/lessons/020-voice-activity-detection), and [Full-duplex models and voice agents](/lessons/077-full-duplex-and-voice-agents) prices it in a voice agent's budget. Endpoint-to-final belongs to the recognizer, which must flush the last chunk and rescore.
+The last two are linked. Finalization is the endpoint wait, $1640 - 1240 = 400$ ms, plus endpoint-to-final, 260 ms. The endpoint wait belongs to the endpointer: it is the hangover from [Voice activity detection](/lessons/020-voice-activity-detection), and [Full-duplex models and voice agents](/lessons/078-full-duplex-and-voice-agents) prices it in a voice agent's budget. Endpoint-to-final belongs to the recognizer, which must flush the last chunk and rescore.
 
 > [!WARNING]
 > Subtracting the chunk start, or the start of the audio, from an event time makes every latency look larger and hides which stage is slow. The log above gives 560 ms for the first partial that way, not 80 ms.

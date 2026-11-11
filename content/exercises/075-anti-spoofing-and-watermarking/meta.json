@@ -1,0 +1,16 @@
+{
+  "id": "075-anti-spoofing-and-watermarking",
+  "title": "LFCC features, min t-DCF, a spread-spectrum watermark, and an attacker's EER",
+  "brief": "Build a linear-frequency filterbank and LFCCs, the ASVspoof 2019 minimum t-DCF, a keyed spread-spectrum watermark with a correlation detector, and an attacker EER that tests speaker anonymization.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy", "scipy"],
+  "hints": [
+    "lfcc_filterbank: edges = np.linspace(0, sample_rate / 2, n_filters + 2). For 3 filters, a 16-point FFT, and 16 kHz, the edges are 0, 2, 4, 6, 8 kHz and filter 0 is (0, 0.5, 1, 0.5, 0, 0, 0, 0, 0) over the 9 bins. Use np.minimum of the rising and falling lines, then np.maximum with 0.",
+    "lfcc: filterbank @ power gives (n_filters, frames). Take np.log(energy + 1e-10), then scipy.fft.dct(..., type=2, axis=0, norm=\"ortho\") and keep the first n_ceps rows. A flat spectrum of ones through the 3-filter bank gives energies (2, 2, 2) and c0 = sqrt(3) ln 2 = 1.201.",
+    "tdcf_costs: with the defaults and an ASV miss of 0.05, false alarm of 0.01, and spoof miss of 0.3, C1 = 0.9405 * (1 - 0.05) - 0.0095 * 10 * 0.01 = 0.892525 and C2 = 10 * 0.05 * (1 - 0.3) = 0.35.",
+    "min_tdcf: thresholds are np.unique of all scores plus one value above the largest. The cost at each is (c1 * frr + c2 * far) / min(c1, c2). For bona fide (0.9, 0.5, 0.4), spoof (0.6, 0.3, 0.1, 0.0), C1 = 0.892525, and C2 = 0.35, the costs run 1.0, 0.75, 0.5, 0.25, 1.1, 1.95, 1.7, 2.55, so the answer is 0.25 at threshold 0.4.",
+    "embed_watermark and detect_watermark: reshape the first seg * n_bits samples to (n_bits, seg), where seg = len(x) // n_bits. Embed adds strength * (2 * bits - 1)[:, None] * chips. Detect subtracts parts.mean(axis=1, keepdims=True) before np.sum(parts * chips, axis=1) > 0. For x = (0.8, 0.7, 0.9, 0.8), chips (1, 1, -1, 1), and bit 0 at strength 0.1, the raw correlation is +1.0 (wrong) and the mean-removed correlation is -0.5 (right).",
+    "anonymize_embeddings: for each row, rng.choice(len(pool), size=k, replace=False) picks the pool rows and pool[idx].mean(axis=0) averages them. attacker_eer: scores = normalized_enrolled @ normalized_trials.T, target = np.diag(scores), non-target = scores[~np.eye(n, dtype=bool)], then the interpolated EER of target against non-target."
+  ]
+}

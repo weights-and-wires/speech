@@ -43,7 +43,7 @@ The repository is laid out as follows.
 
 ## The curriculum
 
-The course has 77 short chapters in eight parts, and 21 interactive demos. Each
+The course has 78 short chapters in eight parts, and 21 interactive demos. Each
 chapter teaches one idea. Readers of the earlier 42-lesson course keep their
 progress: `content/renames.json` maps each old slug to the chapters that
 replaced it.
@@ -83,9 +83,10 @@ speech in the style of Voicebox and F5-TTS, and few-step generation with audio
 metrics.
 
 **Part 8 — Beyond recognition and synthesis.** Enhancement and separation, audio
-classification, paralinguistics and emotion, voice conversion, spoken language
-understanding with dialogue state and speech translation, spoken language models
-and the adapter pattern, and full-duplex models and voice agents.
+classification, paralinguistics and emotion, voice conversion, anti-spoofing and
+watermarking, spoken language understanding with dialogue state and speech
+translation, spoken language models and the adapter pattern, and full-duplex
+models and voice agents.
 
 Eight chapters run a real experiment on the GPU: training a Conformer-CTC on
 spoken digits, probing `wav2vec2-base` and `hubert-base` layer by layer,

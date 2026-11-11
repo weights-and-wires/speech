@@ -20,7 +20,7 @@ exercise: 072-audio-classification-and-clap
 
 Not every question about audio is "what was said". A baby monitor asks whether that was crying. A city sensor asks whether a siren, a dog, or a drill is making the noise. These are *classification* problems: a label for a whole clip, not one per frame, so you first turn the clip into vectors that a classifier can read.
 
-Real sound is messier than one label per clip. A street recording has speech, traffic, and a barking dog at once, so the classifier must say "yes" to several classes, and you need a score that works for that. A fixed list of labels has another limit: nobody trained it to say "squeaky door". If you could describe the class in words, you would not need to retrain.
+Real sound is messier than one label per clip. A street recording has speech, traffic, and a barking dog at once, so the classifier must say "yes" to several classes, and you need a score that works for that. A fixed list of labels has another limit: nobody trained it to say "squeaky door". If you could describe the class in words, you would not need to retrain. Emotion is one more class a clip can carry, covered in [Paralinguistics and emotion](/lessons/073-paralinguistics-and-emotion).
 
 The idea in this chapter is to turn audio into vectors and compare them. You cut a spectrogram into patches for a Transformer, train it to tag many classes at once, and score it by how well it ranks each class. Then you train audio and text vectors into one space, so a sentence becomes a class.
 

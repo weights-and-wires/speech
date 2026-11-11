@@ -187,7 +187,7 @@ $$
 C(\tau) = \frac{C_{\text{miss}}\,P_{\text{miss}}(\tau)\,P_{\text{tar}} + C_{\text{fa}}\,P_{\text{fa}}(\tau)\,(1 - P_{\text{tar}})}{\min\left(C_{\text{miss}} P_{\text{tar}},\ C_{\text{fa}} (1 - P_{\text{tar}})\right)}
 $$
 
-Read it aloud: $P_{\text{tar}}$ is the prior probability that a trial is a target, and $C_{\text{miss}}$ and $C_{\text{fa}}$ are the costs of each error. The denominator is the cost of the better of two trivial systems, accept everything or reject everything, so a cost of 1.0 means no better than guessing. **minDCF** is the minimum over thresholds. VoxSRC uses $P_{\text{tar}} = 0.05$ with both costs 1, so the formula becomes $P_{\text{miss}} + 19\,P_{\text{fa}}$.
+Read it aloud: $P_{\text{tar}}$ is the prior probability that a trial is a target, and $C_{\text{miss}}$ and $C_{\text{fa}}$ are the costs of each error. The denominator is the cost of the better of two trivial systems, accept everything or reject everything, so a cost of 1.0 means no better than guessing. **minDCF** is the minimum over thresholds. VoxSRC uses $P_{\text{tar}} = 0.05$ with both costs 1, so the formula becomes $P_{\text{miss}} + 19\,P_{\text{fa}}$. A detector that listens all day is scored the same way, in false accepts per hour, in [Keyword spotting, endpointing, and language ID](/lessons/043-keyword-spotting-and-language-id).
 
 For the same eight scores, $\tau = 0.7$ gives miss rate 25% and false-alarm rate 0, so the cost is 0.25, and no threshold does better.
 
@@ -276,7 +276,7 @@ The checks test the functions in this order.
 
 ## Where this breaks
 
-**Short clips and a shifted domain.** A threshold tuned on long clips from one microphone can fail on short clips from another. Re-estimate it, and draw the AS-norm cohort, from audio like your deployment audio.
+**Short clips and a shifted domain.** A threshold tuned on long clips from one microphone can fail on short clips from another. Re-estimate it, and draw the AS-norm cohort, from audio like your deployment audio. To hide whose voice a recording holds, see the anonymization section of [Anti-spoofing and watermarking](/lessons/075-anti-spoofing-and-watermarking).
 
 **A margin from step 0.** A large margin at the start can stall the loss. The Run warms it up over 100 steps.
 

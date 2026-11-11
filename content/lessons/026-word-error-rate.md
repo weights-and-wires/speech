@@ -349,11 +349,11 @@ The checks test the functions in this order.
 
 **Normalization can hide errors you care about.** A normalizer that merges `10` and `100` or drops a negation flatters a recognizer. Check what yours removes.
 
-**WER treats every word alike.** Dropping "not" costs the same as dropping "the".
+**WER treats every word alike.** Dropping "not" costs the same as dropping "the". [Sequence-level training](/lessons/035-sequence-level-training) trains a model on WER directly.
 
 **Alignments are not unique.** The distance is unique, but the split into S, D, and I is not: "the cat sat on the mat" against "the cat sit on mat today" has distance 3 as one of each edit or as three substitutions. Compare totals, not breakdowns.
 
-**Utterances are not always independent.** Utterances from one speaker share conditions, so a bootstrap over utterances reports an interval that is too narrow. Resample whole speakers instead (Liu et al., 2023).
+**Utterances are not always independent.** Utterances from one speaker share conditions, so a bootstrap over utterances reports an interval that is too narrow. Resample whole speakers instead (Liu et al., 2023). [Long-form and trustworthy ASR](/lessons/047-long-form-and-trustworthy-asr) puts a bootstrap interval on the WER of each subgroup.
 
 ## The exercise
 

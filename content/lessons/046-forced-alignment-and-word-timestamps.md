@@ -165,13 +165,13 @@ The table has $T \times (2L + 1)$ cells and each cell looks at three neighbors, 
 
 ## Where this breaks
 
-**Peaky timing.** CTC models emit each token as a spike a frame or two wide, and the spike may sit a frame or two from where a phonetician would mark the sound. Expect offsets of 20 to 40 ms at 20 ms per frame, and report the hop with the times. HMM aligners such as the Montreal Forced Aligner model durations with states, so they are often tighter at phone boundaries.
+**Peaky timing.** CTC models emit each token as a spike a frame or two wide, and the spike may sit a frame or two from where a phonetician would mark the sound. Expect offsets of 20 to 40 ms at 20 ms per frame, and report the hop with the times. HMM aligners such as the Montreal Forced Aligner model durations with states, so they are often tighter at phone boundaries. Whisper-style models have no CTC trellis, and [Long-form and trustworthy ASR](/lessons/047-long-form-and-trustworthy-asr) reads their word times from attention.
 
 **Text the model cannot spell.** The transcript must use the model's vocabulary. Normalize case, digits, and punctuation first, or a symbol has no id in the vocabulary and the transcript cannot be turned into tokens.
 
 **Too few frames.** Each token needs one frame, and each repeated pair needs a blank frame too. When the frames cannot hold the transcript, no legal path exists and the exercise raises `ValueError`.
 
-**A transcript that does not match the audio.** Viterbi always returns the best path, even for the wrong words, so the times look plausible and are wrong. The path's score is the warning, and CTC segmentation (Kürzinger et al., 2020) uses it to filter bad segments.
+**A transcript that does not match the audio.** Viterbi always returns the best path, even for the wrong words, so the times look plausible and are wrong. The path's score is the warning, and CTC segmentation (Kürzinger et al., 2020) uses it to filter bad segments. Alignment also feeds pronunciation scoring: [Pronunciation assessment](/lessons/077-pronunciation-assessment) scores each aligned phone.
 
 > [!RECAP]
 > - The trellis has $2L + 1$ states for $L$ tokens, with a backpointer at every cell.

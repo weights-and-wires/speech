@@ -28,7 +28,7 @@ You build the parts that make that attention work: one step of location-sensitiv
 
 ## What you already know
 
-- Text normalization turns "Dr. Lee paid $3.50" into words, and G2P turns words into phones (see [Phonemes and text normalization](/lessons/019-phonemes-and-text-normalization)).
+- Text normalization turns "Dr. Lee paid $3.50" into words, and G2P turns words into phones (see [Phonemes and text normalization](/lessons/019-phonemes-and-text-normalization)). [The TTS front end and prosody](/lessons/053-tts-front-end-and-prosody) adds a rule layer for homographs.
 - A log-mel spectrogram has one column per frame and 80 rows, one per mel band (see [Log-mel spectrograms](/lessons/013-log-mel-spectrograms)).
 - Griffin-Lim turns a magnitude spectrogram back into a waveform by guessing phase (see [Phase and Griffin-Lim](/lessons/008-phase-and-griffin-lim)).
 - An attention decoder scores every encoder output, takes a softmax, and averages the outputs with those weights (see [Attention encoder-decoders](/lessons/033-attention-encoder-decoders)).

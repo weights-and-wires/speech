@@ -223,7 +223,7 @@ The exercise gives you `si_sdr`. Build the rest in the order the checks test the
 
 - **Source counts.** PIT checks $C!$ orders, and a model has a fixed number of outputs, so it can't separate an unknown number of speakers without extra machinery.
 - **Unseen sources.** The model learns the kinds of sources it trained on. A separator trained on chirps and vowels has learned nothing about two talkers.
-- **Long clips.** A receptive field of 1.5 seconds sees one stretch at a time. Streaming a long recording means cutting it in chunks, and the same voice can land on different tracks in different chunks.
+- **Long clips.** A receptive field of 1.5 seconds sees one stretch at a time. Streaming a long recording means cutting it in chunks, and the same voice can land on different tracks in different chunks. [Neural diarization](/lessons/045-neural-diarization) reuses PIT to label which speaker is active in each frame.
 
 ## The exercise
 

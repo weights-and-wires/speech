@@ -338,7 +338,7 @@ A voice assistant must not answer while you pause to breathe or think, so it nee
 
 Take the VAD output $[0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0]$ with a timeout of 2 frames. The pause at frames 4 and 5 does not exceed 2, and speech resumes at frame 6, so the count resets. Frames 7, 8, and 9 make it 3, so `endpoint` returns 9. It is the hangover idea with a different job: the hangover cleans the edges of a stretch, and the timeout triggers an action.
 
-A short timeout answers quickly but cuts off people who pause mid-thought. A long one is safe but makes every turn feel slow. A later lesson covers keyword spotting and endpointing in depth.
+A short timeout answers quickly but cuts off people who pause mid-thought. A long one is safe but makes every turn feel slow. [Keyword spotting, endpointing, and language ID](/lessons/043-keyword-spotting-and-language-id) covers keyword spotting and endpointing in depth.
 
 > [!KEY]
 > You now know how to find the speech in a recording and when it ends: compare each frame with a floor that follows the background, weigh cues by likelihood, switch on high and off low, and end the utterance after a timeout of silence.

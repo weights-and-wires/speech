@@ -97,7 +97,7 @@ Every decode starts from tokens the decoder did not choose. The following table 
 
 The English transcription prompt without timestamps is `[50258, 50259, 50359, 50363]`. With timestamps, drop the last id.
 
-The model also predicts the language token. To detect the language, run the decoder one step after `<|startoftranscript|>`, take the softmax **over the language tokens only**, and pick the largest. A softmax over all 51,865 logits lets text and timestamp tokens take probability, so the language probabilities do not sum to 1, and a text token can hold the top logit. `detect_language` implements this, and `build_prompt` uses its answer when you pass `language=None`.
+The model also predicts the language token. To detect the language, run the decoder one step after `<|startoftranscript|>`, take the softmax **over the language tokens only**, and pick the largest. A softmax over all 51,865 logits lets text and timestamp tokens take probability, so the language probabilities do not sum to 1, and a text token can hold the top logit. `detect_language` implements this, and `build_prompt` uses its answer when you pass `language=None`. [Keyword spotting, endpointing, and language ID](/lessons/043-keyword-spotting-and-language-id) scores language ID with the NIST Cavg.
 
 Timestamp tokens count time in steps of 20 ms, the encoder's resolution:
 
@@ -286,7 +286,7 @@ The checks test the functions in this order. `word_errors` is provided, because 
 
 ## Where this breaks
 
-**Long audio and hallucination.** One window holds 30 s. Whisper's `transcribe` decodes one window, moves forward to the last timestamp, and passes the previous text as a prompt. When a decode repeats itself (gzip compression ratio above 2.4) or is unsure (average log-probability below $-1.0$), it retries at higher temperatures. Silence and noise can still produce invented text or a loop that repeats one phrase. A later lesson on long-form transcription covers the window logic and these failures.
+**Long audio and hallucination.** One window holds 30 s. Whisper's `transcribe` decodes one window, moves forward to the last timestamp, and passes the previous text as a prompt. When a decode repeats itself (gzip compression ratio above 2.4) or is unsure (average log-probability below $-1.0$), it retries at higher temperatures. Silence and noise can still produce invented text or a loop that repeats one phrase. [Long-form and trustworthy ASR](/lessons/047-long-form-and-trustworthy-asr) covers the window logic and these failures, and how to measure calibration.
 
 **Decoder cost.** The encoder runs once per window, but the decoder runs once per token, and each step re-reads the 1,500 encoder positions and the cache of earlier tokens. Distil-Whisper (Gandhi et al., 2023) keeps the whole encoder and cuts the decoder to 2 layers, which the authors report makes it 5.8 times faster with 51% fewer parameters. A later lesson on streaming and on-device recognition covers the cache and other speed-ups.
 

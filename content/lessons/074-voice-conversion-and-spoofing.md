@@ -186,7 +186,7 @@ The `side="left"` counts only scores strictly below the threshold, so a score eq
 
 ### The tandem idea
 
-A countermeasure rarely runs alone. It sits in front of a speaker verification system, and a trial passes only when both say yes. That creates a cost the EER can't see. A countermeasure with a low EER that sets its threshold high rejects many real, enrolled users, and one that sets it low lets spoofs through to a verifier that may accept them. The *tandem detection cost function* (t-DCF; Kinnunen et al., 2018) combines the verifier's errors and the countermeasure's errors into one cost, weighted by how often target, non-target, and spoof trials occur and how much each error costs. It judges a countermeasure by the system it protects. ASVspoof 2019 used the minimum t-DCF as its main metric and the EER as a second one. This course grades only the EER.
+A countermeasure rarely runs alone. It sits in front of a speaker verification system, and a trial passes only when both say yes. That creates a cost the EER can't see. A countermeasure with a low EER that sets its threshold high rejects many real, enrolled users, and one that sets it low lets spoofs through to a verifier that may accept them. The *tandem detection cost function* (t-DCF; Kinnunen et al., 2018) combines the verifier's errors and the countermeasure's errors into one cost, weighted by how often target, non-target, and spoof trials occur and how much each error costs. It judges a countermeasure by the system it protects. ASVspoof 2019 used the minimum t-DCF as its main metric and the EER as a second one. This course grades only the EER, and [Anti-spoofing and watermarking](/lessons/075-anti-spoofing-and-watermarking) builds the t-DCF.
 
 Detectors overfit to the attacks they trained on, and an unseen vocoder can break them. The complementary approach is *provenance*: mark generated audio when it is made, as AudioSeal (2024) does with an imperceptible watermark.
 
@@ -195,7 +195,7 @@ Detectors overfit to the attacks they trained on, and an unseen vocoder can brea
 
 ## Consent and misuse
 
-A voice identifies a person. The EU's GDPR treats biometric data used to identify someone as a special category, and Illinois's BIPA regulates voiceprints. A converted voice can impersonate someone to their bank, their family, or their employer. The rules for this course follow: convert only your own voice, with your own opt-in, or voices from public corpora whose licenses allow it, such as LibriSpeech and VCTK. Label converted audio as synthetic when you share it, and watermark it when you can.
+A voice identifies a person. The EU's GDPR treats biometric data used to identify someone as a special category, and Illinois's BIPA regulates voiceprints. A converted voice can impersonate someone to their bank, their family, or their employer. The rules for this course follow: convert only your own voice, with your own opt-in, or voices from public corpora whose licenses allow it, such as LibriSpeech and VCTK. Label converted audio as synthetic when you share it, and watermark it when you can, as [Anti-spoofing and watermarking](/lessons/075-anti-spoofing-and-watermarking) shows.
 
 > [!WARNING]
 > "It's only a demo" is not consent. The pipeline that converts a synthetic voice in this exercise converts a real one, so the rules apply the moment the input is a recording of a person.

@@ -1,0 +1,15 @@
+{
+  "id": "050-streaming-latency-and-on-device",
+  "title": "Measure streaming latency and an on-device budget",
+  "brief": "Compute RTF, the delay of each position in a chunk, first-partial and final latency from a timeline, the unstable-prefix rate, and whether a quantized model fits a device.",
+  "needs_gpu": false,
+  "timeout": 30,
+  "packages": ["numpy"],
+  "hints": [
+    "rtf is compute_seconds / audio_seconds. 3 s of compute for 10 s of audio is 0.3.",
+    "Position p in a chunk of C frames with L look-ahead frames waits (C - p + L) hops. C=4, L=2, 40 ms gives 240, 200, 160, 120 ms.",
+    "A latency is an event time minus the time the word ended. With word ends [480, 640, 760, 1240], a first partial at 560 ms has latency 560 - 480 = 80 ms, not 560 ms.",
+    "For each partial, count the words before the first word that differs from the final. The rest are unstable. ['turn on a'] against 'turn on the lights' has 3 words shown and 1 unstable.",
+    "model_bytes is ceil(params * bits / 8). 30 million parameters at 8 bits is 30,000,000 bytes. fits_on_device adds the chunk activations and uses <= against the budget."
+  ]
+}

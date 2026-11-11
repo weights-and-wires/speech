@@ -43,7 +43,7 @@ The repository is laid out as follows.
 
 ## The curriculum
 
-The course has 75 short chapters in eight parts, and 21 interactive demos. Each
+The course has 76 short chapters in eight parts, and 21 interactive demos. Each
 chapter teaches one idea. Readers of the earlier 42-lesson course keep their
 progress: `content/renames.json` maps each old slug to the chapters that
 replaced it.
@@ -65,9 +65,9 @@ error rate, and weighted finite-state decoding graphs.
 temporal classification and its decoders, attention encoder-decoders,
 transducers, sequence-level training, streaming, Conformers and SpecAugment,
 efficient encoders, self-supervised speech, WavLM and benchmarking, Whisper,
-speaker recognition, keyword spotting and language ID, diarization, long-form
-and trustworthy recognition, an ASR training recipe, fine-tuning a pretrained
-encoder, and streaming latency on device.
+speaker recognition, keyword spotting and language ID, diarization, neural
+diarization, long-form and trustworthy recognition, an ASR training recipe,
+fine-tuning a pretrained encoder, and streaming latency on device.
 
 **Part 5 — Speech synthesis.** Tacotron and attention, durations and monotonic
 alignment search, the TTS front end and prosody control, WaveNet, GAN vocoders,

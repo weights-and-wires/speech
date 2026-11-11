@@ -216,7 +216,7 @@ Build the functions in the order the checks test them.
 ## Where this breaks
 
 - **A projector that only memorizes.** With few speakers, a projector can learn voices instead of words. The Run holds out a whole speaker for exactly this reason.
-- **Units that lose prosody.** Deduplicated units discard duration and pitch, so a unit model can't tell a question from a statement. The adapter keeps continuous features.
+- **Units that lose prosody.** Deduplicated units discard duration and pitch, so a unit model can't tell a question from a statement. The adapter keeps continuous features. The next chapter, [Speech LLM training and evaluation](/lessons/079-speech-llm-training-and-evaluation), covers how to train and evaluate such a model.
 
 ## The exercise
 

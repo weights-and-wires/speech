@@ -356,7 +356,7 @@ The checks test the pieces in this order. Each module's `__init__` is given, so 
 
 **BatchNorm and streaming do not mix.** As [Streaming encoders](/lessons/036-streaming-encoders) showed, statistics over one chunk differ from those over a whole utterance, so streaming Conformers often use LayerNorm in the convolution module.
 
-**SpecAugment can erase the label.** A time mask wider than a word removes the only evidence for it. Scale $T$ to your utterances.
+**SpecAugment can erase the label.** A time mask wider than a word removes the only evidence for it. Scale $T$ to your utterances. [Efficient speech encoders](/lessons/038-efficient-speech-encoders) covers encoders beyond the Conformer.
 
 ## The exercise
 

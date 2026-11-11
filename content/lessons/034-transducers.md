@@ -202,7 +202,7 @@ The joiner output is a tensor of $B \times T \times (U + 1) \times V$ floats, an
 
 **Blank index conventions disagree.** This course puts the blank at 0, while `torchaudio.functional.rnnt_loss` defaults to the last index, as NeMo does. A mismatch trains without errors and learns nothing useful.
 
-A transducer streams only if its encoder does, which is the next chapter, [Streaming encoders](/lessons/036-streaming-encoders).
+A transducer streams only if its encoder does, which is the next chapter, [Streaming encoders](/lessons/036-streaming-encoders). To train a transducer on whole-sequence objectives such as minimum word error rate, see [Sequence-level training](/lessons/035-sequence-level-training).
 
 ## The exercise
 

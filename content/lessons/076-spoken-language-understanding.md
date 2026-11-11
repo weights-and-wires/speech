@@ -224,7 +224,7 @@ $$
 
 A *cascade* recognizes the speech, translates the text, and, for speech-to-speech, synthesizes the result. SeamlessM4T is one model that can translate speech to text, translate speech to speech, and recognize speech, for up to 100 languages (Seamless Communication et al., 2023). Its introduction sets that single model against a cascade of recognition, text translation, and synthesis. Whisper's translate task is the smaller end-to-end case: one model, speech in, English text out.
 
-Text between those stages stores neither pitch nor timing. The SeamlessM4T introduction says speech carries expressive detail beyond the words, so a synthesizer that sees only the sentence has to choose both. An end-to-end speech-to-speech model can use the audio, and it can also carry a mistake through with no transcript where the missing room would show.
+Text between those stages stores neither pitch nor timing. The SeamlessM4T introduction says speech carries expressive detail beyond the words, so a synthesizer that sees only the sentence has to choose both. An end-to-end speech-to-speech model can use the audio, and it can also carry a mistake through with no transcript where the missing room would show. Another spoken-language application scores how a learner says a word, which [Pronunciation assessment](/lessons/077-pronunciation-assessment) covers.
 
 > [!WARNING]
 > On one sentence a zero n-gram count is common, and an unsmoothed geometric mean becomes 0. Use smoothing 2, and do not rank two systems by a single sentence.

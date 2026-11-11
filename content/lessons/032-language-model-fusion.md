@@ -211,7 +211,7 @@ $$
 \operatorname{score}(y) = \log p_{\text{am}}(y) + \lambda \log p_{\text{lm}}(y) + \gamma\,|y|
 $$
 
-Read it aloud: the acoustic score, plus $\lambda$ times the LM score, plus $\gamma$ per token, which offsets the LM's pull toward short output, like $\beta$. It cannot recover a hypothesis the beam dropped, so the list must be wide enough.
+Read it aloud: the acoustic score, plus $\lambda$ times the LM score, plus $\gamma$ per token, which offsets the LM's pull toward short output, like $\beta$. It cannot recover a hypothesis the beam dropped, so the list must be wide enough. [Sequence-level training](/lessons/035-sequence-level-training) turns the list's scores into word posteriors.
 
 A large language model (LLM) can do this in two ways. Prompt it with the n-best list and ask for the likeliest transcript, which can return a sentence not on the list. Or score each hypothesis's log-likelihood under the LLM and use it as $\log p_{\text{lm}}$, which keeps the output on the list. Both add an LLM call per utterance.
 

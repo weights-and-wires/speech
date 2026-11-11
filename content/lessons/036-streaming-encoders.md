@@ -259,7 +259,7 @@ $$
 \text{delay}(p) = (C - 1 - p + 1) \cdot \text{frame\_ms} = (C - p) \cdot \text{frame\_ms}
 $$
 
-For $C = 4$ and 40 ms frames, the delays are 160, 120, 80, and 40 ms, as Figure 2 shows. The worst delay is $C \cdot \text{frame\_ms}$ and the mean is $(C + 1)/2 \cdot \text{frame\_ms}$, which is 100 ms here. This is also how real systems count: NVIDIA's cache-aware streaming FastConformer counts context in 80 ms frames, and a right context of 13 frames gives a latency of $(13 + 1) \times 80 = 1{,}120$ ms.
+For $C = 4$ and 40 ms frames, the delays are 160, 120, 80, and 40 ms, as Figure 2 shows. The worst delay is $C \cdot \text{frame\_ms}$ and the mean is $(C + 1)/2 \cdot \text{frame\_ms}$, which is 100 ms here. This is also how real systems count: NVIDIA's cache-aware streaming FastConformer counts context in 80 ms frames, and a right context of 13 frames gives a latency of $(13 + 1) \times 80 = 1{,}120$ ms. [Streaming latency and on-device speech](/lessons/050-streaming-latency-and-on-device) measures latency on a real timeline.
 
 ```figure
 <svg viewBox="0 0 560 250" role="img" aria-label="Delay from the start of each frame to its output for a chunk of four 40 ms frames: 160, 120, 80, and 40 ms">

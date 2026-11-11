@@ -41,7 +41,7 @@ $$
 T_{\text{resp}} = T_{\text{endpoint}} + T_{\text{ASR}} + T_{\text{LLM}} + T_{\text{TTS}} + T_{\text{network}} + T_{\text{buffer}}
 $$
 
-Read it aloud: the silence the agent waits for before it decides you're done, plus the recognizer's final result, the language model's time to its first token, the synthesizer's time to its first audio, the network, and the playback buffer.
+Read it aloud: the silence the agent waits for before it decides you're done, plus the recognizer's final result, the language model's time to its first token, the synthesizer's time to its first audio, the network, and the playback buffer. [Streaming latency and on-device speech](/lessons/050-streaming-latency-and-on-device) shows how to measure each term.
 
 ```figure
 <svg viewBox="0 0 600 170" role="img" aria-label="A stacked bar of 1,000 milliseconds: endpoint silence 500, final transcript 50, first LLM token 250, first TTS chunk 120, network 40, playback buffer 40">
@@ -257,6 +257,7 @@ Build the functions in the order the checks test them.
 
 - **The endpoint guess.** A fixed silence wait either interrupts slow speakers or makes everyone wait.
 - **Echo.** Cancellation fails when the room changes, and the agent then interrupts itself again.
+- **Turn metrics are not quality.** Gaps and overlaps don't show whether the model understands speech as well as text. [Speech LLM training and evaluation](/lessons/079-speech-llm-training-and-evaluation) measures that modality gap, and a win rate.
 
 ## The exercise
 

@@ -24,7 +24,7 @@ Tacotron learns when to read each symbol with attention, and attention is fragil
 
 FastSpeech removes attention by making timing explicit. A small network predicts how many frames each phone lasts, its *duration*. Then each phone's vector is copied that many times, and every frame is predicted at once, in parallel. The reported mel-spectrogram speedup over an autoregressive teacher was 270 times.
 
-That moves the hard problem to training: where do the true durations come from? This chapter builds the length regulator that uses durations, the pitch and energy targets that FastSpeech 2 adds beside them, and monotonic alignment search, the dynamic program with which Glow-TTS and VITS find durations on their own.
+That moves the hard problem to training: where do the true durations come from? This chapter builds the length regulator that uses durations, the pitch and energy targets that FastSpeech 2 adds beside them, and monotonic alignment search, the dynamic program with which Glow-TTS and VITS find durations on their own. [The TTS front end and prosody](/lessons/053-tts-front-end-and-prosody) assembles these targets into FastSpeech 2's full variance adaptor.
 
 ## What you already know
 

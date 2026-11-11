@@ -92,7 +92,7 @@ Figure 1. One frame of a synthetic voice at 269 Hz, a period of 59.4 samples (da
 
 $F_0$ is a physical quantity, the repetition rate. *Pitch* is a perception, how high a sound seems. They usually agree, but harmonics at 400, 600, and 800 Hz with nothing at 200 Hz are heard as a pitch of 200 Hz. This *missing fundamental* is common: a telephone line cuts everything below 300 Hz, and a man's voice still sounds low. So a tracker should find the *period*, 1/200 s, whether or not the fundamental is present.
 
-A tracker also decides whether a frame has a pitch at all. Vowels and "m" do. Silence and "s" do not. This *voicing decision* matters as much as the frequency, because a made-up pitch in silence ruins a contour.
+A tracker also decides whether a frame has a pitch at all. Vowels and "m" do. Silence and "s" do not. This *voicing decision* matters as much as the frequency, because a made-up pitch in silence ruins a contour. [Paralinguistics and emotion](/lessons/073-paralinguistics-and-emotion) uses these contours as prosody features.
 
 ## The obvious method and where it fails
 

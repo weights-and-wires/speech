@@ -260,7 +260,7 @@ Later chapters build systems that imitate a voice from a few seconds of audio. T
 
 - **Consent.** Clone only voices whose owners agreed, for the use at hand. A voice in an online video is not consent.
 - **Watermarking.** Mark generated audio so it can be recognized later. AudioSeal (2024) embeds an imperceptible watermark that a detector finds in a short excerpt.
-- **Detection and disclosure.** Spoofing countermeasures, scored in [Voice conversion and spoofing](/lessons/073-voice-conversion-and-spoofing), detect synthetic speech without a watermark but often miss unseen generators. Labeling synthetic audio depends on neither.
+- **Detection and disclosure.** Spoofing countermeasures, scored in [Voice conversion and spoofing](/lessons/074-voice-conversion-and-spoofing), detect synthetic speech without a watermark but often miss unseen generators. Labeling synthetic audio depends on neither.
 
 Neither a watermark nor a detector replaces consent. They make careless misuse harder and accidental misuse traceable.
 

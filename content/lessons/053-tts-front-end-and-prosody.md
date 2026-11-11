@@ -201,7 +201,7 @@ To clone a voice, the model needs the speaker's identity. Two designs exist.
 
 A vector of a few hundred numbers is a bottleneck that drops accent, room sound, and rhythm. A prompt keeps them, because the model sees the actual frames. That is why zero-shot systems moved to prompts. VALL-E continues a prompt of codec tokens as a language model (see [Codec language models](/lessons/061-codec-language-models)), and F5-style models fill in masked mel frames around a prompt (see [Flow matching for speech](/lessons/068-flow-matching-for-speech)). Prompting is the same idea as the reference encoder, with the compression removed.
 
-A prompt clones a voice from a few seconds of audio, so cloning needs consent. For detection and risk, see [Voice conversion and spoofing](/lessons/073-voice-conversion-and-spoofing).
+A prompt clones a voice from a few seconds of audio, so cloning needs consent. For detection and risk, see [Voice conversion and spoofing](/lessons/074-voice-conversion-and-spoofing).
 
 ## Build it step by step
 

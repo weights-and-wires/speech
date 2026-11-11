@@ -1,0 +1,19 @@
+{
+  "id": "073-paralinguistics-and-emotion",
+  "title": "Measure a voice and score an emotion classifier",
+  "brief": "Compute jitter, shimmer, and F0 statistics, then score emotion predictions with a confusion matrix, UAR, Cohen's kappa, and the concordance correlation coefficient, and train a class-balanced linear classifier.",
+  "needs_gpu": false,
+  "timeout": 20,
+  "packages": [
+    "numpy",
+    "scipy"
+  ],
+  "hints": [
+    "jitter: for the periods [100, 102, 98, 101], np.abs(np.diff(t)) is [2, 4, 3], its mean is 3, and np.mean(t) is 100.25, so the answer is 3 / 100.25 = 0.0299. Divide by the mean of all four periods.",
+    "f0_stats: keep f0[f0 > 0] before any statistic. For [0, 100, 100, 200, 200, 0, 150, 150, 0, 0] the voiced mean is 150, and np.percentile gives 100 and 200, so the range is 12 * log2(2) = 12 semitones.",
+    "ccc: for gold [-1, 0, 1] and prediction gold + 1, the means differ by 1 and both variances are 2/3, so CCC = 2 (2/3) / (2/3 + 2/3 + 1) = 4/7. np.corrcoef would give 1. Use x.var() and np.mean((x - x.mean()) * (y - y.mean())) so every moment divides by n.",
+    "cohen_kappa: for [[20, 5], [10, 15]], p_o = 35 / 50 = 0.7, and the chance agreement from row sums (25, 25) and column sums (30, 20) is (25 * 30 + 25 * 20) / 50^2 = 0.5, so kappa is (0.7 - 0.5) / 0.5 = 0.4.",
+    "uar: for [[70, 8, 2], [5, 8, 2], [1, 1, 3]], divide each diagonal entry by its row sum: 70/80, 8/15, 3/5. Their mean is 0.669, while accuracy is 0.81.",
+    "fit_linear: build Xb = np.hstack([X, np.ones((n, 1))]), the one-hot Y = np.eye(K)[y], and the weights w. Then np.linalg.solve(Xb.T @ (w[:, None] * Xb) + l2 * P, Xb.T @ (w[:, None] * Y)), with P the identity whose last diagonal entry is 0."
+  ]
+}

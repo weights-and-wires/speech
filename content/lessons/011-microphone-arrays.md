@@ -21,7 +21,7 @@ exercise: 011-microphone-arrays
 
 A smart speaker sits across the room. The person is a few meters away, the walls add copies of that voice, and the loudspeaker plays the assistant's reply into the same microphones that have to hear the person. One microphone records all of that as a single mixture. Several microphones, a few centimeters apart, hear the voice at slightly different times. That time difference is how you aim the array at the person.
 
-The loudspeaker is a separate handle, because you already have the signal that was played. The room's copy of it is an impulse response, so you can subtract an estimate of that copy. CHiME-6 records dinner-party speech on linear arrays of four sample-synchronized microphones, and one of its baselines is a weighted delay-and-sum. This chapter builds that delay, the weights that beat it when noise has a direction, and the canceler. The agent that talks and listens at once is [Full-duplex models and voice agents](/lessons/079-full-duplex-and-voice-agents).
+The loudspeaker is a separate handle, because you already have the signal that was played. The room's copy of it is an impulse response, so you can subtract an estimate of that copy. CHiME-6 records dinner-party speech on linear arrays of four sample-synchronized microphones, and one of its baselines is a weighted delay-and-sum. This chapter builds that delay, the weights that beat it when noise has a direction, and the canceler. The agent that talks and listens at once is [Full-duplex models and voice agents](/lessons/080-full-duplex-and-voice-agents).
 
 ## What you already know
 
@@ -240,7 +240,7 @@ The $10 \log_{10} M$ gain needs uncorrelated noise. A directional interferer is 
 
 A spacing wider than half a wavelength lets a second angle imitate the same delays. At $5$ cm and $343$ m/s that starts at $c / (2d) = 3430$ Hz.
 
-During double-talk the error is mostly the near-end voice. Keep adapting and the filter spends its taps on the person. WebRTC's AEC3 freezes or slows the update for that stretch. The [full-duplex chapter](/lessons/079-full-duplex-and-voice-agents) is where an agent talks over the person on purpose.
+During double-talk the error is mostly the near-end voice. Keep adapting and the filter spends its taps on the person. WebRTC's AEC3 freezes or slows the update for that stretch. The [full-duplex chapter](/lessons/080-full-duplex-and-voice-agents) is where an agent talks over the person on purpose.
 
 ## The exercise
 

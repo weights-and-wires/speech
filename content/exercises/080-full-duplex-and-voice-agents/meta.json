@@ -1,5 +1,5 @@
 {
-  "id": "079-full-duplex-and-voice-agents",
+  "id": "080-full-duplex-and-voice-agents",
   "title": "Parallel streams, a depth step, streaming convolution, turn-taking, and turn metrics",
   "brief": "Lay out Moshi's time-aligned text and audio streams with their delays, interleave text and speech tokens, score and sample an RQ-Transformer's frames, stream a causal convolution chunk by chunk, and run a voice agent's turn-taking state machine against its latency budget, tell a backchannel from a barge-in, and compute gaps, overlaps, and takeover rates from a two-channel timeline.",
   "needs_gpu": false,

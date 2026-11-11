@@ -143,7 +143,7 @@
   "078-spoken-language-models"
  ],
  "42-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "025-neural-acoustic-models": [
   "028-neural-acoustic-models"
@@ -253,7 +253,7 @@
   "078-spoken-language-models"
  ],
  "060-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "023-n-gram-language-models": [
   "025-n-gram-language-models"
@@ -372,7 +372,7 @@
   "078-spoken-language-models"
  ],
  "061-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "040-text-to-speech-and-tacotron": [
   "051-text-to-speech-and-tacotron"
@@ -442,7 +442,7 @@
   "078-spoken-language-models"
  ],
  "062-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "041-text-to-speech-and-tacotron": [
   "051-text-to-speech-and-tacotron"
@@ -512,13 +512,13 @@
   "078-spoken-language-models"
  ],
  "063-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "063-spoken-language-models": [
   "078-spoken-language-models"
  ],
  "064-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "011-hearing-and-the-mel-scale": [
   "012-hearing-and-the-mel-scale"
@@ -685,7 +685,7 @@
   "078-spoken-language-models"
  ],
  "065-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "041-asr-recipe": [
   "048-asr-recipe"
@@ -764,7 +764,7 @@
   "078-spoken-language-models"
  ],
  "066-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "040-diarization-and-forced-alignment": [
   "044-diarization",
@@ -777,7 +777,7 @@
   "078-spoken-language-models"
  ],
  "067-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "064-classification-and-voice-conversion": [
   "072-audio-classification-and-clap",
@@ -877,7 +877,7 @@
   "078-spoken-language-models"
  ],
  "068-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "039-whisper": [
   "041-whisper"
@@ -970,7 +970,7 @@
   "078-spoken-language-models"
  ],
  "069-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "038-self-supervised-speech": [
   "039-self-supervised-speech",
@@ -1079,7 +1079,7 @@
   "078-spoken-language-models"
  ],
  "070-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "043-diarization": [
   "044-diarization"
@@ -1166,7 +1166,7 @@
   "078-spoken-language-models"
  ],
  "071-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "046-asr-recipe": [
   "048-asr-recipe"
@@ -1247,7 +1247,7 @@
   "078-spoken-language-models"
  ],
  "072-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "051-wavenet": [
   "054-wavenet"
@@ -1316,7 +1316,7 @@
   "078-spoken-language-models"
  ],
  "073-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "049-text-to-speech-and-tacotron": [
   "051-text-to-speech-and-tacotron"
@@ -1394,7 +1394,7 @@
   "078-spoken-language-models"
  ],
  "074-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "045-forced-alignment-and-word-timestamps": [
   "046-forced-alignment-and-word-timestamps"
@@ -1487,7 +1487,7 @@
   "078-spoken-language-models"
  ],
  "075-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "073-voice-conversion-and-spoofing": [
   "074-voice-conversion-and-spoofing"
@@ -1499,7 +1499,7 @@
   "078-spoken-language-models"
  ],
  "076-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "075-spoken-language-understanding": [
   "076-spoken-language-understanding"
@@ -1508,12 +1508,15 @@
   "078-spoken-language-models"
  ],
  "077-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
  ],
  "077-spoken-language-models": [
   "078-spoken-language-models"
  ],
  "078-full-duplex-and-voice-agents": [
-  "079-full-duplex-and-voice-agents"
+  "080-full-duplex-and-voice-agents"
+ ],
+ "079-full-duplex-and-voice-agents": [
+  "080-full-duplex-and-voice-agents"
  ]
 }

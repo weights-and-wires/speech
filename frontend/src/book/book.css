@@ -120,27 +120,11 @@ body {
 }
 
 /* Paper is always the light theme: book.html pins data-theme="light". White
-   pages print cleanly, and the code slab turns into a light panel with the
-   light palette's own colours for syntax, so a printed page carries no dark
-   blocks. */
+   pages print cleanly. The book root opts in to the kit's light code palette
+   with class="code-light", so a printed page carries no dark blocks. */
 .book {
   --canvas: #fff;
   --paper: #fff;
-  --code-bg: var(--surface-muted);
-  --code-ink: var(--ink);
-  --code-line: var(--line);
-  --code-muted: var(--muted);
-  --code-button-line: var(--strong-line);
-  --hl-keyword: var(--accent-ink);
-  --hl-string: var(--series-6);
-  --hl-number: var(--series-2);
-  --hl-comment: var(--muted);
-  --hl-title: var(--forest);
-  --hl-builtin: var(--series-3);
-  --hl-type: var(--series-3);
-  --hl-meta: var(--muted);
-  --hl-punct: var(--ink);
-  --hl-attr: var(--series-4);
 }
 
 /* The app sets lesson prose at 1rem; the book keeps its 10pt body. */
@@ -261,15 +245,8 @@ body {
   align-items: baseline;
   gap: 2mm;
 }
-/* src/ui styles .toc-title as the app's "On this page" label. In the book it
-   is a contents entry, so it takes the entry's own type. */
 .toc-title {
   min-width: 0;
-  margin: 0;
-  color: inherit;
-  font: inherit;
-  letter-spacing: normal;
-  text-transform: none;
 }
 /* The dot leader between a title and its page number. */
 .toc-leader {

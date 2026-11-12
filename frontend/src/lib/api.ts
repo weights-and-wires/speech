@@ -1,5 +1,7 @@
 /** The typed client for everything under /api. */
 
+export type Heading = { text: string; level: 2 | 3 };
+
 export type LessonMeta = {
   slug: string;
   title: string;
@@ -7,6 +9,8 @@ export type LessonMeta = {
   summary: string;
   minutes: number | null;
   objectives: string[];
+  /** The `##` and `###` headings, in order, as plain text. */
+  headings: Heading[];
   prereqs: string[];
   exercise: string | null;
   gpu: boolean;

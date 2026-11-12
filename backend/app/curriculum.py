@@ -15,6 +15,7 @@ a stub is hidden when the bundle is served.
 from __future__ import annotations
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -42,6 +43,31 @@ def _text_list(value: Any) -> list[str]:
             out.extend(f"{k}: {v}" for k, v in item.items())
         else:
             out.append(str(item))
+    return out
+
+
+_FENCE = re.compile(r"^(```|~~~).*?^\1[ \t]*$", re.DOTALL | re.MULTILINE)
+_HEADING = re.compile(r"^(#{2,3})[ \t]+(.+?)[ \t#]*$", re.MULTILINE)
+
+
+def _plain(text: str) -> str:
+    """Strip inline Markdown and math delimiters from heading text."""
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    return re.sub(r"[`*$]", "", text).strip()
+
+
+def _headings(body: str) -> list[dict[str, Any]]:
+    """The `##` and `###` headings of a lesson body, in order, as plain text.
+
+    Each entry is `{"text": ..., "level": 2 or 3}`. Headings inside fenced code
+    blocks are skipped. The search dialog matches on these, and the reader gives
+    every `##` heading an anchor built from the same text.
+    """
+    out: list[dict[str, Any]] = []
+    for match in _HEADING.finditer(_FENCE.sub("", body)):
+        text = _plain(match.group(2))
+        if text:
+            out.append({"text": text, "level": len(match.group(1))})
     return out
 
 
@@ -123,6 +149,7 @@ def load_lessons() -> list[dict[str, Any]]:
                 "prereqs": _text_list(meta.get("prereqs", [])),
                 "exercise": meta.get("exercise"),
                 "gpu": bool(meta.get("gpu", False)),
+                "headings": _headings(post.content),
                 "body": post.content,
             }
         )

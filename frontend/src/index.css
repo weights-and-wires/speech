@@ -110,10 +110,6 @@
      ---------------------------------------------------------------------- */
 
   .slab {
-    /* The kit has no error colour for the slab; this is the dark theme's
-       --error, which reads on the slab in both themes. */
-    --slab-bad: #f0a49a;
-
     color-scheme: dark;
     --paper: var(--code-bg);
     --surface: var(--code-active-line);
@@ -124,8 +120,8 @@
     --forest-soft: var(--code-selection);
     --line: var(--code-line);
     --strong-line: var(--code-button-line);
-    --error: var(--slab-bad);
-    --error-soft: color-mix(in oklab, var(--slab-bad) 14%, var(--code-bg));
+    --error: var(--code-error);
+    --error-soft: color-mix(in oklab, var(--code-error) 14%, var(--code-bg));
 
     --canvas: var(--code-bg);
     --chrome: var(--code-bg);
@@ -137,7 +133,7 @@
     --ink-3: var(--code-muted);
     --ink-4: var(--code-muted);
     --good: var(--hl-title);
-    --bad: var(--slab-bad);
+    --bad: var(--code-error);
     --warn: var(--hl-keyword);
     --mark: var(--code-selection);
     --primary: var(--hl-title);

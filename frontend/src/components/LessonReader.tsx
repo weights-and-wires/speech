@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import type { Lesson, LessonMeta } from "../lib/api";
 import { KIND_LABEL, sections as readSections, symbols as readSymbols, terms as readTerms } from "../lib/lessonOutline";
@@ -33,6 +33,7 @@ function rememberedFocus(): boolean {
 
 export default function LessonReader({ lesson, lessons, onStartExercise }: Props) {
   const scroller = useRef<HTMLElement>(null);
+  const { hash } = useLocation();
   const [progress, setProgress] = useState(0);
   const [current, setCurrent] = useState(-1);
   const [read, setRead] = useState<Set<number>>(new Set());
@@ -98,6 +99,18 @@ export default function LessonReader({ lesson, lessons, onStartExercise }: Props
       window.removeEventListener("resize", onScroll);
     };
   }, [lesson.slug, measure]);
+
+  // A link such as /lessons/slug#s-section, from the search dialog, opens at that section.
+  useEffect(() => {
+    if (!hash) return;
+    const id = decodeURIComponent(hash.slice(1));
+    const open = window.setTimeout(() => {
+      scroller.current
+        ?.querySelector<HTMLElement>(`#${CSS.escape(id)}`)
+        ?.scrollIntoView({ block: "start" });
+    }, 300);
+    return () => window.clearTimeout(open);
+  }, [hash, lesson.slug]);
 
   useEffect(() => {
     try {

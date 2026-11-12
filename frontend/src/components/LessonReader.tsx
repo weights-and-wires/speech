@@ -180,7 +180,7 @@ export default function LessonReader({ lesson, lessons, onStartExercise }: Props
 
             {menuOpen && (
               <div className="menu fade-in absolute inset-x-0 top-[calc(100%+6px)] max-h-[min(65vh,440px)] overflow-y-auto" role="menu">
-                <p className="toc-title px-2.5 pb-1 pt-2">
+                <p className="toc-label px-2.5 pb-1 pt-2">
                   On this page · {read.size} of {outline.length} read
                 </p>
                 <ul>

@@ -165,7 +165,7 @@ grad = p * (errors - np.sum(p * errors))
 Figure 2. The gradient is p times the gap between a hypothesis's errors and the list's mean, 1.6. Hypotheses worse than the mean get pushed down, h2 gets pushed up, and the three values sum to zero.
 ```
 
-The subtracted $\bar{e}$ is a **baseline**. Leave it out and every hypothesis with errors gets pushed down. The update has the shape of a policy gradient with a baseline. For more information, see [Baselines and actor-critic](https://rl.ifkash.dev/lessons/031-baselines-and-actor-critic) and [RL for vision, speech, and robots](https://rl.ifkash.dev/lessons/063-rl-for-vision-speech-and-robots) in the RL course.
+The subtracted $\bar{e}$ is a **baseline**. Leave it out and every hypothesis with errors gets pushed down. The update has the shape of a policy gradient with a baseline. For more information, see [Baselines and actor-critic](https://rl.ifkash.dev/lessons/033-baselines-and-actor-critic) and [RL for vision, speech, and robots](https://rl.ifkash.dev/lessons/084-rl-for-vision-speech-and-robots) in the RL course.
 
 ## Word posteriors and confusion networks
 

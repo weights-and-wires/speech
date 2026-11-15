@@ -75,7 +75,7 @@ Figure 1. The mask is 1 only from the first response token to the end token. The
 
 ### Mask only what the model must write
 
-Masked loss, the label shift, and packing are covered in [Supervised fine-tuning and the post-training pipeline](https://rl.ifkash.dev/lessons/053-sft-and-the-post-training-pipeline). The audio-specific part is short. The placeholder positions never take loss, because their ids are filler and the real content is the projector's vectors. Those frames still receive gradients, because the loss on the response flows back through them. The prompt is masked because it is one fixed string per task, so training on it teaches a constant.
+Masked loss, the label shift, and packing are covered in [Supervised fine-tuning and the post-training pipeline](https://rl.ifkash.dev/lessons/065-sft-and-the-post-training-pipeline). The audio-specific part is short. The placeholder positions never take loss, because their ids are filler and the real content is the projector's vectors. Those frames still receive gradients, because the loss on the response flows back through them. The prompt is masked because it is one fixed string per task, so training on it teaches a constant.
 
 In code, build the mask from the length of everything before the response:
 
@@ -190,7 +190,7 @@ Figure 2. With 9 wins, 6 ties, and 5 losses, the win rate is 0.6 and its 95% int
 > [!TIP]
 > A model judge often favors the answer shown first. Run each pair in both orders and score a preference only when the two verdicts agree, or count disagreement as a tie. Then the swap test in the exercise holds: swapping A and B maps the rate to one minus itself.
 
-Preference optimization trains a model on pairs like these. For the loss and its variants, see [Direct preference optimization](https://rl.ifkash.dev/lessons/058-direct-preference-optimization). For speech, every pair needs generated audio and a judge calibrated against humans.
+Preference optimization trains a model on pairs like these. For the loss and its variants, see [Direct preference optimization](https://rl.ifkash.dev/lessons/071-direct-preference-optimization). For speech, every pair needs generated audio and a judge calibrated against humans.
 
 > [!RECAP]
 > - A sample is a task tag, audio placeholders, a prompt, a response, and an end token, in that order.

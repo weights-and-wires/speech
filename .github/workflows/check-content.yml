@@ -9,7 +9,7 @@ on:
 
 jobs:
   content:
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest-2-vcpu
     steps:
       - uses: actions/checkout@v4
 
@@ -27,7 +27,7 @@ jobs:
         run: python scripts/check_content.py
 
   frontend:
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest-2-vcpu
     steps:
       - uses: actions/checkout@v4
 
@@ -47,11 +47,15 @@ jobs:
         run: npm test
         working-directory: frontend
 
+      # Node sizes its default heap from the machine's memory. On the Avrea
+      # runner that default is too small for the Vite build, so set it.
       - run: npm run build
         working-directory: frontend
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
   book:
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest-2-vcpu
     steps:
       - uses: actions/checkout@v4
 

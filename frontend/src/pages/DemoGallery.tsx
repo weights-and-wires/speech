@@ -10,7 +10,8 @@ const BOOK_WIDTH_PX = Math.floor((138 / 25.4) * 96);
 
 /**
  * Every registered demo on one page, so a demo can be seen and checked
- * without the lesson that uses it. Only the dashboard's footer links here.
+ * without the lesson that uses it. The sidebar's Demo gallery link and the
+ * overview's All demos button lead here.
  * `?printed=1` shows a demo the way the PDF book prints it: at the book's
  * width, inside `PrintedFigure`, with its controls hidden.
  */

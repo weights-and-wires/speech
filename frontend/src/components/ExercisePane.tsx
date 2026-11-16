@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { api, ApiError, runStream, type ExerciseDetail, type RunEvent } from "../lib/api";
+import { useEditorLook } from "../lib/editorPrefs";
+import { useTheme } from "../lib/theme";
 import CodeEditor from "./CodeEditor";
+import { useOutputCollapse } from "./CollapsibleOutput";
+import EditorToolbar, { ToolbarPanel, type ToolbarAction } from "./EditorToolbar";
 import Markdown from "./Markdown";
-import RunConsole, { type CheckResult, type ConsoleLine } from "./RunConsole";
+import RunConsole, { ConsoleHeader, type CheckResult, type ConsoleLine } from "./RunConsole";
+import { modKey } from "./shellIcons";
 import SplitPane from "./SplitPane";
 
 type Props = {
@@ -49,6 +54,8 @@ export default function ExercisePane({
   const [useGpu, setUseGpu] = useState(false);
   const [revealed, setRevealed] = useState<string | null>(null);
   const [saved, setSaved] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  // Counts runs, so the output panel opens when one starts.
+  const [runId, setRunId] = useState(0);
 
   const abort = useRef<AbortController | null>(null);
   const codeRef = useRef(code);
@@ -93,6 +100,7 @@ export default function ExercisePane({
       abort.current = controller;
 
       setRunning(true);
+      setRunId((n) => n + 1);
       setMode(next);
       setLines([]);
       setChecks([]);
@@ -195,213 +203,161 @@ export default function ExercisePane({
     }
     try {
       const body = await api.solution(exercise.id);
+      setHintsShown(0);
       setRevealed(body.solution);
     } catch {
       setRevealed("# The solution could not be loaded.");
     }
   }
 
-  const mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
-  const mod = mac ? "⌘" : "Ctrl";
+  const mod = modKey();
+  const look = useEditorLook(useTheme().resolved);
+  const output = useOutputCollapse(runId);
+  const consoleId = useId();
+  const panelId = useId();
 
-  return (
-    <div className="slab flex min-h-0 flex-1 flex-col">
-      <header className="shrink-0 border-b border-rule bg-chrome px-3 pb-2.5 pt-2.5">
-        <div className="flex items-baseline gap-2">
-          <h2 className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ink">
-            <span className="mr-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--hl-keyword)]">
-              Exercise
-            </span>
-            {exercise.title}
-          </h2>
-          <span className="shrink-0 font-mono text-[10px] text-ink-3">
-            {exercise.timeout}s limit
-          </span>
-          {onCollapse && (
-            <button
-              type="button"
-              onClick={onCollapse}
-              aria-label="Hide the code editor"
-              title={`Hide the code editor (${mod} .)`}
-              className="icon-btn -my-1 -mr-1.5 self-center"
-            >
-              <FoldIcon />
-            </button>
-          )}
-        </div>
-        <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-ink-3" title={exercise.brief}>
-          {exercise.brief}
-        </p>
+  const status =
+    saved === "saving" ? "Saving…" : saved === "saved" ? "Saved" : saved === "failed" ? "Not saved" : "";
 
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          {running ? (
-            <button type="button" onClick={stop} className="btn btn-danger">
-              <span className="size-2 rounded-[2px] bg-current" aria-hidden />
-              Stop
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => start("run")}
-                className="btn btn-secondary"
-                title={`Run the file (${mod} Return)`}
-              >
-                Run
-                <span className="kbd hidden lg:inline-flex">{mod}↵</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => start("check")}
-                className="btn btn-primary"
-                title={`Run the checks (${mod} Shift Return)`}
-              >
-                Check
-                <span className="kbd hidden lg:inline-flex">{mac ? "⇧⌘↵" : "Ctrl⇧↵"}</span>
-              </button>
+  const actions: ToolbarAction[] = [
+    ...(exercise.hints.length > 0
+      ? [
+          {
+            id: "hint",
+            label: hintsShown ? "Hide hints" : "Show a hint",
+            icon: "bulb" as const,
+            pressed: hintsShown > 0,
+            controls: panelId,
+            onClick: () => {
+              setRevealed(null);
+              setHintsShown((n) => (n ? 0 : 1));
+            },
+          },
+        ]
+      : []),
+    {
+      id: "reset",
+      label: "Reset to the starter file",
+      icon: "reset",
+      priority: "low",
+      onClick: () => void reset(),
+    },
+    {
+      id: "solution",
+      label: revealed !== null ? "Hide the solution" : "Show the solution",
+      icon: "key",
+      priority: "low",
+      pressed: revealed !== null,
+      controls: panelId,
+      onClick: () => void reveal(),
+    },
+    ...(gpuLesson
+      ? [
+          {
+            id: "gpu",
+            label: gpuAvailable ? (useGpu ? "Run on the CPU" : "Run on a GPU") : "No GPU endpoint is configured",
+            tip: gpuAvailable
+              ? "Send runs to a RunPod GPU worker. A cold worker takes a few seconds to start."
+              : "No GPU endpoint is configured, so every run stays on the CPU.",
+            icon: "gpu" as const,
+            priority: "low" as const,
+            pressed: useGpu && gpuAvailable,
+            disabled: !gpuAvailable,
+            onClick: () => setUseGpu((v) => !v),
+          },
+        ]
+      : []),
+  ];
 
-              {gpuLesson ? (
-                <label
-                  title={
-                    gpuAvailable
-                      ? "Send this run to a RunPod GPU worker. A cold worker takes " +
-                        "a few seconds to start, so the checks are quicker on the CPU."
-                      : "No GPU endpoint is configured, so every run stays on the CPU."
-                  }
-                  className={`ml-1 flex min-h-8 items-center gap-2 rounded-md px-2 text-[13px] transition-colors ${
-                    gpuAvailable ? "cursor-pointer text-ink-2 hover:text-ink" : "cursor-not-allowed text-ink-4"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    className="size-3.5 accent-[var(--primary)]"
-                    checked={useGpu && gpuAvailable}
-                    disabled={!gpuAvailable}
-                    onChange={(event) => setUseGpu(event.target.checked)}
-                  />
-                  Use a GPU
-                </label>
-              ) : null}
-            </>
-          )}
-
-          <div className="flex-1" />
-
-          <span
-            className={`mr-1 text-[12px] ${saved === "failed" ? "text-bad" : "text-ink-4"}`}
-            aria-live="polite"
-          >
-            {saved === "saving"
-              ? "Saving…"
-              : saved === "saved"
-                ? "Saved"
-                : saved === "failed"
-                  ? "Not saved"
-                  : ""}
-          </span>
-          {exercise.hints.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setHintsShown((n) => (n ? 0 : 1))}
-              aria-expanded={hintsShown > 0}
-              className="btn btn-ghost px-2.5!"
-            >
-              {hintsShown ? "Hide hints" : "Hint"}
-            </button>
-          )}
-          <button type="button" onClick={reset} className="btn btn-ghost px-2.5!" title="Replace your code with the starter file">
-            Reset
-          </button>
-          <button
-            type="button"
-            onClick={reveal}
-            aria-pressed={revealed !== null}
-            className="btn btn-ghost px-2.5!"
-          >
-            Solution
-          </button>
-        </div>
-
-        {hintsShown > 0 && (
-          <div className="fade-in mt-2.5 rounded-[6px] border border-rule bg-raise p-3">
-            <ol className="space-y-2">
-              {exercise.hints.slice(0, hintsShown).map((hint, index) => (
-                <li key={index} className="fade-in flex gap-2.5 text-[13.5px] leading-snug text-ink-2">
-                  <span className="w-12 shrink-0 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-ink-3">Hint {index + 1}</span>
-                  <span>{hint}</span>
-                </li>
-              ))}
-            </ol>
-            {hintsShown < exercise.hints.length && (
-              <button
-                type="button"
-                onClick={() => setHintsShown((n) => n + 1)}
-                className="mt-2.5 text-[12.5px] font-medium text-accent hover:underline"
-              >
-                Show hint {hintsShown + 1} of {exercise.hints.length}
-              </button>
-            )}
-          </div>
-        )}
-      </header>
-
-      {revealed !== null ? (
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex shrink-0 items-center gap-2 border-b border-rule px-3 py-1.5">
-            <span className="flex-1 text-[13px] font-medium text-ink-2">Reference solution</span>
-            <button type="button" onClick={() => setRevealed(null)} className="btn btn-secondary min-h-7!">
-              Back to your code
-            </button>
-          </div>
-          <div className="min-h-0 flex-1 overflow-auto overscroll-contain p-3">
-            <Markdown inline>{"```python\n" + revealed + "\n```"}</Markdown>
-          </div>
-        </div>
-      ) : (
-        <SplitPane
-          direction="column"
-          storageKey={`speech.split.exercise`}
-          initial={62}
-          min={25}
-          max={85}
-          className="min-h-0 flex-1"
-          label="Resize the editor and the output"
-          first={
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <CodeEditor
-                value={code}
-                onChange={setCode}
-                onRun={() => start("run")}
-                onCheck={() => start("check")}
-              />
-            </div>
-          }
-          second={
-            <RunConsole
-              lines={lines}
-              checks={checks}
-              planned={planned}
-              running={running}
-              mode={mode}
-              backend={backend}
-              summary={summary}
-              next={next}
-              mod={mod}
-            />
-          }
-        />
-      )}
-    </div>
+  const header = (collapsed: boolean) => (
+    <ConsoleHeader
+      mode={mode}
+      backend={backend}
+      running={running}
+      summary={summary}
+      collapsed={collapsed}
+      onToggle={output.toggle}
+      controls={consoleId}
+    />
   );
-}
 
-/** A pane with an arrow pushing it off to the right. */
-function FoldIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <rect x="1.75" y="2.75" width="12.5" height="10.5" rx="2" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M9.75 3v10" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M5 6l2 2-2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <div className={`slab flex min-h-0 flex-1 flex-col ${look === "paper" ? "code-light sh-slab-paper" : ""}`}>
+      <EditorToolbar
+        title={exercise.title}
+        info={<Markdown inline>{exercise.brief}</Markdown>}
+        meta={`${exercise.timeout}s limit`}
+        status={status}
+        running={running}
+        onRun={() => start("run")}
+        onCheck={() => start("check")}
+        onStop={stop}
+        actions={actions}
+        onCollapse={onCollapse}
+        collapseShortcut={`${mod} .`}
+      />
+
+      {hintsShown > 0 && (
+        <ToolbarPanel id={panelId} title="Hints" onClose={() => setHintsShown(0)}>
+          <ol className="space-y-2">
+            {exercise.hints.slice(0, hintsShown).map((hint, index) => (
+              <li key={index} className="fade-in flex gap-2.5 text-[13.5px] leading-snug text-ink-2">
+                <span className="w-12 shrink-0 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-ink-3">
+                  Hint {index + 1}
+                </span>
+                <span>{hint}</span>
+              </li>
+            ))}
+          </ol>
+          {hintsShown < exercise.hints.length && (
+            <button
+              type="button"
+              onClick={() => setHintsShown((n) => n + 1)}
+              className="mt-2.5 text-[12.5px] font-medium text-accent hover:underline"
+            >
+              Show hint {hintsShown + 1} of {exercise.hints.length}
+            </button>
+          )}
+        </ToolbarPanel>
+      )}
+
+      {revealed !== null && (
+        <ToolbarPanel id={panelId} title="Reference solution" onClose={() => setRevealed(null)}>
+          <Markdown inline>{"```python\n" + revealed + "\n```"}</Markdown>
+        </ToolbarPanel>
+      )}
+
+      <SplitPane
+        direction="column"
+        storageKey="speech.split.exercise"
+        initial={62}
+        min={25}
+        max={85}
+        className="min-h-0 flex-1"
+        label="Resize the editor and the output"
+        collapsed={output.collapsed}
+        rail={header(true)}
+        first={
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <CodeEditor value={code} onChange={setCode} onRun={() => start("run")} onCheck={() => start("check")} />
+          </div>
+        }
+        second={
+          <RunConsole
+            lines={lines}
+            checks={checks}
+            planned={planned}
+            running={running}
+            mode={mode}
+            backend={backend}
+            summary={summary}
+            next={next}
+            mod={mod}
+            onToggle={output.toggle}
+            bodyId={consoleId}
+          />
+        }
+      />
+    </div>
   );
 }

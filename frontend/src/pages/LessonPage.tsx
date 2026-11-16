@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import { EditorRail } from "../components/EditorToolbar";
 import ExercisePane from "../components/ExercisePane";
 import LessonReader from "../components/LessonReader";
+import { modKey } from "../components/shellIcons";
 import SplitPane from "../components/SplitPane";
 import { api, ApiError, type Lesson, type LessonMeta } from "../lib/api";
 import { REVEAL_EVENT, revealInEditor } from "../lib/events";
@@ -174,7 +176,13 @@ export default function LessonPage({ gpuAvailable, lessons, onProgress }: Props)
         stacked={!wide}
         active={tab}
         collapsed={editorHidden}
-        rail={<EditorRail title={lesson.exercise_detail.title} onOpen={() => setEditorHidden(false)} />}
+        rail={
+          <EditorRail
+            title={lesson.exercise_detail.title}
+            shortcut={`${modKey()} .`}
+            onOpen={() => setEditorHidden(false)}
+          />
+        }
         first={reading}
         second={
           <ExercisePane
@@ -201,27 +209,6 @@ function remembered(key: string): boolean {
   } catch {
     return false;
   }
-}
-
-/** The strip a folded editor leaves behind. Clicking it brings the editor back. */
-function EditorRail({ title, onOpen }: { title: string; onOpen: () => void }) {
-  const mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-label={`Show the code editor: ${title}`}
-      title={`Show the code editor (${mac ? "⌘" : "Ctrl"} .)`}
-      className="slab flex w-10 shrink-0 flex-col items-center gap-3 border-l border-rule py-3 text-ink-3 transition-colors hover:bg-sunk! hover:text-ink"
-    >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-        <rect x="1.75" y="2.75" width="12.5" height="10.5" rx="2" stroke="currentColor" strokeWidth="1.3" />
-        <path d="M9.75 3v10" stroke="currentColor" strokeWidth="1.3" />
-        <path d="M7 6L5 8l2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] [writing-mode:vertical-rl]">Code editor</span>
-    </button>
-  );
 }
 
 /** One of the two panes a narrow screen shows at a time. */

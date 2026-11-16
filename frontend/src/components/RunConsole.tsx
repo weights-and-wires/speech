@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { MediaEvent, RunEvent } from "../lib/api";
+import { OutputHeader, Spinner } from "./CollapsibleOutput";
 import RunMedia from "./figures/RunMedia";
 
 export type ConsoleLine =
@@ -23,6 +24,10 @@ type Props = {
   next?: { slug: string; title: string } | null;
   /** The modifier key's name on this platform, for the empty-state hint. */
   mod: string;
+  /** Folds the console down to its header strip. */
+  onToggle: () => void;
+  /** The id of the scrolling body, for the header's aria-controls. */
+  bodyId: string;
 };
 
 /**
@@ -43,6 +48,8 @@ export default function RunConsole({
   summary,
   next,
   mod,
+  onToggle,
+  bodyId,
 }: Props) {
   const bottom = useRef<HTMLDivElement>(null);
   const top = useRef<HTMLDivElement>(null);
@@ -70,26 +77,18 @@ export default function RunConsole({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-canvas">
-      <header className="flex h-9 shrink-0 items-center gap-2.5 border-b border-rule px-3">
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-2">
-          {mode === "check" ? "Checks" : "Output"}
-        </span>
-        {backend && (
-          <span className="text-[12px] text-ink-4">
-            {backend === "runpod" ? "on a RunPod GPU" : "on the CPU"}
-          </span>
-        )}
-        {running && (
-          <span className="flex items-center gap-1.5 text-[12px] text-ink-3">
-            <Spinner />
-            Running
-          </span>
-        )}
-        <div className="flex-1" />
-        {summary && !running && <Summary summary={summary} mode={mode} />}
-      </header>
+      <ConsoleHeader
+        mode={mode}
+        backend={backend}
+        running={running}
+        summary={summary}
+        collapsed={false}
+        onToggle={onToggle}
+        controls={bodyId}
+      />
 
       <div
+        id={bodyId}
         className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-3 py-2.5 font-mono text-[12.5px] leading-relaxed"
         onScroll={(event) => {
           const el = event.currentTarget;
@@ -311,10 +310,10 @@ function Glyph({
 }
 
 function Line({ line }: { line: ConsoleLine }) {
-  if (line.kind === "media") return <RunMedia event={line.event} />;
   if (line.kind === "status") {
     return <p className="fade-in py-px font-sans text-[12px] text-ink-4">{line.text}</p>;
   }
+  if (line.kind === "media") return <RunMedia event={line.event} />;
   if (line.kind === "error") {
     return (
       <div className="fade-in my-2 rounded-md bg-[color-mix(in_oklab,var(--bad)_7%,transparent)] px-3 py-2">
@@ -359,11 +358,36 @@ function Summary({
   );
 }
 
-function Spinner() {
+/**
+ * The console's header strip: what ran, where, and how it went, with the
+ * chevron that folds the console. The folded console shows this strip alone.
+ */
+export function ConsoleHeader({
+  mode,
+  backend,
+  running,
+  summary,
+  collapsed,
+  onToggle,
+  controls,
+}: {
+  mode: "run" | "check" | null;
+  backend: string | null;
+  running: boolean;
+  summary: Extract<RunEvent, { type: "done" }> | null;
+  collapsed: boolean;
+  onToggle: () => void;
+  controls?: string;
+}) {
   return (
-    <svg viewBox="0 0 16 16" className="size-3 animate-spin" aria-hidden>
-      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" fill="none" />
-      <path d="M14 8a6 6 0 0 0-6-6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
-    </svg>
+    <OutputHeader
+      label={mode === "check" ? "Checks" : "Output"}
+      detail={backend ? (backend === "runpod" ? "on a RunPod GPU" : "on the CPU") : undefined}
+      running={running}
+      status={summary ? <Summary summary={summary} mode={mode} /> : undefined}
+      collapsed={collapsed}
+      onToggle={onToggle}
+      controls={controls}
+    />
   );
 }

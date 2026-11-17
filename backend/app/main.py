@@ -1,14 +1,15 @@
 """The HTTP surface: SSO identity, content, progress, drafts, and run streams.
 
 All course APIs and the PDF book require a Caddy-authenticated identity.
-Health and session are public; the SPA is served from `frontend/dist`.
+Health and session are public; the SPA is served from `frontend/dist`. The MCP
+server at `/mcp` is the exception: it ignores the proxy identity and takes a
+bearer token.
 """
 
 from __future__ import annotations
 
-import asyncio
 import json
-from pathlib import Path
+from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -16,13 +17,27 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Str
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import curriculum, db
+from . import course, curriculum, db, mcp_server, mcp_tokens
 from .auth import current_user, sso_user
 from .config import Settings, get_settings
-from .runner import RunRequest, RunnerError, choose_backend, run_local, run_runpod
 from .runner import runpod as runpod_backend
+from .runs import start_run
 
-app = FastAPI(title="Weights and Wires — Speech and audio", docs_url=None, redoc_url=None)
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    db.init()
+    db.carry_progress(curriculum.renames())
+    async with mcp_server.lifespan():
+        yield
+
+
+app = FastAPI(
+    title="Weights and Wires — Speech and audio",
+    docs_url=None,
+    redoc_url=None,
+    lifespan=lifespan,
+)
 
 
 # The hub at this origin reads the progress summary from the browser.
@@ -46,12 +61,6 @@ async def hub_cors(request: Request, call_next: Any) -> Any:
     return response
 
 
-@app.on_event("startup")
-def startup() -> None:
-    db.init()
-    db.carry_progress(curriculum.renames())
-
-
 # Models -----------------------------------------------------------------
 
 
@@ -61,6 +70,10 @@ class DraftBody(BaseModel):
 
 class ProgressBody(BaseModel):
     status: str = Field(pattern="^(started|solved)$")
+
+
+class TokenBody(BaseModel):
+    name: str = Field(min_length=1, max_length=mcp_tokens.MAX_NAME_LENGTH)
 
 
 class RunBody(BaseModel):
@@ -82,7 +95,7 @@ def health(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
         "lessons": len(lessons),
         "exercises": len(curriculum.load_exercises()),
         "gpu": settings.gpu_available,
-        "book_pages": (book_info(settings) or {}).get("pages", 0),
+        "book_pages": (course.book_info(settings) or {}).get("pages", 0),
     }
 
 
@@ -127,36 +140,12 @@ def solution(exercise_id: str, user: str = Depends(current_user)) -> dict[str, A
     return {"id": exercise_id, "solution": exercise["solution"]}
 
 
-def book_info(settings: Settings) -> dict[str, Any] | None:
-    """The PDF book on disk, as the book build's manifest describes it.
-
-    The image build prints the PDF into the book folder, so a fresh checkout
-    that hasn't run the book build has none. Then this is None and the header
-    shows no download button, rather than one that leads to a 404.
-    """
-    try:
-        manifest = json.loads((settings.book_dir / "manifest.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    name = manifest.get("file")
-    if not isinstance(name, str) or "/" in name or not (settings.book_dir / name).is_file():
-        return None
-    return {
-        "title": manifest.get("title"),
-        "pages": manifest.get("pages"),
-        "bytes": manifest.get("bytes"),
-        "built": manifest.get("built"),
-        "commit": manifest.get("commit"),
-        "url": f"/book/{name}",
-    }
-
-
 @app.get("/api/book")
 def book(
     user: str = Depends(current_user), settings: Settings = Depends(get_settings)
 ) -> dict[str, Any]:
     """The whole course as one PDF, or None when this server has no PDF."""
-    return {"book": book_info(settings)}
+    return {"book": course.book_info(settings)}
 
 
 @app.get("/book/{name}")
@@ -164,7 +153,7 @@ def book_file(
     name: str, user: str = Depends(current_user), settings: Settings = Depends(get_settings)
 ) -> FileResponse:
     """The PDF, sent as a download. Only the file the manifest names is served."""
-    info = book_info(settings)
+    info = course.book_info(settings)
     if info is None or info["url"] != f"/book/{name}":
         raise HTTPException(status_code=404, detail="No such book")
     return FileResponse(settings.book_dir / name, media_type="application/pdf", filename=name)
@@ -192,16 +181,7 @@ def drop_draft(exercise_id: str, user: str = Depends(current_user)) -> dict[str,
 @app.get("/api/progress/summary")
 def progress_summary(user: str = Depends(current_user)) -> dict[str, Any]:
     """Counts for the hub: lessons done, lessons served, and the latest one touched."""
-    titles = {lesson["slug"]: lesson["title"] for lesson in curriculum.lesson_list()}
-    rows = {
-        slug: row for slug, row in db.get_progress(user).items() if slug in titles
-    }
-    done = sum(1 for row in rows.values() if row["status"] == "solved")
-    last = None
-    if rows:
-        slug = max(rows, key=lambda key: rows[key]["updated_at"])
-        last = {"slug": slug, "title": titles[slug]}
-    return {"done": done, "total": len(titles), "last": last}
+    return course.progress_summary(user)
 
 
 @app.put("/api/progress/{slug}")
@@ -254,51 +234,16 @@ async def run(
     user: str = Depends(current_user),
     settings: Settings = Depends(get_settings),
 ) -> StreamingResponse:
-    exercise = curriculum.get_exercise(body.exercise_id)
-    if exercise is None:
+    started = start_run(
+        user, body.exercise_id, body.mode, body.code, settings, prefer_gpu=body.prefer_gpu
+    )
+    if started is None:
         raise HTTPException(status_code=404, detail="No such exercise")
 
-    request = RunRequest(
-        exercise_id=body.exercise_id,
-        mode=body.mode,
-        code=body.code,
-        timeout=int(exercise["timeout"]),
-        needs_gpu=bool(exercise["needs_gpu"]) or body.prefer_gpu,
-    )
-    backend = choose_backend(request, settings)
-
-    # A draft is saved on every run, so a closed tab never loses work.
-    db.save_draft(user, body.exercise_id, body.code)
-
     async def stream() -> AsyncIterator[bytes]:
-        summary: dict[str, Any] = {"ok": False}
-        yield _sse({"type": "begin", "backend": backend, "mode": body.mode})
-        try:
-            if backend == "runpod":
-                source = run_runpod(request, settings)
-            else:
-                source = run_local(request, Path(exercise["directory"]), settings)
-            media = _MediaBudget()
-            async for event in source:
-                if event.get("type") == "done":
-                    summary = event
-                yield media.frame(event)
-        except RunnerError as exc:
-            yield _sse({"type": "error", "message": str(exc)})
-            yield _sse({"type": "done", "ok": False})
-        except asyncio.CancelledError:
-            # The reader navigated away. Nothing to report, and the local runner
-            # kills its process group on the way out.
-            raise
-        except Exception as exc:  # noqa: BLE001 - the stream must always close
-            yield _sse({"type": "error", "message": f"The runner failed: {exc}"})
-            yield _sse({"type": "done", "ok": False})
-        else:
-            db.record_run(user, body.exercise_id, body.mode, backend, summary)
-            if body.mode == "check" and summary.get("ok"):
-                for lesson in curriculum.lesson_list():
-                    if lesson.get("exercise") == body.exercise_id:
-                        db.set_progress(user, lesson["slug"], "solved")
+        media = _MediaBudget()
+        async for event in started.events:
+            yield media.frame(event)
 
     return StreamingResponse(
         stream(),
@@ -348,6 +293,49 @@ class _MediaBudget:
         return framed
 
 
+# MCP --------------------------------------------------------------------
+
+
+def _token_view(record: dict[str, Any]) -> dict[str, Any]:
+    return {key: record.get(key) for key in ("id", "name", "prefix", "created_at", "last_used_at")}
+
+
+@app.get("/api/mcp/tokens")
+def list_mcp_tokens(
+    request: Request,
+    user: str = Depends(current_user),
+    settings: Settings = Depends(get_settings),
+) -> dict[str, Any]:
+    """The MCP endpoint's URL and the caller's active tokens, without secrets."""
+    url = settings.mcp_public_url or str(request.base_url).rstrip("/") + "/mcp"
+    return {"url": url, "tokens": [_token_view(t) for t in db.list_tokens(user)]}
+
+
+@app.post("/api/mcp/tokens")
+def create_mcp_token(body: TokenBody, user: str = Depends(current_user)) -> dict[str, Any]:
+    """Create a token for the caller. The response is the only copy of the secret."""
+    try:
+        record = mcp_tokens.create_token(user, body.name)
+    except mcp_tokens.TokenLimitError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {key: record[key] for key in ("id", "name", "prefix", "created_at", "token")}
+
+
+@app.delete("/api/mcp/tokens/{token_id}")
+def revoke_mcp_token(token_id: int, user: str = Depends(current_user)) -> dict[str, Any]:
+    if not db.revoke_token(token_id, username=user):
+        raise HTTPException(status_code=404, detail="No such token")
+    return {"revoked": True}
+
+
+# Both spellings are routes of their own, so neither redirects: MCP clients
+# don't follow a redirect on POST. They are registered before the SPA catch-all.
+app.router.add_route("/mcp", mcp_server.endpoint, include_in_schema=False)
+app.router.add_route("/mcp/", mcp_server.endpoint, include_in_schema=False)
+
+
 # Static assets ----------------------------------------------------------
 
 
@@ -363,7 +351,9 @@ def _mount_frontend() -> None:
 
     @app.get("/{path:path}", include_in_schema=False)
     def spa(path: str) -> Any:
-        if path.startswith("api/"):
+        # .well-known/ too: an MCP client probes it for OAuth metadata, and an
+        # HTML page with 200 there reads as a broken OAuth server.
+        if path.startswith(("api/", "mcp/", ".well-known/")):
             return JSONResponse({"detail": "Not found"}, status_code=404)
         candidate = dist / path
         if path and candidate.is_file() and dist in candidate.resolve().parents:

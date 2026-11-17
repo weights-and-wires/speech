@@ -6,3 +6,4 @@ python-frontmatter==1.1.0
 httpx==0.28.1
 numpy==2.3.3
 scipy==1.16.2
+mcp==1.30.0

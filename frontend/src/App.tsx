@@ -8,6 +8,7 @@ import Mark from "./components/Mark";
 import SearchDialog from "./components/SearchDialog";
 import StatusMark from "./components/StatusMark";
 import { DEMOS } from "./demos";
+import AgentsPage from "./pages/AgentsPage";
 import Dashboard from "./pages/Dashboard";
 import DemoGallery from "./pages/DemoGallery";
 import LessonPage from "./pages/LessonPage";
@@ -179,6 +180,7 @@ export default function App() {
         nav={[
           { to: "/", label: "Course overview", icon: "grid", active: location.pathname === "/" },
           { to: "/demos", label: "Demo gallery", icon: "spark", count: Object.keys(DEMOS).length, active: onDemos },
+          { to: "/agents", label: "Agent access", icon: "key", active: location.pathname === "/agents" },
         ]}
         sections={sections}
         storageKey="speech.sidebar"
@@ -210,6 +212,7 @@ export default function App() {
           />
           <Route path="/demos" element={<DemoGallery />} />
           <Route path="/demos/:id" element={<DemoGallery />} />
+          <Route path="/agents" element={<AgentsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

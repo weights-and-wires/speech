@@ -32,7 +32,7 @@ The repository is laid out as follows.
 |---|---|
 | `content/lessons/` | The lessons, in Markdown with YAML front matter. |
 | `content/exercises/` | One directory per exercise: a starter file, checks, and a worked solution. |
-| `backend/` | FastAPI: auth, content, progress, drafts, and the run stream. |
+| `backend/` | FastAPI: auth, content, progress, drafts, the run stream, and the MCP server. |
 | `backend/app/runner/` | The harness, the `speechcheck` assertion library, the `speechlab` output helpers, and the two execution backends. |
 | `frontend/` | React and Vite: the reader, the editor, the run console, and the demos. |
 | `frontend/src/demos/` | The interactive demos, their plotting kit, and a small signal-processing library. |
@@ -130,6 +130,13 @@ You need Python 3.12 or later and Node 20 or later.
    cd frontend && npm install && npm run dev
    ```
 
+To run the backend's unit tests, run the following command from the repository
+root:
+
+```bash
+.venv/bin/python -m unittest discover -s backend/tests -t .
+```
+
 Open `http://localhost:5173`. The Vite dev server proxies `/api` to the backend
 on port 8000. To use a backend on another port, set `API_TARGET`, for example
 `API_TARGET=http://127.0.0.1:8016 npm run dev`. Sign-in requires requests to pass
@@ -206,6 +213,111 @@ course API and the PDF book remains protected by the identity dependency.
 Set `SSO_USERS` as comma-separated `authelia_name:course_name` pairs to preserve
 existing progress, drafts, and run history. Unmapped Authelia usernames are
 used directly. `Caddyfile.example` shows the site's forward-auth configuration.
+
+## MCP server for AI agents
+
+The app serves a [Model Context Protocol](https://modelcontextprotocol.io)
+server at `https://speech.ifkash.dev/mcp`, over the Streamable HTTP transport.
+An agent such as Claude Code can use it to read the course and work through it
+as you.
+
+The server exposes the following tools:
+
+- `course_overview`, `list_lessons`, `get_lesson`, and `search` for the
+  syllabus, chapter text, and full-text search over lessons, exercises, and
+  documents. `get_lesson` replaces each figure's SVG with its description and
+  caption, and each demo with its ID and caption; pass `format="raw"` for the
+  Markdown as authored.
+- `list_exercises`, `get_exercise`, and `get_solution` for an exercise's brief,
+  hints, starter code, checks, and worked solution.
+- `list_demos` and `get_demo` for the interactive demos and the lessons that
+  place them. An agent can't use a demo, which is a browser component, but it
+  can read its title and the caption that says what to notice.
+- `get_document` for the files under `docs/`, including the curriculum, the
+  content contract, and the research notes, and `get_book_info` for the PDF
+  book's details. The PDF itself needs a signed-in browser session.
+- `get_progress`, `list_drafts`, `get_draft`, `save_draft`, `delete_draft`, and
+  `set_progress` for your progress and drafts.
+- `run_exercise`, which runs or checks code the same way the editor's **Run**
+  and **Check** buttons do. It describes the clips and figures that the code
+  plays or plots, without their audio or pixels.
+
+Lessons are also resources, at `speech://lessons/SLUG`. Reading a lesson
+through the server doesn't mark it started.
+
+An agent can't complete the Authelia sign-in, so Caddy routes `/mcp` without
+`forward_auth`, and the server requires a bearer token instead. A token acts
+as the reader who owns it. The server ignores the `Remote-User` and
+`X-SSO-Proxy` headers.
+
+**Caution:** A token can run code in the container, the same as a signed-in
+reader. Treat it like a password, and revoke it when you no longer use it.
+
+### Get a token
+
+To create a token, do one of the following:
+
+- On the site, open **Agent access** in the sidebar, at
+  `https://speech.ifkash.dev/agents`. Enter a name and click **Create token**.
+  The page shows the token once, with ready-to-copy client configurations.
+- On the VM, run the command line in the container:
+
+  ```bash
+  docker exec speech python -m backend.app.mcp_tokens create USERNAME --name NAME
+  ```
+
+  Replace the following:
+
+  - `USERNAME`: the reader the token acts as, after `SSO_USERS` mapping, for
+    example `enderboi`.
+  - `NAME`: a label that tells you where the token is used, for example
+    `laptop`.
+
+To see or revoke tokens on the VM, run
+`docker exec speech python -m backend.app.mcp_tokens list` or
+`docker exec speech python -m backend.app.mcp_tokens revoke ID`. The server
+stores only a SHA-256 hash of each token, so a lost token can't be recovered;
+revoke it and create another. A token starts with `speechmcp_`.
+
+### Connect a client
+
+To connect Claude Code, complete the following steps:
+
+1. Put the token in an environment variable:
+
+   ```bash
+   export TOKEN=TOKEN_VALUE
+   ```
+
+   Replace `TOKEN_VALUE` with the token.
+
+2. Add the server:
+
+   ```bash
+   claude mcp add --transport http speech https://speech.ifkash.dev/mcp \
+     --header "Authorization: Bearer $TOKEN"
+   ```
+
+For a client that reads an `mcpServers` configuration file, add the following
+entry:
+
+```json
+{
+  "mcpServers": {
+    "speech": {
+      "type": "http",
+      "url": "https://speech.ifkash.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer TOKEN_VALUE"
+      }
+    }
+  }
+}
+```
+
+The server is stateless and answers with plain JSON, so it needs no session
+and works through a proxy that buffers responses. A `run_exercise` call returns
+when the run finishes, which can take up to the exercise's timeout.
 
 ## The GPU backend
 
@@ -288,13 +400,16 @@ A deploy has three steps:
 The VM never builds from source and holds no copy of the tree. `.env` on the VM
 holds the session secret and the RunPod key, and a deploy never touches it.
 `Caddyfile.example` holds the vhost block for `speech.ifkash.dev`, including
-the buffering and timeout settings the run stream needs. `docker-compose.yml`
-is an example of the service definition.
+the buffering and timeout settings the run stream needs and the `/mcp` route
+that skips forward-auth. `docker-compose.yml` is an example of the service
+definition.
 
 The VM has little disk and memory to spare, so the image is built to share its
 largest layers with the ml course: the `Dockerfile` is identical to that
 course's up to and including the CPU `torch` install, and the packages this
 course adds, such as `soundfile`, come in a later layer. Keep it that way. The
+image installs Python packages with [uv](https://docs.astral.sh/uv/), pinned in
+the `Dockerfile` by its `COPY --from=ghcr.io/astral-sh/uv` line. The
 container is capped at 1.5 CPUs and 1 GB, and `LOCAL_WORKERS=1` runs one
 submission at a time.
 
@@ -333,6 +448,22 @@ the site's Markdown pipeline, and prints it with headless Chrome. It prints
 more than once, so that the contents carry real page numbers. The PDF,
 `speech-and-audio.pdf`, and its `manifest.json` land in `book/`, which Git
 ignores.
+
+The print layout imports only part of `frontend/src/`, and the image's book
+stage copies only that part, so a change to the site's UI doesn't reprint the
+book. The list of files appears in two places that must stay in step: the
+`BOOK_SOURCES` list in `frontend/scripts/build-book.mjs`, which the build's
+input hash covers, and the `COPY` lines of the `Dockerfile`'s `book` stage.
+After you import a new file from the print layout, a Vite build in the image
+fails with an unresolved import until you add it. To list the files, run the
+following command from `frontend/`:
+
+```bash
+node -e 'require("esbuild").build({entryPoints:["src/book/main.tsx"],bundle:true,write:false,metafile:true,logLevel:"silent",external:["*.css"],loader:{".css":"empty"}}).then(r=>console.log(Object.keys(r.metafile.inputs).filter(f=>f.startsWith("src/")).sort().join("\n")))'
+```
+
+The output omits `src/index.css` and the stylesheets it imports, which you
+list yourself. `src/demos/` is listed whole.
 
 The build fails on any formula KaTeX can't render and on anything wider than
 the page, because Chrome shrinks every page to fit the widest element. It skips

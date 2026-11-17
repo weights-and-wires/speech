@@ -151,6 +151,21 @@ export type RunEvent =
       timeout?: boolean;
     };
 
+/** One MCP access token, listed without its secret. */
+export type McpToken = {
+  id: number;
+  name: string;
+  /** The first characters of the token, enough to recognize it. */
+  prefix: string;
+  /** Unix seconds. */
+  created_at: number;
+  /** Unix seconds, or null if the token has never been used. */
+  last_used_at: number | null;
+};
+
+/** A freshly created token. `token` is the full secret, returned only once. */
+export type McpTokenCreated = Omit<McpToken, "last_used_at"> & { token: string };
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -234,6 +249,17 @@ export const api = {
       local: { workers: number; memory_mb: number; timeout_ceiling: number };
       runpod: Record<string, unknown>;
     }>("/api/compute"),
+
+  mcpTokens: () => request<{ url: string; tokens: McpToken[] }>("/api/mcp/tokens"),
+
+  createMcpToken: (name: string) =>
+    request<McpTokenCreated>("/api/mcp/tokens", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    }),
+
+  revokeMcpToken: (id: number) =>
+    request<{ revoked: boolean }>(`/api/mcp/tokens/${id}`, { method: "DELETE" }),
 
   book: () => request<{ book: BookFile | null }>("/api/book"),
 

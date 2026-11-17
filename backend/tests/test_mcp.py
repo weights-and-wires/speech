@@ -285,6 +285,31 @@ class MCPTests(unittest.TestCase):
         _, progress = self._call_with(token, SIGNED_IN, "get_progress")
         self.assertEqual(progress["reader"], "other")
 
+    def test_hub_secret_acts_as_the_named_reader(self) -> None:
+        hub = {"X-MCP-Hub-Secret": "hub-secret", "X-MCP-Hub-User": "Portal"}
+
+        # Off by default: without MCP_HUB_SECRET the headers grant nothing.
+        self.assertEqual(self._rpc(None, "ping", extra=hub).status_code, 401)
+
+        os.environ["MCP_HUB_SECRET"] = "hub-secret"
+        self.get_settings.cache_clear()
+        try:
+            wrong = {**hub, "X-MCP-Hub-Secret": "guess"}
+            self.assertEqual(self._rpc(None, "ping", extra=wrong).status_code, 401)
+            no_user = {"X-MCP-Hub-Secret": "hub-secret"}
+            self.assertEqual(self._rpc(None, "ping", extra=no_user).status_code, 401)
+
+            response = self._rpc(
+                None, "tools/call", {"name": "get_progress", "arguments": {}}, extra=hub
+            )
+            self.assertEqual(response.status_code, 200, response.text)
+            progress = json.loads(response.json()["result"]["content"][0]["text"])
+            # The Authelia name maps through SSO_USERS, as a browser session does.
+            self.assertEqual(progress["reader"], "reader")
+        finally:
+            os.environ.pop("MCP_HUB_SECRET", None)
+            self.get_settings.cache_clear()
+
     def test_well_known_and_mcp_subpaths_are_not_the_spa(self) -> None:
         # Without a built frontend there is no catch-all, so a 404 is the floor;
         # `test_spa_catch_all_returns_json_404` covers the catch-all itself.
